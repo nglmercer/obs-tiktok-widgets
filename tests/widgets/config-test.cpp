@@ -23,6 +23,18 @@ int main(int argc, char **argv)
 	tt::WidgetManager restored(dir.path(), WIDGET_ASSETS);
 	if (restored.widgets.size() != 2 || restored.widgets[0].id() != chat.id())
 		throw std::runtime_error("persistence");
+	const auto editable = dir.path() + "/editable.html";
+	QFile source(editable);
+	if (!source.open(QIODevice::WriteOnly))
+		throw std::runtime_error("editable source");
+	source.write("<!doctype html><p>External edit retained</p>");
+	source.close();
+	restored.widgets[0].value["editableHtml"] = editable;
+	restored.save();
+	tt::WidgetManager edited(dir.path(), WIDGET_ASSETS);
+	QFile generated(edited.materialize(edited.widgets[0]));
+	if (!generated.open(QIODevice::ReadOnly) || !generated.readAll().contains("External edit retained"))
+		throw std::runtime_error("external HTML edit survives restart");
 	restored.duplicate(chat.id());
 	if (restored.widgets.size() != 3 || restored.widgets[2].id() == chat.id())
 		throw std::runtime_error("duplicate identity");

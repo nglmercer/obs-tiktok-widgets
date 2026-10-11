@@ -51,10 +51,17 @@ int main(int argc, char **argv)
 	monitor->append(events[0]);
 	check(tree->topLevelItemCount() == 1 && tree->topLevelItem(0)->childCount() > 0, "structured JSON rendering");
 	tree->topLevelItem(0)->setExpanded(true);
-	auto *filter = dock.findChild<QLineEdit *>("eventTypeFilter");
-	filter->setText("gift");
+	auto *filter = dock.findChild<QComboBox *>("eventTypeFilter");
+	filter->setCurrentIndex(filter->findData("gift"));
 	check(tree->topLevelItem(0)->isHidden(), "filter existing events");
-	filter->clear();
+	filter->setCurrentIndex(0);
+	monitor->append(tt::EventNormalizer::synthetic("state", 1));
+	check(tree->topLevelItem(1)->isHidden(), "state hidden by default");
+	monitor->append(tt::EventNormalizer::synthetic("state", 1));
+	check(tree->topLevelItemCount() == 2, "repeated state snapshots suppressed in monitor");
+	filter->setCurrentIndex(filter->findData("state"));
+	check(!tree->topLevelItem(1)->isHidden(), "state remains selectable");
+	filter->setCurrentIndex(0);
 	for (int i = 0; i < 205; ++i)
 		monitor->append(tt::EventNormalizer::synthetic("like", i));
 	check(tree->topLevelItemCount() == 200, "bounded rendered history");

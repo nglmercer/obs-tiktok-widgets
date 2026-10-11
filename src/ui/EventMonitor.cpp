@@ -3,7 +3,7 @@
 #include <QHBoxLayout>
 #include <QTreeWidget>
 #include <QHeaderView>
-#include <QLineEdit>
+#include <QComboBox>
 #include <QCheckBox>
 #include <QPushButton>
 #include <QJsonArray>
@@ -44,9 +44,12 @@ void appendJsonField(QTreeWidgetItem *parent, const QString &key, const QJsonVal
 EventMonitor::EventMonitor(QWidget *p) : QWidget(p)
 {
 	auto *layout = new QVBoxLayout(this);
-	filter = new QLineEdit;
+	filter = new QComboBox;
 	filter->setObjectName("eventTypeFilter");
-	filter->setPlaceholderText(tr("Filter event type"));
+	filter->addItem(tr("LIVE events (hide connection state)"), "live");
+	filter->addItem(tr("All events"), "all");
+	for (auto type : {"chat", "gift", "like", "follow", "member", "social", "roomUser", "state", "unknown"})
+		filter->addItem(QString::fromLatin1(type), QString::fromLatin1(type));
 	paused = new QCheckBox(tr("Pause"));
 	auto *controls = new QHBoxLayout;
 	auto *clear = new QPushButton(tr("Clear"));
@@ -63,8 +66,11 @@ EventMonitor::EventMonitor(QWidget *p) : QWidget(p)
 	log->header()->setSectionResizeMode(0, QHeaderView::Interactive);
 	log->header()->setStretchLastSection(true);
 	log->setColumnWidth(0, 160);
-	connect(clear, &QPushButton::clicked, log, &QTreeWidget::clear);
-	connect(filter, &QLineEdit::textChanged, this, [this] { applyFilter(); });
+	connect(clear, &QPushButton::clicked, this, [this] {
+		log->clear();
+		lastState = {};
+	});
+	connect(filter, &QComboBox::currentIndexChanged, this, [this] { applyFilter(); });
 	connect(copy, &QPushButton::clicked, this, [this] {
 		auto *item = log->currentItem();
 		if (!item)
@@ -81,14 +87,22 @@ void EventMonitor::applyFilter()
 {
 	for (int i = 0; i < log->topLevelItemCount(); ++i) {
 		auto *item = log->topLevelItem(i);
-		item->setHidden(!filter->text().isEmpty() &&
-				!item->data(0, Qt::UserRole).toString().contains(filter->text(), Qt::CaseInsensitive));
+		item->setHidden(filter->currentData() == "live"
+					? item->data(0, Qt::UserRole) == "state"
+					: filter->currentData() != "all" &&
+						  item->data(0, Qt::UserRole) != filter->currentData());
 	}
 }
 void EventMonitor::append(const QJsonObject &event)
 {
 	if (paused->isChecked())
 		return;
+	if (event["type"] == "state") {
+		const auto state = event["data"].toObject();
+		if (!lastState.isEmpty() && state == lastState)
+			return;
+		lastState = state;
+	}
 	const bool follow = log->verticalScrollBar() == nullptr || !log->currentItem();
 	auto copy = event;
 	copy.remove("native");
@@ -100,7 +114,9 @@ void EventMonitor::append(const QJsonObject &event)
 	root->setData(0, Qt::UserRole + 1, QString::fromUtf8(QJsonDocument(copy).toJson(QJsonDocument::Indented)));
 	for (auto it = copy.begin(); it != copy.end(); ++it)
 		appendJsonField(root, it.key(), it.value());
-	root->setHidden(!filter->text().isEmpty() && !type.contains(filter->text(), Qt::CaseInsensitive));
+	if (filter->findData(type) < 0)
+		filter->addItem(type, type);
+	applyFilter();
 	while (log->topLevelItemCount() > 200)
 		delete log->takeTopLevelItem(0);
 	if (follow)

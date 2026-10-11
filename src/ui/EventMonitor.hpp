@@ -2,14 +2,15 @@
 #include <QWidget>
 #include <QJsonObject>
 class QTreeWidget;
-class QLineEdit;
+class QComboBox;
 class QCheckBox;
 namespace tt {
 class EventMonitor : public QWidget {
 	QTreeWidget *log;
 	void applyFilter();
-	QLineEdit *filter;
+	QComboBox *filter;
 	QCheckBox *paused;
+	QJsonObject lastState;
 
 public:
 	explicit EventMonitor(QWidget * = nullptr);

@@ -65,11 +65,19 @@ QString WidgetManager::materialize(const WidgetConfig &widget) const
 	write(dir + "/widget.js", script.readAll());
 	write(dir + "/widget.css", css.readAll());
 	QFile html(assets + "/widgets/" + widget.type() + "/index.html");
-	if (widget.type() == "custom")
+	if (!widget.value["editableHtml"].toString().isEmpty())
+		html.setFileName(widget.value["editableHtml"].toString());
+	else if (widget.type() == "custom")
 		html.setFileName(widget.value["customHtml"].toString());
 	if (!html.open(QIODevice::ReadOnly))
 		throw std::runtime_error("Widget HTML is missing");
 	auto page = html.readAll();
+	if (!widget.value["editableHtml"].toString().isEmpty()) {
+		const auto folder = QFileInfo(html).absolutePath();
+		write(folder + "/config.js", "window.TikTokWidgetConfig=" + json + ";\n");
+		page = "<base href=\"" + QUrl::fromLocalFile(folder + "/").toString().toHtmlEscaped().toUtf8() +
+		       "\">\n" + page;
+	}
 	page.replace("../widget.js", "widget.js");
 	page.replace("../widget.css", "widget.css");
 	if (widget.type() == "custom")

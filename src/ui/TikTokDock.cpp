@@ -8,6 +8,9 @@
 #include "core/SigningBundleManager.hpp"
 #include <QTabWidget>
 #include <QComboBox>
+#include <QMenu>
+#include <QFileInfo>
+#include <QDir>
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QVBoxLayout>
@@ -93,15 +96,36 @@ TikTokDock::TikTokDock(PluginConfig &c, TikTokConnectionManager &n, EventDispatc
 	connect(advanced, &QGroupBox::toggled, sessionPath, &QWidget::setVisible);
 	connectionLayout->addWidget(advanced);
 	connectionLayout->addStretch();
+	auto *help = new QLabel(tr("1. Create a widget   2. Edit its appearance   3. Add it to a scene"));
+	help->setWordWrap(true);
+	widgetsLayout->addWidget(help);
 	list = new QListWidget;
 	widgetsLayout->addWidget(list, 1);
 	refreshList();
 	auto *widgetActions = new QGridLayout;
 	widgetsLayout->addLayout(widgetActions);
+	auto *more = new QPushButton(tr("More actions…"));
+	auto *moreMenu = new QMenu(more);
+	more->setMenu(moreMenu);
+	widgetActions->addWidget(more, 2, 1);
 	int widgetActionIndex = 0;
 	std::function<void(const QString &, std::function<void()>)> button =
-		[this, widgetActions, &widgetActionIndex](const QString &text, std::function<void()> fn) {
+		[this, widgetActions, moreMenu, &widgetActionIndex](const QString &text, std::function<void()> fn) {
+			if (text != tr("Create widget") && text != tr("Edit widget") &&
+			    text != tr("Add to current scene") && text != tr("Preview widget")) {
+				auto *action = moreMenu->addAction(text);
+				action->setEnabled(list->currentRow() >= 0);
+				connect(list, &QListWidget::currentRowChanged, action,
+					[action](int row) { action->setEnabled(row >= 0); });
+				connect(action, &QAction::triggered, this, [this, fn] { guarded(fn); });
+				return;
+			}
 			auto *b = new QPushButton(text);
+			if (text != tr("Create widget")) {
+				b->setEnabled(list->currentRow() >= 0);
+				connect(list, &QListWidget::currentRowChanged, b,
+					[b](int row) { b->setEnabled(row >= 0); });
+			}
 			widgetActions->addWidget(b, widgetActionIndex / 2, widgetActionIndex % 2);
 			++widgetActionIndex;
 			connect(b, &QPushButton::clicked, this, [this, fn] { guarded(fn); });
@@ -121,8 +145,9 @@ TikTokDock::TikTokDock(PluginConfig &c, TikTokConnectionManager &n, EventDispatc
 			throw;
 		}
 		refreshList();
+		list->setCurrentRow(widgets.widgets.size() - 1);
 	});
-	button(tr("Configure widget"), [this] {
+	button(tr("Edit widget"), [this] {
 		auto i = list->currentRow();
 		if (i < 0)
 			return;
@@ -198,6 +223,30 @@ TikTokDock::TikTokDock(PluginConfig &c, TikTokConnectionManager &n, EventDispatc
 		widgets.save();
 		BrowserSourceManager::refresh(old, widgets.materialize(old));
 	});
+	button(tr("Open editable HTML folder"), [this] {
+		auto i = list->currentRow();
+		if (i < 0)
+			return;
+		auto &widget = widgets.widgets[i];
+		const auto page = widgets.materialize(widget);
+		const auto folder = QFileInfo(page).absolutePath() + "/editable";
+		QDir().mkpath(folder);
+		for (const auto &name : {"index.html", "widget.js", "widget.css"}) {
+			const auto destination = folder + "/" + name;
+			if (!QFile::exists(destination) &&
+			    !QFile::copy(QFileInfo(page).absolutePath() + "/" + name, destination))
+				throw std::runtime_error("Cannot create editable HTML copy");
+		}
+		widget.value["editableHtml"] = folder + "/index.html";
+		widgets.save();
+		BrowserSourceManager::refresh(widget, widgets.materialize(widget));
+		QDesktopServices::openUrl(QUrl::fromLocalFile(folder));
+	});
+	button(tr("Reload edited HTML"), [this] {
+		const auto i = list->currentRow();
+		if (i >= 0)
+			BrowserSourceManager::refresh(widgets.widgets[i], widgets.materialize(widgets.widgets[i]));
+	});
 	button = [this, eventsLayout](const QString &text, std::function<void()> fn) {
 		auto *b = new QPushButton(text);
 		eventsLayout->addWidget(b);
@@ -255,9 +304,12 @@ void TikTokDock::guarded(std::function<void()> fn)
 }
 void TikTokDock::refreshList()
 {
+	const auto previousRow = list->currentRow();
 	list->clear();
 	for (const auto &w : widgets.widgets)
 		list->addItem(w.name() + " (" + w.type() + ")");
+	if (list->count())
+		list->setCurrentRow(qBound(0, previousRow, list->count() - 1));
 }
 void TikTokDock::connectRoom(bool forceReconnect)
 {

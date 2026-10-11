@@ -32,3 +32,7 @@ Built-in templates read `window.TikTokWidgetConfig` from generated `config.js`, 
 Open a built-in page with `?preview=1` to display an explicit fixture button in any ordinary browser. It dispatches chat, gift, like, follow, viewer and unknown fixtures locally. The dock's generator uses the native normalization envelope and dispatch queue; it never starts network transport. `web/examples/custom.html` is a minimal SDK-free subscription example.
 
 An iframe can optionally receive events forwarded explicitly by its parent with postMessage and strict origin checks. postMessage is not a bus across separate OBS Browser Sources.
+
+## Edit local HTML externally
+
+Select a widget, then choose **More actions → Open editable HTML folder**. The plugin creates a per-widget `editable` folder containing `index.html`, `widget.js`, and `widget.css`, and uses that HTML as the widget source. Open those files in your preferred editor, save, then choose **Reload edited HTML**. The editable files survive settings changes and OBS restarts. `config.js` is generated automatically; change settings through Edit widget instead of editing that file. Browser preview uses fixtures; real DOM events require an OBS Browser Source. Deleting the widget removes its per-widget folder.
