@@ -22,7 +22,8 @@ test(
       );
       const frame = page
         .frames()
-        .find((f) => f.url().endsWith("/preview.html"));
+        .find((f) => f.url().includes("/preview.html?session="));
+      assert.equal(await frame.evaluate(() => document.compatMode), "CSS1Compat");
       assert.equal(
         await frame.locator("#root").innerText(),
         "Viewer123\nRose × 23 ✓",
@@ -56,12 +57,20 @@ test(
         "gift",
       ]);
       assert.equal(await page.evaluate(() => window.leaks), 0);
+      await page.locator("#completed").uncheck();
+      await page.locator("#replay").click();
+      await page.waitForFunction(() => document.querySelector("#history").children.length === 7);
+      assert.equal(JSON.parse(await page.locator("#json").innerText()).data.repeat_end, false);
+      assert.match(await frame.locator("#root").innerText(), /Rose × 23 …/);
       await page.locator("#interval").fill("1000");
       await page.locator("#replay").click();
       await page.locator("#stop").click();
       const stopped = await page.locator("#history li").count();
       await page.waitForTimeout(1100);
       assert.equal(await page.locator("#history li").count(), stopped);
+      const stale = new URL(frame.url()).searchParams.get("session");
+      await page.locator("#reset").click();
+      await page.locator("#reset").click();
       await page.locator("#reset").click();
       await page.waitForFunction(
         () => !document.querySelector("#replay").disabled,
@@ -69,7 +78,13 @@ test(
       assert.equal(await page.locator("#history li").count(), 0);
       const resetFrame = page
         .frames()
-        .find((f) => f.url().endsWith("/preview.html"));
+        .find((f) => f.url().includes("/preview.html?session="));
+      assert.equal(await resetFrame.locator("#root").innerText(), "");
+      await resetFrame.evaluate((stale) => {
+        parent.postMessage({channel:"tiktok-playground",version:1,session:stale,action:"ready"},"*");
+        window.postMessage({channel:"tiktok-playground",version:1,session:stale,action:"event",event:{version:1,synthetic:true}},"*");
+      }, stale);
+      await page.waitForTimeout(100);
       assert.equal(await resetFrame.locator("#root").innerText(), "");
       await page.locator("#streak").uncheck();
       await page.locator("#username").fill("<img src=x onerror=alert(1)>");
@@ -106,3 +121,93 @@ test(
     }
   },
 );
+
+test("native generated documents retain standards mode and custom local assets; audio resolution and failures", {skip: !executablePath}, async () => {
+  const fs = await import("node:fs");
+  const os = await import("node:os");
+  const {execFileSync} = await import("node:child_process");
+  const {pathToFileURL} = await import("node:url");
+  const binary = process.env.PLAYGROUND_NATIVE_TEST || "build/widget-test";
+  assert.ok(fs.existsSync(binary), "Build native widget-test before running this integration suite");
+  const root = fs.mkdtempSync(`${os.tmpdir()}/playground-browser-`);
+  const browser = await chromium.launch({executablePath,headless:true});
+  try {
+    execFileSync(binary, {env:{...process.env,PLAYGROUND_FIXTURE_DIR:root}});
+    const wav=Buffer.alloc(44+1600); wav.write('RIFF');wav.writeUInt32LE(wav.length-8,4);wav.write('WAVEfmt ',8);wav.writeUInt32LE(16,16);wav.writeUInt16LE(1,20);wav.writeUInt16LE(1,22);wav.writeUInt32LE(8000,24);wav.writeUInt32LE(16000,28);wav.writeUInt16LE(2,32);wav.writeUInt16LE(16,34);wav.write('data',36);wav.writeUInt32LE(1600,40);
+    fs.writeFileSync(`${root}/author/tone.wav`,wav);
+    const page = await browser.newPage();
+    await page.goto(pathToFileURL(fs.readFileSync(`${root}/preview-path.txt`,"utf8")).href);
+    await page.waitForFunction(() => !document.querySelector('#replay').disabled);
+    const frame = page.frames()[1];
+    assert.equal(await frame.evaluate(() => document.compatMode), "CSS1Compat");
+    assert.equal(await frame.evaluate(() => document.doctype.name), "html");
+    assert.equal(await frame.evaluate(() => window.customAssetLoaded), true);
+    assert.equal(await frame.locator('#asset').evaluate(el=>getComputedStyle(el).color), "rgb(12, 34, 56)");
+    assert.equal(await frame.locator('img').evaluate(el=>el.naturalWidth),10);
+    const audio = await frame.evaluate(async()=> {
+      const probe=src=>new Promise(resolve=>{const audio=new Audio(src);audio.onloadedmetadata=()=>resolve('loaded');audio.onerror=()=>resolve('missing');});
+      return [await probe('tone.wav'),await probe('missing.wav')];
+    });
+    assert.deepEqual(audio,['loaded','missing']);
+    assert.equal(fs.readFileSync(`${root}/author/index.html`,"utf8").includes("tiktok-bootstrap"),false);
+    await page.goto(pathToFileURL(fs.readFileSync(`${root}/builtin-path.txt`,"utf8")).href);
+    await page.waitForFunction(() => !document.querySelector('#replay').disabled);
+    const built = page.frames()[1];
+    assert.equal(await built.evaluate(() => document.compatMode), "CSS1Compat");
+    await built.evaluate(() => {
+      window.audioUrls=[];
+      window.Audio=class {constructor(url){window.audioUrls.push(url);} play(){return Promise.reject(new Error('Autoplay denied'));}};
+      window.TikTokWidgetConfig.soundUrl='nested/audio.wav';
+      // Update renderer through the validated frame session, preserving configured soundUrl.
+      window.dispatchEvent(new CustomEvent('tiktok:preview-settings',{detail:{animation:false,sound:true}}));
+    });
+    await page.locator("#sound").check();
+    // Configure before renderer startup for each audio case.
+    for (const soundUrl of ['nested/audio.wav','file:///tmp/explicit-audio.wav','https://example.org/audio.wav','javascript:alert(1)']) {
+      await built.evaluate(soundUrl => {
+        window.TikTokWidgetConfig={template:'gifts',sound:true,soundUrl};
+        const script=document.createElement('script');script.src='widget.js';document.body.append(script);
+      },soundUrl);
+      await built.waitForTimeout(50);
+      await page.locator('#replay').click();
+      await built.waitForTimeout(50);
+    }
+    const urls=await built.evaluate(()=>window.audioUrls);
+    assert.ok(urls.some(u=>u.endsWith('/nested/audio.wav') && u.includes('/widgets/')));
+    assert.ok(urls.includes('file:///tmp/explicit-audio.wav'));
+    assert.ok(urls.includes('https://example.org/audio.wav'));
+    assert.ok(urls.every(u=>!u.startsWith('javascript:')));
+    assert.match(await page.locator('#status').innerText(),/Audio playback failed/);
+    assert.equal(await built.locator('head script[src$="frame.js"]').count(),1);
+    assert.equal(await built.locator('script[src$="config.js"]').count(),0);
+  } finally {await browser.close();fs.rmSync(root,{recursive:true,force:true});}
+});
+
+test("reset while initialization is pending rejects old loaded and ready packets", {skip:!executablePath}, async()=>{
+  const browser=await chromium.launch({executablePath,headless:true});
+  try {
+    const page=await browser.newPage();
+    await page.addInitScript(()=>{
+      if(parent===window)return;
+      const register=window.addEventListener.bind(window);
+      window.addEventListener=(name,fn,options)=>register(name,name==='load'?()=>setTimeout(()=>fn.call(window,new Event('load')),350):fn,options);
+    });
+    await page.goto(new URL('../../data/web/playground/index.html',import.meta.url).href);
+    const old=new URL(page.frames()[1].url()).searchParams.get('session');
+    await page.locator('#reset').click();
+    await page.locator('#reset').click();
+    await page.waitForTimeout(40);
+    const active=page.frames()[1];
+    await active.evaluate(old=>{
+      for(const action of ['loaded','ready']) parent.postMessage({channel:'tiktok-playground',version:1,session:old,action},'*');
+    },old);
+    await page.waitForTimeout(40);
+    assert.equal(await page.locator('#replay').isDisabled(),true);
+    assert.equal(await page.locator('#history li').count(),0);
+    await page.waitForFunction(()=>!document.querySelector('#replay').disabled);
+    assert.equal(await page.locator('#history li').count(),0);
+    await active.evaluate(()=>location.reload());
+    await page.waitForFunction(old=>new URL(document.querySelector('#preview').src).searchParams.get('session')!==old,new URL(active.url()).searchParams.get('session'));
+    await page.waitForFunction(()=>!document.querySelector('#replay').disabled);
+  } finally {await browser.close();}
+});

@@ -1,4 +1,6 @@
 import { scenario, ScenarioEngine, type FixtureOptions } from "./engine.js";
+import { channel, targetOrigin, validPacket } from "./protocol.js";
+import { uniqueId, integer } from "./engine.js";
 import type { TikTokEvent } from "../sdk/types.js";
 const el = <T extends HTMLElement>(id: string) =>
   document.getElementById(id) as T;
@@ -7,14 +9,15 @@ const frame = el<HTMLIFrameElement>("preview"),
   status = el("status"),
   json = el("json"),
   history = el("history");
-let ready = false,
-  last: TikTokEvent | undefined,
-  pending = false;
-const send = (data: Record<string, unknown>) =>
-  frame.contentWindow?.postMessage(
-    { channel: "tiktok-playground", ...data },
-    "*",
-  );
+let state: "loading" | "initializing" | "ready" | "error" | "closed" = "loading";
+let session = "", timeout: ReturnType<typeof setTimeout> | undefined;
+let last: TikTokEvent | undefined, initialReplay = true;
+let supported: string[] | null = null;
+const origin = targetOrigin(new URL("preview.html", location.href).href);
+const send = (data: Record<string, unknown>) => {
+  if (state === "closed" || state === "error") return;
+  frame.contentWindow?.postMessage({ channel, version: 1, session, ...data }, origin);
+};
 const settings = () =>
   send({
     action: "settings",
@@ -22,6 +25,7 @@ const settings = () =>
     sound: input("sound").checked,
   });
 const engine = new ScenarioEngine((event) => {
+  if (state !== "ready") return;
   send({ action: "event", event });
   last = event;
   json.textContent = JSON.stringify(event, null, 2);
@@ -35,14 +39,11 @@ const engine = new ScenarioEngine((event) => {
   li.append(b);
   history.append(li);
   while (history.children.length > 200) history.firstChild?.remove();
-  status.textContent = "Local simulation delivered";
+  status.textContent = supported && !supported.includes(event.type) ? `This template or its filters do not display ${event.type} events.` : "Local simulation delivered";
 });
 function options(): FixtureOptions {
-  const count = Number(input("count").value);
-  if (!Number.isInteger(count) || count < 1 || count > 1000000)
-    throw new Error("Repeat count must be between 1 and 1,000,000");
-  if (input("streak").checked && count < 5)
-    throw new Error("Streak total must be at least 5");
+  const count = integer(input("count").value);
+  if (BigInt(count) < 1n) throw new Error("Repeat count must be positive");
   return {
     type: input("type").value,
     username: input("username").value,
@@ -67,11 +68,10 @@ function play() {
       repetitions > 100
     )
       throw new Error("Invalid interval or simulation count");
+    const speed = Number(input("speed").value);
+    if (!Number.isFinite(speed) || speed <= 0) throw new Error("Invalid playback speed");
     scenario(o, input("streak").checked);
-    if (!ready) {
-      pending = true;
-      return;
-    }
+    if (state !== "ready") return;
     settings();
     engine.play(
       () => scenario(o, input("streak").checked),
@@ -82,42 +82,38 @@ function play() {
     status.textContent = (e as Error).message;
   }
 }
-window.addEventListener("message", (e) => {
-  if (
-    e.source !== frame.contentWindow ||
-    e.data?.channel !== "tiktok-playground"
-  )
-    return;
-  if (e.data.action === "loaded") settings();
-  if (e.data.action === "ready") {
-    ready = true;
-    el<HTMLButtonElement>("replay").disabled = false;
-    if (pending) {
-      pending = false;
-      play();
-    }
-  }
-});
-el<HTMLButtonElement>("replay").disabled = true;
-pending = true;
-frame.src = "preview.html";
-el("replay").onclick = play;
-el("stop").onclick = () => {
-  pending = false;
+function loadPreview() {
   engine.stop();
-  status.textContent = "Stopped";
+  if (timeout !== undefined) clearTimeout(timeout);
+  session = uniqueId(); state = "loading";
+  el<HTMLButtonElement>("replay").disabled = true;
+  status.textContent = "Loading preview…";
+  frame.src = `preview.html?session=${encodeURIComponent(session)}`;
+  timeout = setTimeout(() => {
+    state = "error"; engine.stop(); timeout = undefined;
+    status.textContent = "Preview initialization timed out. Reset to retry.";
+  }, 10000);
+}
+window.addEventListener("message", (e) => {
+  if (e.source !== frame.contentWindow || (origin !== "*" && e.origin !== origin) || !validPacket(e.data, session)) return;
+  if (e.data.action === "loaded" && state === "loading") { state = "initializing"; settings(); }
+  else if (e.data.action === "ready" && state === "initializing") {
+    state = "ready";
+    supported = e.data.supported ?? null;
+    clearTimeout(timeout); timeout = undefined;
+    el<HTMLButtonElement>("replay").disabled = false;
+    status.textContent = "Preview ready. Templates display their supported event types and filters.";
+    if (initialReplay) { initialReplay = false; play(); }
+  } else if (e.data.action === "error" && state === "ready") status.textContent = e.data.message;
+});
+frame.onload = () => { if (state === "ready") { initialReplay = false; loadPreview(); } };
+frame.onerror = () => { state = "error"; el<HTMLButtonElement>("replay").disabled = true; engine.stop(); clearTimeout(timeout); status.textContent = "Preview failed to load. Reset to retry."; };
+loadPreview();
+el("replay").onclick = play;
+el("stop").onclick = () => { initialReplay = false; engine.stop(); status.textContent = "Stopped"; };
+el("reset").onclick = () => {
+  initialReplay = false; last = undefined; json.textContent = ""; history.replaceChildren(); loadPreview();
 };
-el("reset").onclick = () =>
-  engine.reset(() => {
-    pending = false;
-    ready = false;
-    last = undefined;
-    json.textContent = "";
-    history.replaceChildren();
-    el<HTMLButtonElement>("replay").disabled = true;
-    frame.src = "preview.html";
-    status.textContent = "Reset";
-  });
 input("range").oninput = () => {
   input("count").value = input("range").value;
 };
@@ -131,7 +127,7 @@ input("gift").onchange = () => {
       el<HTMLSelectElement>("gift").selectedOptions[0].text;
   }
 };
-for (const id of ["animation", "sound"]) input(id).onchange = settings;
+for (const id of ["animation", "sound"]) input(id).onchange = () => { if (state === "ready") settings(); };
 el("copy").onclick = async () => {
   if (!last) return;
   const text = JSON.stringify(last, null, 2);
@@ -143,11 +139,12 @@ el("copy").onclick = async () => {
     area.value = text;
     document.body.append(area);
     area.select();
-    const copied = document.execCommand("copy");
+    let copied = false;
+    try { copied = document.execCommand("copy"); } catch {}
     area.remove();
     status.textContent = copied
       ? "JSON copied"
       : "Copy unavailable: select the JSON and copy manually";
   }
 };
-window.addEventListener("pagehide", () => engine.stop());
+window.addEventListener("pagehide", () => { state = "closed"; session = ""; clearTimeout(timeout); engine.stop(); });

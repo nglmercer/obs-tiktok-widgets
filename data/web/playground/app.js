@@ -46,11 +46,11 @@
   }
   function scenario(options2 = {}, streak = false) {
     const group = uniqueId();
-    if (streak && BigInt(integer(options2.count || "23")) < 5n)
-      throw new Error("Streak total must be at least 5");
-    return streak && (!options2.type || options2.type === "gift") ? ["1", "5", options2.count || "23"].map(
-      (count, i) => fixture({ ...options2, count, completed: i === 2 }, group)
-    ) : [fixture(options2, group)];
+    if (!streak || options2.type && options2.type !== "gift") return [fixture(options2, group)];
+    const total = BigInt(integer(options2.count || "23"));
+    if (total < 1n) throw new Error("Streak total must be positive");
+    const checkpoints = [1n, 5n, total].filter((n, i, all) => n <= total && all.indexOf(n) === i).sort((a, b) => a < b ? -1 : 1);
+    return checkpoints.map((count, i) => fixture({ ...options2, count: String(count), completed: i === checkpoints.length - 1 ? options2.completed ?? true : false }, group));
   }
   var ScenarioEngine = class {
     constructor(emit) {
@@ -88,6 +88,39 @@
     }
   };
 
+  // web/playground/protocol.ts
+  var channel = "tiktok-playground";
+  function targetOrigin(url) {
+    const parsed = new URL(url);
+    return parsed.protocol === "file:" || parsed.origin === "null" ? "*" : parsed.origin;
+  }
+  function validPacket(value, session3) {
+    if (!value || typeof value !== "object" || !session3) return false;
+    const p = value;
+    try {
+      if (JSON.stringify(p).length > 65536) return false;
+    } catch {
+      return false;
+    }
+    if (p.channel !== channel || p.session !== session3 || p.version !== 1) return false;
+    if (p.action === "loaded") return Object.keys(p).length === 4;
+    if (p.action === "ready") return Object.keys(p).length === 4 || Object.keys(p).length === 5 && (p.supported === null || Array.isArray(p.supported) && p.supported.length <= 5 && p.supported.every((t) => ["gift", "chat", "like", "follow", "roomUser"].includes(t)));
+    if (p.action === "settings") return typeof p.animation === "boolean" && typeof p.sound === "boolean";
+    if (p.action === "error") return typeof p.message === "string" && p.message.length <= 512;
+    if (p.action !== "event") return false;
+    const e = p.event;
+    return !!e && e.version === 1 && e.synthetic === true && ["gift", "chat", "like", "follow", "roomUser"].includes(e.type) && typeof e.messageId === "string" && typeof e.room === "string" && typeof e.method === "string" && typeof e.receivedTimestamp === "string" && e.isHistory === false && !!e.data && typeof e.data === "object" && !Array.isArray(e.data) && validData(e);
+  }
+  function validData(e) {
+    const d = e.data;
+    const uint = (v) => typeof v === "string" && /^\d{1,20}$/.test(v) && BigInt(v) <= 18446744073709551615n;
+    if (e.type !== "roomUser" && (!d.user || typeof d.user !== "object" || !uint(d.user.id) || typeof d.user.nickname !== "string")) return false;
+    if (e.type === "gift") return uint(d.gift_id) && uint(d.repeat_count) && uint(d.combo_count) && typeof d.group_id === "string" && typeof d.gift_name === "string" && typeof d.repeat_end === "boolean";
+    if (e.type === "like") return uint(d.count) && uint(d.total);
+    if (e.type === "roomUser") return uint(d.total);
+    return e.type !== "chat" || typeof d.comment === "string";
+  }
+
   // web/playground/app.ts
   var el = (id) => document.getElementById(id);
   var input = (id) => el(id);
@@ -95,19 +128,24 @@
   var status = el("status");
   var json = el("json");
   var history = el("history");
-  var ready = false;
+  var state = "loading";
+  var session2 = "";
+  var timeout;
   var last;
-  var pending = false;
-  var send = (data) => frame.contentWindow?.postMessage(
-    { channel: "tiktok-playground", ...data },
-    "*"
-  );
+  var initialReplay = true;
+  var supported = null;
+  var origin = targetOrigin(new URL("preview.html", location.href).href);
+  var send = (data) => {
+    if (state === "closed" || state === "error") return;
+    frame.contentWindow?.postMessage({ channel, version: 1, session: session2, ...data }, origin);
+  };
   var settings = () => send({
     action: "settings",
     animation: input("animation").checked,
     sound: input("sound").checked
   });
   var engine = new ScenarioEngine((event) => {
+    if (state !== "ready") return;
     send({ action: "event", event });
     last = event;
     json.textContent = JSON.stringify(event, null, 2);
@@ -120,14 +158,11 @@
     li.append(b);
     history.append(li);
     while (history.children.length > 200) history.firstChild?.remove();
-    status.textContent = "Local simulation delivered";
+    status.textContent = supported && !supported.includes(event.type) ? `This template or its filters do not display ${event.type} events.` : "Local simulation delivered";
   });
   function options() {
-    const count = Number(input("count").value);
-    if (!Number.isInteger(count) || count < 1 || count > 1e6)
-      throw new Error("Repeat count must be between 1 and 1,000,000");
-    if (input("streak").checked && count < 5)
-      throw new Error("Streak total must be at least 5");
+    const count = integer(input("count").value);
+    if (BigInt(count) < 1n) throw new Error("Repeat count must be positive");
     return {
       type: input("type").value,
       username: input("username").value,
@@ -143,11 +178,10 @@
       const o = options(), interval = Number(input("interval").value), repetitions = Number(input("repetitions").value);
       if (!Number.isFinite(interval) || interval < 0 || interval > 6e4 || !Number.isInteger(repetitions) || repetitions < 1 || repetitions > 100)
         throw new Error("Invalid interval or simulation count");
+      const speed = Number(input("speed").value);
+      if (!Number.isFinite(speed) || speed <= 0) throw new Error("Invalid playback speed");
       scenario(o, input("streak").checked);
-      if (!ready) {
-        pending = true;
-        return;
-      }
+      if (state !== "ready") return;
       settings();
       engine.play(
         () => scenario(o, input("streak").checked),
@@ -158,38 +192,66 @@
       status.textContent = e.message;
     }
   }
+  function loadPreview() {
+    engine.stop();
+    if (timeout !== void 0) clearTimeout(timeout);
+    session2 = uniqueId();
+    state = "loading";
+    el("replay").disabled = true;
+    status.textContent = "Loading preview\u2026";
+    frame.src = `preview.html?session=${encodeURIComponent(session2)}`;
+    timeout = setTimeout(() => {
+      state = "error";
+      engine.stop();
+      timeout = void 0;
+      status.textContent = "Preview initialization timed out. Reset to retry.";
+    }, 1e4);
+  }
   window.addEventListener("message", (e) => {
-    if (e.source !== frame.contentWindow || e.data?.channel !== "tiktok-playground")
-      return;
-    if (e.data.action === "loaded") settings();
-    if (e.data.action === "ready") {
-      ready = true;
+    if (e.source !== frame.contentWindow || origin !== "*" && e.origin !== origin || !validPacket(e.data, session2)) return;
+    if (e.data.action === "loaded" && state === "loading") {
+      state = "initializing";
+      settings();
+    } else if (e.data.action === "ready" && state === "initializing") {
+      state = "ready";
+      supported = e.data.supported ?? null;
+      clearTimeout(timeout);
+      timeout = void 0;
       el("replay").disabled = false;
-      if (pending) {
-        pending = false;
+      status.textContent = "Preview ready. Templates display their supported event types and filters.";
+      if (initialReplay) {
+        initialReplay = false;
         play();
       }
-    }
+    } else if (e.data.action === "error" && state === "ready") status.textContent = e.data.message;
   });
-  el("replay").disabled = true;
-  pending = true;
-  frame.src = "preview.html";
+  frame.onload = () => {
+    if (state === "ready") {
+      initialReplay = false;
+      loadPreview();
+    }
+  };
+  frame.onerror = () => {
+    state = "error";
+    el("replay").disabled = true;
+    engine.stop();
+    clearTimeout(timeout);
+    status.textContent = "Preview failed to load. Reset to retry.";
+  };
+  loadPreview();
   el("replay").onclick = play;
   el("stop").onclick = () => {
-    pending = false;
+    initialReplay = false;
     engine.stop();
     status.textContent = "Stopped";
   };
-  el("reset").onclick = () => engine.reset(() => {
-    pending = false;
-    ready = false;
+  el("reset").onclick = () => {
+    initialReplay = false;
     last = void 0;
     json.textContent = "";
     history.replaceChildren();
-    el("replay").disabled = true;
-    frame.src = "preview.html";
-    status.textContent = "Reset";
-  });
+    loadPreview();
+  };
   input("range").oninput = () => {
     input("count").value = input("range").value;
   };
@@ -202,7 +264,9 @@
       input("giftName").value = el("gift").selectedOptions[0].text;
     }
   };
-  for (const id of ["animation", "sound"]) input(id).onchange = settings;
+  for (const id of ["animation", "sound"]) input(id).onchange = () => {
+    if (state === "ready") settings();
+  };
   el("copy").onclick = async () => {
     if (!last) return;
     const text = JSON.stringify(last, null, 2);
@@ -214,10 +278,19 @@
       area.value = text;
       document.body.append(area);
       area.select();
-      const copied = document.execCommand("copy");
+      let copied = false;
+      try {
+        copied = document.execCommand("copy");
+      } catch {
+      }
       area.remove();
       status.textContent = copied ? "JSON copied" : "Copy unavailable: select the JSON and copy manually";
     }
   };
-  window.addEventListener("pagehide", () => engine.stop());
+  window.addEventListener("pagehide", () => {
+    state = "closed";
+    session2 = "";
+    clearTimeout(timeout);
+    engine.stop();
+  });
 })();

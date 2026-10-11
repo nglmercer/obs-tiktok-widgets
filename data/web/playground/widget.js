@@ -10,7 +10,8 @@ function safeUrl(url){try{const u=new URL(url);return ['https:','http:'].include
 function image(url){const src=safeUrl(url);if(!src)return null;const img=document.createElement('img');img.src=src;img.referrerPolicy='no-referrer';return img;}
 function row(user,text,url){const div=document.createElement('div');div.className='item'+(config.animation?' animate':'');const avatar=image(url||user?.avatar_url);if(avatar)div.append(avatar);const content=document.createElement('div'),name=document.createElement('strong'),message=document.createElement('div');name.textContent=user?.nickname||user?.unique_id||'Viewer';message.textContent=text;content.append(name,message);div.append(content);return div;}
 function trim(){while(root.children.length>Math.max(1,Math.min(1000,Number(config.messageLimit)||30)))root.firstChild.remove();}
-function sound(){if(config.sound && config.soundUrl){try{const url=new URL(config.soundUrl,location.href);if(['https:','file:'].includes(url.protocol))new Audio(url.href).play().catch(()=>{});}catch{}}}
+function sound(){if(config.sound && config.soundUrl){try{const url=new URL(config.soundUrl,window.TikTokWidgetAssetBase||document.baseURI||location.href);if(['https:','http:','file:'].includes(url.protocol))new Audio(url.href).play().catch(error=>reportSound(error));else reportSound(new Error('Unsupported audio URL protocol')); }catch(error){reportSound(error);}}}
+function reportSound(error){const message='Audio playback failed: '+(error?.message||error);console.warn(message);if(window.TikTokPlaygroundPreview)window.dispatchEvent(new CustomEvent('tiktok:preview-error',{detail:message}));}
 let likeTotal=0n,likeTimer,viewerTimer,pendingViewer;
 const giftRows=new Map(),giftCounts=new Map();
 function counter(label,value){root.replaceChildren();const div=document.createElement('div');div.className='counter'+(config.animation?' animate':'');div.textContent=`${label} ${value}`;root.append(div);}
@@ -30,7 +31,7 @@ case 'viewers':if(e.type==='roomUser'){pendingViewer=d.total||'0';if(!viewerTime
 case 'events':{const pre=document.createElement('pre');const copy={...e};delete copy.native;pre.textContent=JSON.stringify(copy,null,2);root.append(pre);trim();}break;
 }}
 window.addEventListener('tiktok:event',accept);
-window.addEventListener('message',event=>{if(window.TikTokPlaygroundPreview && event.source===parent && event.data?.channel==='tiktok-playground' && event.data.action==='settings'){config.animation=!!event.data.animation;config.sound=!!event.data.sound;}});
+window.addEventListener('tiktok:preview-settings',event=>{if(window.TikTokPlaygroundPreview){config.animation=event.detail.animation;config.sound=event.detail.sound;}});
 // Follow is an alias on identified social events and is consumed only here.
 if(config.template==='alerts')window.addEventListener('tiktok:follow',event=>{if(event.detail.type!=='follow')accept({detail:{...event.detail,type:'follow'}});});
 window.addEventListener('tiktok:state',event=>{window.TikTokLastState=event.detail;});

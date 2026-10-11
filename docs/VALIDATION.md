@@ -61,3 +61,15 @@ Executed successfully on this Linux host:
 The browser suite is opt-in through `PLAYGROUND_BROWSER_EXECUTABLE`; plain `npm test` reports that one suite skipped when no executable is configured. No external server is used by the browser test or playground.
 
 Not completed: real OBS/CEF scene isolation and restart checks, audible playback, live TikTok traffic, Firefox/system-browser compatibility, Windows/macOS builds. OBS was not restarted, installed plugins were not replaced and user scenes were not edited. Mock source/bridge tests and Chromium preview are not real OBS/CEF validation; production readiness is **not claimed**. See [Event Playground acceptance steps](EVENT_PLAYGROUND.md).
+
+## PR #1 corrections (2026-10-11)
+
+Validated against fetched branch head `6baa414` before applying corrections on `feat/event-playground`.
+
+- `npm ci` and `npm run build` passed. Locked dependency audit reported zero vulnerabilities; esbuild's blocked postinstall did not prevent the installed binary from building assets.
+- `PLAYGROUND_BROWSER_EXECUTABLE=/home/meme/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome npm test`: **20/20 passed**, including three real Chromium suites. Native-generated documents retain CSS1Compat and DOCTYPE with a missing head; original custom files stay unchanged; local images, nested CSS/JS and real WAV metadata load; missing audio emits a resource error. Audio URL/protocol and autoplay-error reporting use a controlled Audio stub; audible output is not claimed.
+- Regression checks cover unfinished/completed and small uint64 cumulative streaks, unique replay groups, concurrent engines, timer cancellation, delayed initialization, stale loaded/ready/event rejection, rapid Reset, unexpected iframe reload, source/session/payload validation, safe text, animation, clipboard, responsive layout and local event isolation.
+- Native `cmake --build build -j4` passed using the existing configured Linux build. `ctest --test-dir build --output-on-failure`: **7/7 passed**, including production source serialization/persistence, generated-path stability, preview cleanup, unrelated-widget/external-file preservation, UUID traversal rejection, symlink deletion protection and independent duplicate editable HTML.
+- CMake staging to `/tmp/obs-playground-fixes-stage` and Linux CPack ZIP packaging passed. Packaged playground assets were compared byte-for-byte with `data/web/playground`; generated web assets remain tracked alongside sources.
+
+No OBS GUI acceptance workflow, real CEF multi-source monitoring, OBS restart, audible playback, live TikTok connection, other browser engine, Windows or macOS run was performed. This environment supplies Linux native libraries and headless Chromium; automated libobs tests use a mock Browser Source. These results do not establish the complete manual OBS Definition of Done. Custom templates remain trusted programs, may implement their own settings/event handling, and remain subject to browser local-file/autoplay policy. Malformed HTML beyond supported document/prolog/head structures is not repaired by a full HTML parser.

@@ -90,19 +90,20 @@ test("frame validates sender, synthetic contract and dispatch order", () => {
     parent = { postMessage: (e) => sent.push(e) };
   const window = {
     TikTokWidgetConfig: {},
+    location: {href:"file:///preview.html?session=test"},
     addEventListener: (t, fn) => (listeners[t] = fn),
     dispatchEvent: (e) => events.push(e.type),
   };
   vm.runInNewContext(fs.readFileSync("data/web/playground/frame.js", "utf8"), {
     window,
     parent,
-    CustomEvent,
+    CustomEvent, URL, document: {referrer:""}, dispatchEvent: () => {},
   });
   listeners.load();
   assert.equal(sent[0].action, "loaded");
   const packet = {
     channel: "tiktok-playground",
-    action: "event",
+    action: "event", version: 1, session: "test",
     event: fixture(),
   };
   listeners.message({ source: {}, data: packet });
@@ -111,6 +112,11 @@ test("frame validates sender, synthetic contract and dispatch order", () => {
     source: parent,
     data: { ...packet, event: { ...packet.event, synthetic: false } },
   });
+  assert.equal(events.length, 0);
+  listeners.message({ source: parent, data: packet });
+  assert.equal(events.length, 0);
+  listeners.message({source:parent, data:{channel:"tiktok-playground",session:"test",version:1,action:"settings",animation:true,sound:false}});
+  for (const invalid of [{...packet, session:"old"}, {...packet,version:2}, {...packet,event:{...packet.event,data:{}}}, {...packet,action:"unknown"}, {...packet, padding:"x".repeat(65537)}]) listeners.message({source:parent,data:invalid});
   assert.equal(events.length, 0);
   listeners.message({ source: parent, data: packet });
   assert.deepEqual(events, ["tiktok:event", "tiktok:gift"]);
@@ -138,4 +144,32 @@ test("packaged assets match sources and iframe is sandboxed with no transport", 
     fs.readFileSync("data/web/widgets/widget.js", "utf8"),
     fs.readFileSync("web/widgets/widget.js", "utf8"),
   );
+});
+
+test("unfinished streaks and small totals retain monotonic cumulative semantics", () => {
+  for (const total of ["1", "2", "4", "5", "6", "23", "18446744073709551615"]) {
+    const events = scenario({ count: total, completed: false }, true);
+    assert.equal(events.at(-1).data.repeat_count, total);
+    assert.ok(events.every(e => e.data.repeat_end === false));
+    assert.ok(events.every((e,i) => !i || BigInt(e.data.repeat_count) > BigInt(events[i-1].data.repeat_count)));
+    assert.equal(scenario({count:total},true).at(-1).data.repeat_end,true);
+  }
+});
+
+test("concurrent engines and repeated stop/reset leave no scheduled timers", () => {
+  const originalSet = globalThis.setTimeout, originalClear = globalThis.clearTimeout;
+  const timers = new Map(); let id = 0;
+  globalThis.setTimeout = fn => {timers.set(++id,fn); return id;};
+  globalThis.clearTimeout = id => timers.delete(id);
+  try {
+    const received=[];
+    const a=new ScenarioEngine(e=>received.push(e)), b=new ScenarioEngine(e=>received.push(e));
+    a.play(()=>scenario({},true),10,2); b.play(()=>scenario({completed:false},true),10,2);
+    assert.equal(timers.size,2);
+    while(timers.size){const [id,fn]=timers.entries().next().value;timers.delete(id);fn();}
+    assert.equal(received.length,12);
+    assert.equal(new Set(received.map(e=>e.messageId)).size,12);
+    assert.equal(new Set(received.map(e=>e.data.group_id)).size,4);
+    for(let i=0;i<10;i++){a.play(()=>scenario({},true));a.reset(()=>{});b.play(()=>scenario({},true));b.stop();assert.equal(timers.size,0);}
+  } finally {globalThis.setTimeout=originalSet;globalThis.clearTimeout=originalClear;}
 });
