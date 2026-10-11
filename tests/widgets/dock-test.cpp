@@ -9,6 +9,7 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QLabel>
+#include <QAction>
 #include <stdexcept>
 #include <iostream>
 static void check(bool v, const char *m)
@@ -38,11 +39,18 @@ int main(int argc, char **argv)
 	}
 	check(dock.findChild<QLabel *>("connectionStatus")->text().contains("username"), "empty username inline error");
 	check(connection.getState() == TTL_CONNECTION_DISCONNECTED, "no connection for empty username");
+	bool playgroundAction = false;
+	for (auto *action : dock.findChildren<QAction *>())
+		if (action->text() == "Open Event Playground") {
+			playgroundAction = true;
+			check(!action->isEnabled(), "playground requires selected widget");
+		}
+	check(playgroundAction, "native playground action exists");
 	auto *selector = dock.findChild<QComboBox *>("testEventType");
 	check(selector && selector->count() == 8, "test event selector");
 	selector->setCurrentIndex(selector->findData("chat"));
 	for (auto *button : dock.findChildren<QPushButton *>())
-		if (button->text() == "Generate test events")
+		if (button->text() == "Broadcast synthetic events to OBS (integration test)")
 			button->click();
 	auto events = dispatcher.take();
 	check(events.size() == 1 && events[0]["type"] == "chat", "selected event only");

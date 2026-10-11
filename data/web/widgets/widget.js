@@ -30,6 +30,7 @@ case 'viewers':if(e.type==='roomUser'){pendingViewer=d.total||'0';if(!viewerTime
 case 'events':{const pre=document.createElement('pre');const copy={...e};delete copy.native;pre.textContent=JSON.stringify(copy,null,2);root.append(pre);trim();}break;
 }}
 window.addEventListener('tiktok:event',accept);
+window.addEventListener('message',event=>{if(window.TikTokPlaygroundPreview && event.source===parent && event.data?.channel==='tiktok-playground' && event.data.action==='settings'){config.animation=!!event.data.animation;config.sound=!!event.data.sound;}});
 // Follow is an alias on identified social events and is consumed only here.
 if(config.template==='alerts')window.addEventListener('tiktok:follow',event=>{if(event.detail.type!=='follow')accept({detail:{...event.detail,type:'follow'}});});
 window.addEventListener('tiktok:state',event=>{window.TikTokLastState=event.detail;});

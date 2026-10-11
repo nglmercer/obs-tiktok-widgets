@@ -4,6 +4,7 @@
 namespace tt {
 class WidgetManager {
 	QString directory, assets;
+	QString materializeAt(const WidgetConfig &, const QString &dir, bool preview) const;
 
 public:
 	QList<WidgetConfig> widgets;
@@ -12,6 +13,7 @@ public:
 	void load();
 	void save();
 	QString materialize(const WidgetConfig &) const;
+	QString materializePlayground(const WidgetConfig &) const;
 	WidgetConfig create(QString type);
 	WidgetConfig duplicate(QString id);
 	void erase(QString id);

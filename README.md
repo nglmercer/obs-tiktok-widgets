@@ -11,7 +11,9 @@ Build using [docs/BUILD.md](docs/BUILD.md), then install the plugin, its Rust sh
 1. Open **Docks → TikTok LIVE Widgets**.
 2. In **Connection**, enter `@creator` and click **Connect**. The plugin automatically downloads, verifies and caches the pinned signing bundle when needed. Anonymous guest bootstrap is the default; account session configuration is optional.
 3. In **Widgets**, create **chat** and **gifts** widgets, configure each, and add them to the current or a selected scene.
-4. In **Events**, select a test event type (or all events), then click **Generate test events** to exercise widgets without a live room. Expand events to inspect their JSON fields or use **Copy JSON** for formatted output. **Preview widget** opens an ordinary browser in fixture mode.
+4. In **Events**, select a test event type (or all events), then click **Broadcast synthetic events to OBS (integration test)** to exercise widgets without a live room. Expand events to inspect their JSON fields or use **Copy JSON** for formatted output. **Preview widget** opens an ordinary browser in fixture mode.
+
+For isolated simulation, select a gift widget and choose **More actions → Open Event Playground**. It automatically shows Viewer123 sending 23 Rose, supports replay and cumulative streaks, and leaves OBS sources unchanged. See [Event Playground](docs/EVENT_PLAYGROUND.md).
 
 Additional widgets, scene changes, and Browser Source reloads never create TikTok clients. Every loaded custom Browser Source can also subscribe directly:
 
@@ -26,7 +28,7 @@ See [architecture](docs/ARCHITECTURE.md), [event contract](docs/EVENTS.md), [wid
 
 ## Verified status
 
-Linux native compile/link and package staging passed. Six project C++ suites, eight JavaScript checks, and eleven pinned upstream native tests passed. The bridge test uses OBS's real in-process API wrapper and a mock vendor handler; it does **not** establish real CEF DOM delivery. Windows/macOS CI is configured but has not been executed here. Real OBS dock loading, multiple real Browser Source delivery, live TikTok connection, and production latency/leak verification remain acceptance checks. Do not treat this repository as a certified production release until those checks are completed.
+Linux native compile/link and package staging passed. Seven project C++ suites, sixteen JavaScript/browser checks, and eleven pinned upstream native tests passed. The bridge test uses OBS's real in-process API wrapper and a mock vendor handler; it does **not** establish real CEF DOM delivery. Windows/macOS CI is configured but has not been executed here. Real OBS dock loading, multiple real Browser Source delivery, live TikTok connection, and production latency/leak verification remain acceptance checks. Do not treat this repository as a certified production release until those checks are completed.
 
 GPL-2.0-or-later. The native dependency includes modified AGPL protobuf schemas; read [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and the shipped exact license before distribution.
 

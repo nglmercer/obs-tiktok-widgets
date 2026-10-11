@@ -2,6 +2,7 @@
 #include <QCoreApplication>
 #include <QTemporaryDir>
 #include <QFile>
+#include <QFileInfo>
 #include <stdexcept>
 #include <iostream>
 int main(int argc, char **argv)
@@ -35,6 +36,37 @@ int main(int argc, char **argv)
 	QFile generated(edited.materialize(edited.widgets[0]));
 	if (!generated.open(QIODevice::ReadOnly) || !generated.readAll().contains("External edit retained"))
 		throw std::runtime_error("external HTML edit survives restart");
+	auto read = [](const QString &path) {
+		QFile file(path);
+		if (!file.open(QIODevice::ReadOnly))
+			throw std::runtime_error("Cannot read fixture");
+		return file.readAll();
+	};
+	const auto beforeSettings = read(dir.path() + "/widgets.json");
+	const auto beforeHtml = read(edited.materialize(edited.widgets[0]));
+	const auto beforeExternal = read(editable);
+	const auto beforeConfig = read(dir.path() + "/config.js");
+	const auto beforeWidget = edited.widgets[0].value;
+	const auto playground = edited.materializePlayground(edited.widgets[0]);
+	if (!read(playground).contains("sandbox=\"allow-scripts allow-same-origin\"") ||
+	    !read(QFileInfo(playground).absolutePath() + "/preview.html").contains("External edit retained"))
+		throw std::runtime_error("isolated preview preserves custom HTML");
+	if (read(dir.path() + "/widgets.json") != beforeSettings || read(editable) != beforeExternal ||
+	    read(dir.path() + "/config.js") != beforeConfig || edited.widgets[0].value != beforeWidget ||
+	    read(edited.materialize(edited.widgets[0])) != beforeHtml)
+		throw std::runtime_error("playground mutated production files or identity");
+	for (const auto &widget : edited.widgets) {
+		const auto page = edited.materializePlayground(widget);
+		for (auto asset : {"app.js", "frame.js", "playground.css", "widget.js", "widget.css", "preview.html"})
+			if (read(QFileInfo(page).absolutePath() + "/" + asset).isEmpty())
+				throw std::runtime_error("packaged preview asset missing");
+	}
+	for (auto type : {"chat", "gifts", "alerts", "likes", "viewers", "events"}) {
+		const auto templateWidget = tt::WidgetConfig::create(type);
+		const auto page = edited.materializePlayground(templateWidget);
+		if (!read(QFileInfo(page).absolutePath() + "/preview.html").contains("frame.js"))
+			throw std::runtime_error("template preview bootstrap missing");
+	}
 	restored.duplicate(chat.id());
 	if (restored.widgets.size() != 3 || restored.widgets[2].id() == chat.id())
 		throw std::runtime_error("duplicate identity");

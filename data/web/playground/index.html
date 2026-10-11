@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>OBS TikTok Event Playground</title>
+    <link rel="stylesheet" href="playground.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Event Playground</h1>
+      <p>Local preview · OBS scenes and live connections are unaffected</p>
+    </header>
+    <main>
+      <section class="controls">
+        <label
+          >Event type<select id="type">
+            <option value="gift">Gift</option>
+            <option value="chat">Chat</option>
+            <option value="like">Like</option>
+            <option value="follow">Follow</option>
+            <option value="roomUser">Viewers</option>
+          </select></label
+        >
+        <label
+          >Username<input
+            id="username"
+            value="Viewer123"
+            maxlength="100" /></label
+        ><label
+          >User ID<input
+            id="userId"
+            value="9007199254740993"
+            inputmode="numeric"
+        /></label>
+        <label
+          >Gift<select id="gift">
+            <option value="5655">Rose</option>
+            <option value="5269">TikTok</option>
+            <option value="5760">GG</option>
+            <option value="custom">Custom gift</option>
+          </select></label
+        ><label
+          >Gift ID<input id="giftId" value="5655" inputmode="numeric" /></label
+        ><label
+          >Gift name<input id="giftName" value="Rose" maxlength="100"
+        /></label>
+        <label
+          >Repeat count<input
+            id="count"
+            type="number"
+            min="1"
+            max="1000000"
+            value="23" /></label
+        ><input
+          id="range"
+          aria-label="Repeat count slider"
+          type="range"
+          min="1"
+          max="1000"
+          value="23"
+        />
+        <label
+          ><input id="completed" type="checkbox" checked />Completed
+          streak</label
+        ><label
+          ><input id="streak" type="checkbox" />Cumulative streak 1 → 5 →
+          total</label
+        >
+        <label
+          >Interval (milliseconds)<input
+            id="interval"
+            type="number"
+            min="0"
+            max="60000"
+            value="600" /></label
+        ><label
+          >Speed<select id="speed">
+            <option value="0.5">0.5×</option>
+            <option value="1" selected>1×</option>
+            <option value="2">2×</option>
+            <option value="4">4×</option>
+          </select></label
+        ><label
+          >Simulations<input
+            id="repetitions"
+            type="number"
+            min="1"
+            max="100"
+            value="1"
+        /></label>
+        <label><input id="animation" type="checkbox" checked />Animation</label
+        ><label
+          ><input id="sound" type="checkbox" />Sound (uses widget sound
+          URL)</label
+        >
+        <div class="actions">
+          <button id="replay">Replay</button><button id="stop">Stop</button
+          ><button id="reset">Reset</button>
+        </div>
+        <p id="status" role="status">Loading renderer…</p>
+      </section>
+      <section>
+        <h2>Live widget preview</h2>
+        <iframe
+          id="preview"
+          title="Real widget renderer"
+          sandbox="allow-scripts allow-same-origin"
+          src="about:blank"
+        ></iframe>
+        <h2>Event JSON</h2>
+        <button id="copy">Copy JSON</button>
+        <pre id="json" tabindex="0"></pre>
+        <h2>Timeline</h2>
+        <ol id="history"></ol>
+      </section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>

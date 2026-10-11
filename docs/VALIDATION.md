@@ -40,3 +40,24 @@ The Flatpak SDK build passed all six CTest suites, including offline automatic-d
 The event selector and JSON tree update passed all six CTest suites in the Flatpak SDK. Dock tests verify selected-type generation, structured event fields, filtering existing records and the 200-event display bound. Updated installed plugin passed runtime loading; OBS restart is required.
 
 The event-selector and widget-action update passed six CTest suites. Tests cover hiding state by default, retaining selectable state records, suppressing repeated monitor snapshots, and preserving external HTML edits after widget restoration. The installed plugin passed normal Flatpak runtime loading. Layout was reviewed using offscreen Qt renders; actual live/CEF delivery remains unverified.
+
+
+## Event Playground (2026-10-11)
+
+All four implementation phases are included in one change: fixture/scenario/local DOM bus; responsive controls with the real renderer; native dock action and separate preview materialization; security, persistence, regression tests, documentation and package checks.
+
+Executed successfully on this Linux host:
+
+- `npm ci`: locked dependencies installed; zero reported vulnerabilities. The host npm policy blocked esbuild's postinstall script, but the platform binary was available and all esbuild invocations succeeded.
+- `npm run build`: existing SDK, TypeScript playground checks, application/frame bundles and reusable scenario module; source renderer/CSS copied into packaged assets.
+- `PLAYGROUND_BROWSER_EXECUTABLE=/home/meme/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome npm test`: **16/16 passed**, including an actual file-based headless Chromium preview. Checked automatic Viewer123 ×23 Rose, cumulative 1 → 5 → 23, generic-before-typed DOM ordering, replay, cancellation, reset, clipboard copy, HTML injection as safe text, animation control, narrow viewport and zero preview events on the host window.
+- Deterministic tests cover v1/method/synthetic/default fields, uint64 precision, unique message/group IDs, cumulative totals, repeated scenarios, reentrant cancellation, sender validation, packaged/source parity and all existing renderer/SDK regressions.
+- `cmake --build build -j4`: full plugin and test executables built against the existing host OBS SDK/Qt configuration.
+- `ctest --test-dir build --output-on-failure`: **7/7 passed**. New source-persistence suite uses real libobs serialization/restoration with a **mock** browser source, verifies no changed source settings and retains UUID/local-file settings. Widget tests verify separate playground assets, all six built-in templates, preserved editable HTML/config and unchanged widgets.json. Dock tests verify the new action and separately labeled global broadcasting.
+- `cmake --install build --prefix /tmp/obs-playground-stage`: staging passed.
+- `cpack --config build/CPackConfig.cmake -B /tmp/obs-playground-package`: Linux ZIP generated under the project's configured release directory. Verified all eight playground assets in the archive byte-for-byte against the current build.
+- Headless Chromium screenshot reviewed: dark controls, real gift card, JSON inspector and timeline render correctly.
+
+The browser suite is opt-in through `PLAYGROUND_BROWSER_EXECUTABLE`; plain `npm test` reports that one suite skipped when no executable is configured. No external server is used by the browser test or playground.
+
+Not completed: real OBS/CEF scene isolation and restart checks, audible playback, live TikTok traffic, Firefox/system-browser compatibility, Windows/macOS builds. OBS was not restarted, installed plugins were not replaced and user scenes were not edited. Mock source/bridge tests and Chromium preview are not real OBS/CEF validation; production readiness is **not claimed**. See [Event Playground acceptance steps](EVENT_PLAYGROUND.md).

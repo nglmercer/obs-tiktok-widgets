@@ -52,7 +52,23 @@ void WidgetManager::save()
 }
 QString WidgetManager::materialize(const WidgetConfig &widget) const
 {
-	const auto dir = directory + "/widgets/" + widget.id();
+	return materializeAt(widget, directory + "/widgets/" + widget.id(), false);
+}
+QString WidgetManager::materializePlayground(const WidgetConfig &widget) const
+{
+	const auto dir = directory + "/playground/" + widget.id();
+	QDir().mkpath(dir);
+	for (const auto &name : {"index.html", "app.js", "playground.css", "frame.js"}) {
+		QFile asset(assets + "/playground/" + name);
+		if (!asset.open(QIODevice::ReadOnly))
+			throw std::runtime_error("Packaged playground assets are missing");
+		write(dir + "/" + name, asset.readAll());
+	}
+	materializeAt(widget, dir, true);
+	return dir + "/index.html";
+}
+QString WidgetManager::materializeAt(const WidgetConfig &widget, const QString &dir, bool preview) const
+{
 	QDir().mkpath(dir);
 	auto json = QJsonDocument(widget.value).toJson(QJsonDocument::Compact);
 	json.replace("<", "\\u003c");
@@ -74,7 +90,8 @@ QString WidgetManager::materialize(const WidgetConfig &widget) const
 	auto page = html.readAll();
 	if (!widget.value["editableHtml"].toString().isEmpty()) {
 		const auto folder = QFileInfo(html).absolutePath();
-		write(folder + "/config.js", "window.TikTokWidgetConfig=" + json + ";\n");
+		if (!preview)
+			write(folder + "/config.js", "window.TikTokWidgetConfig=" + json + ";\n");
 		page = "<base href=\"" + QUrl::fromLocalFile(folder + "/").toString().toHtmlEscaped().toUtf8() +
 		       "\">\n" + page;
 	}
@@ -84,8 +101,19 @@ QString WidgetManager::materialize(const WidgetConfig &widget) const
 		page = "<script src=\"config.js\"></script><base href=\"" +
 		       QUrl::fromLocalFile(QFileInfo(html).absolutePath() + "/").toString().toHtmlEscaped().toUtf8() +
 		       "\">\n" + page;
-	write(dir + "/index.html", page);
-	return dir + "/index.html";
+	if (preview) {
+		page.replace("src=\"config.js\"",
+			     "src=\"" + QUrl::fromLocalFile(dir + "/config.js").toString().toHtmlEscaped().toUtf8() +
+				     "\"");
+		// Keep custom HTML verbatim after bootstrap. The system-browser sandbox frame receives
+		// only local postMessages; it has no OBS bridge or plugin transport.
+		const auto url = QUrl::fromLocalFile(dir + "/frame.js").toString().toHtmlEscaped().toUtf8();
+		page = "<script>window.TikTokWidgetConfig=" + json + ";</script><script src=\"" + url +
+		       "\"></script>\n" + page;
+	}
+	const auto path = dir + (preview ? "/preview.html" : "/index.html");
+	write(path, page);
+	return path;
 }
 WidgetConfig WidgetManager::create(QString type)
 {

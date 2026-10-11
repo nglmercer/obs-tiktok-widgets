@@ -211,6 +211,12 @@ TikTokDock::TikTokDock(PluginConfig &c, TikTokConnectionManager &n, EventDispatc
 			QDesktopServices::openUrl(
 				QUrl::fromLocalFile(widgets.materialize(widgets.widgets[i])).toString() + "?preview=1");
 	});
+	button(tr("Open Event Playground"), [this] {
+		const auto i = list->currentRow();
+		if (i >= 0 &&
+		    !QDesktopServices::openUrl(QUrl::fromLocalFile(widgets.materializePlayground(widgets.widgets[i]))))
+			throw std::runtime_error("Cannot open Event Playground in the system browser");
+	});
 	button(tr("Reset widget settings"), [this] {
 		auto i = list->currentRow();
 		if (i < 0)
@@ -258,7 +264,7 @@ TikTokDock::TikTokDock(PluginConfig &c, TikTokConnectionManager &n, EventDispatc
 	for (auto type : {"chat", "gift", "like", "follow", "roomUser", "state", "unknown"})
 		testType->addItem(QString::fromLatin1(type), QString::fromLatin1(type));
 	eventsLayout->addWidget(testType);
-	button(tr("Generate test events"), [this, testType] {
+	button(tr("Broadcast synthetic events to OBS (integration test)"), [this, testType] {
 		static int sequence = 0;
 		++sequence;
 		const auto selected = testType->currentData().toString();
