@@ -27,6 +27,26 @@ inputs:
 runs:
   using: composite
   steps:
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: ${{ runner.os == 'macOS' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+    - name: Build and test browser SDK
+      shell: bash
+      run: npm ci && npm run build && npm test
+    - name: Fetch pinned native dependency
+      shell: bash
+      run: |
+        git clone https://github.com/nglmercer/tiktok-signer vendor/tiktok-signer
+        git -C vendor/tiktok-signer checkout --detach 886157c10350c7def971f782451462db72bc0007
+    - name: Test pinned native C ABI
+      shell: bash
+      run: cargo test --manifest-path vendor/tiktok-signer/Cargo.toml --locked -p ttl-live-native
+    - name: Collect dependency license notices
+      shell: bash
+      run: python tools/collect-licenses.py
     - name: Run macOS Build
       if: runner.os == 'macOS'
       shell: zsh --no-rcs --errexit --pipefail {0}
@@ -89,6 +109,13 @@ runs:
 
         .github/scripts/Build-Windows.ps1 @BuildArgs
 
+    - name: Run C++ offline tests
+      shell: bash
+      run: |
+        if [[ "$RUNNER_OS" == "Windows" ]]; then build_dir=build_x64;
+        elif [[ "$RUNNER_OS" == "macOS" ]]; then build_dir=build_macos;
+        else build_dir=build_x86_64; fi
+        ctest --test-dir "$build_dir" -C "${{ inputs.config }}" --output-on-failure
     - name: Create Summary 📊
       if: contains(fromJSON('["Linux", "macOS"]'),runner.os)
       shell: zsh --no-rcs --errexit --pipefail {0}

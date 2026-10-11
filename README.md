@@ -1,59 +1,30 @@
-# OBS Plugin Template
+# OBS TikTok LIVE Widgets
 
-## Introduction
+A standalone C++20 / Qt6 OBS plugin that shares one in-process TikTok LIVE client across every OBS Browser Source. Widgets receive DOM `CustomEvent`s through OBS Browser's `emit_event` vendor request. No Node runtime, external TikTok service, listening port, WebSocket password, widget token, or per-widget connection is used.
 
-The plugin template is meant to be used as a starting point for OBS Studio plugin development. It includes:
+## Install and use
 
-* Boilerplate plugin source code
-* A CMake project file
-* GitHub Actions workflows and repository actions
+Build using [docs/BUILD.md](docs/BUILD.md), then install the plugin, its Rust shared library, and its `data` assets together. Requires OBS 30+ with Qt6, OBS Browser and OBS WebSocket API v3. OBS's network WebSocket server can remain disabled. Linux was compiled against OBS 32.2.2; other OBS versions require compatibility verification.
 
-## Supported Build Environments
+1. Open **Docks → TikTok LIVE Widgets**.
+2. Download the pinned signing bundle using the dock, or select a local copy with the documented SHA-256. Downloads are verified before caching or execution.
+3. Enter `@creator` and click **Connect**. Anonymous guest bootstrap is the default. An optional private account cookie-header file stays outside saved widget/plugin configuration.
+4. Create **chat** and **gifts** widgets, configure each, and add them to the current or a selected scene.
+5. Click **Generate test events** to exercise all widgets without a live room. **Preview widget** opens an ordinary browser in explicit fixture mode.
 
-| Platform  | Tool   |
-|-----------|--------|
-| Windows   | Visual Studio 17 2022 |
-| macOS     | XCode 16.0 |
-| Windows, macOS  | CMake 3.30.5 |
-| Ubuntu 24.04 | CMake 3.28.3 |
-| Ubuntu 24.04 | `ninja-build` |
-| Ubuntu 24.04 | `pkg-config`
-| Ubuntu 24.04 | `build-essential` |
+Additional widgets, scene changes, and Browser Source reloads never create TikTok clients. Every loaded custom Browser Source can also subscribe directly:
 
-## Quick Start
+```js
+window.addEventListener('tiktok:gift', event => console.log(event.detail));
+window.addEventListener('tiktok:event', event => console.log(event.detail));
+```
 
-An absolute bare-bones [Quick Start Guide](https://github.com/obsproject/obs-plugintemplate/wiki/Quick-Start-Guide) is available in the wiki.
+Available templates: scrolling chat, gift streak alerts, follow alerts, aggregated like counter, coalesced viewer counter, and event monitor. Custom HTML pages can use the same DOM API, with or without the optional TypeScript SDK. Settings include dimensions, themes, CSS, filters, animations, and sounds. Widget configuration is local and identified by UUID; it contains no transport credentials.
 
-## Documentation
+See [architecture](docs/ARCHITECTURE.md), [event contract](docs/EVENTS.md), [widget development](docs/WIDGET_DEVELOPMENT.md), and [validation report](docs/VALIDATION.md).
 
-All documentation can be found in the [Plugin Template Wiki](https://github.com/obsproject/obs-plugintemplate/wiki).
+## Verified status
 
-Suggested reading to get up and running:
+Linux native compile/link and package staging passed. Four project C++ suites, eight JavaScript checks, and eleven pinned upstream native tests passed. The bridge test uses OBS's real in-process API wrapper and a mock vendor handler; it does **not** establish real CEF DOM delivery. Windows/macOS CI is configured but has not been executed here. Real OBS dock loading, multiple real Browser Source delivery, live TikTok connection, and production latency/leak verification remain acceptance checks. Do not treat this repository as a certified production release until those checks are completed.
 
-* [Getting started](https://github.com/obsproject/obs-plugintemplate/wiki/Getting-Started)
-* [Build system requirements](https://github.com/obsproject/obs-plugintemplate/wiki/Build-System-Requirements)
-* [Build system options](https://github.com/obsproject/obs-plugintemplate/wiki/CMake-Build-System-Options)
-
-## GitHub Actions & CI
-
-Default GitHub Actions workflows are available for the following repository actions:
-
-* `push`: Run for commits or tags pushed to `master` or `main` branches.
-* `pr-pull`: Run when a Pull Request has been pushed or synchronized.
-* `dispatch`: Run when triggered by the workflow dispatch in GitHub's user interface.
-* `build-project`: Builds the actual project and is triggered by other workflows.
-* `check-format`: Checks CMake and plugin source code formatting and is triggered by other workflows.
-
-The workflows make use of GitHub repository actions (contained in `.github/actions`) and build scripts (contained in `.github/scripts`) which are not needed for local development, but might need to be adjusted if additional/different steps are required to build the plugin.
-
-### Retrieving build artifacts
-
-Successful builds on GitHub Actions will produce build artifacts that can be downloaded for testing. These artifacts are commonly simple archives and will not contain package installers or installation programs.
-
-### Building a Release
-
-To create a release, an appropriately named tag needs to be pushed to the `main`/`master` branch using semantic versioning (e.g., `12.3.4`, `23.4.5-beta2`). A draft release will be created on the associated repository with generated installer packages or installation programs attached as release artifacts.
-
-## Signing and Notarizing on macOS
-
-Basic concepts of codesigning and notarization on macOS are explained in the correspodning [Wiki article](https://github.com/obsproject/obs-plugintemplate/wiki/Codesigning-On-macOS) which has a specific section for the [GitHub Actions setup](https://github.com/obsproject/obs-plugintemplate/wiki/Codesigning-On-macOS#setting-up-code-signing-for-github-actions).
+GPL-2.0-or-later. The native dependency includes modified AGPL protobuf schemas; read [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and the shipped exact license before distribution.

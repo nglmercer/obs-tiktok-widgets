@@ -1,0 +1,12 @@
+<!doctype html><meta charset="utf-8"><title>OBS TikTok bridge acceptance harness</title>
+<style>body{background:#111;color:white;font:18px monospace}pre{white-space:pre-wrap}</style>
+<h1>Browser bridge acceptance</h1><pre id="results">Waiting for dock fixture generator…</pre>
+<script>
+const results={generic:0,chat:0,gift:0,state:0,invalid:0,fixtureIds:[]};
+for(const type of ['event','chat','gift','state'])window.addEventListener('tiktok:'+type,event=>{
+ const detail=event.detail;
+ if(!detail||typeof detail!=='object'||Array.isArray(detail)||detail.version!==1)results.invalid++;
+ else {results[type==='event'?'generic':type]++;if(type==='event'&&detail.synthetic)results.fixtureIds.push(detail.messageId);}
+ document.getElementById('results').textContent=JSON.stringify(results,null,2);
+});
+</script>

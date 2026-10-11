@@ -1,0 +1,1 @@
+window.TikTokWidgetConfig = window.TikTokWidgetConfig || {};

@@ -1,0 +1,9 @@
+# Distribution notices
+
+The plugin and vendored obs-websocket API header are GPL-2.0-or-later; see LICENSE and the copyright header in vendor/obs-websocket-api.h. The plugin was derived from the official OBS plugin template, revision 3e7d7ac3b5342cd7d9b88890b9c70b472d1520fc.
+
+The pinned tiktok-signer crate workspace is MIT, except its protobuf schemas and generated bindings. These carry modified AGPL-3.0 terms with additional permissions and restrictions. The exact text ships as data/PROTOBUF-LICENSE.txt, with upstream notices at data/THIRD_PARTY_NOTICES.md. The native binary links those schemas; do not label the whole dependency MIT. Section 18 permits downstream client integration, while Section 19 changes those permissions for certain hosted services. This plugin is a local open-source OBS client. Review the exact license before redistributing modified or hosted products.
+
+Rust transitive dependencies retain their own licenses. The workspace-wide declaration inventory and available crate license files ship under data/RUST-DEPENDENCY-LICENSES.json and data/licenses. The generator uses pinned Cargo metadata. Review missing notice files and the actual linked dependency subset before a public binary release. OBS, Qt and OBS Browser are host dependencies, not copied into release archives by this project. Observe their licensing if distributing them separately. The proprietary TikTok signing bundle is neither vendored nor included in binary archives. Its download origin and digest are documented in docs/BUILD.md; downloading it does not grant redistribution rights.
+
+Follow identification uses the server displayText key convention documented in TikTok-Live-Connector, reference revision 8a92330066ae4dea287b98e3ee27504764fc9cdd, src/lib/client/index.ts. No code from that project is copied or linked.
