@@ -1,5 +1,7 @@
 # OBS TikTok LIVE Widgets
 
+**Development preview:** Linux/OBS Flatpak builds and offline tests pass. Real multi-source Browser/CEF delivery, live TikTok acceptance, and Windows/macOS builds remain unverified. See [validation status](docs/VALIDATION.md) before using this in a production stream.
+
 A standalone C++20 / Qt6 OBS plugin that shares one in-process TikTok LIVE client across every OBS Browser Source. Widgets receive DOM `CustomEvent`s through OBS Browser's `emit_event` vendor request. No Node runtime, external TikTok service, listening port, WebSocket password, widget token, or per-widget connection is used.
 
 ## Install and use
@@ -24,7 +26,7 @@ See [architecture](docs/ARCHITECTURE.md), [event contract](docs/EVENTS.md), [wid
 
 ## Verified status
 
-Linux native compile/link and package staging passed. Four project C++ suites, eight JavaScript checks, and eleven pinned upstream native tests passed. The bridge test uses OBS's real in-process API wrapper and a mock vendor handler; it does **not** establish real CEF DOM delivery. Windows/macOS CI is configured but has not been executed here. Real OBS dock loading, multiple real Browser Source delivery, live TikTok connection, and production latency/leak verification remain acceptance checks. Do not treat this repository as a certified production release until those checks are completed.
+Linux native compile/link and package staging passed. Six project C++ suites, eight JavaScript checks, and eleven pinned upstream native tests passed. The bridge test uses OBS's real in-process API wrapper and a mock vendor handler; it does **not** establish real CEF DOM delivery. Windows/macOS CI is configured but has not been executed here. Real OBS dock loading, multiple real Browser Source delivery, live TikTok connection, and production latency/leak verification remain acceptance checks. Do not treat this repository as a certified production release until those checks are completed.
 
 GPL-2.0-or-later. The native dependency includes modified AGPL protobuf schemas; read [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and the shipped exact license before distribution.
 
