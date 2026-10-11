@@ -8,21 +8,26 @@ class QLineEdit;
 class QLabel;
 class QListWidget;
 class QCheckBox;
+class QPushButton;
 namespace tt {
 class EventMonitor;
+class SigningBundleManager;
 class TikTokDock : public QWidget {
 	PluginConfig &config;
 	TikTokConnectionManager &connection;
 	EventDispatcher &dispatcher;
 	WidgetManager &widgets;
-	QLineEdit *username, *bundlePath, *sessionPath;
+	QLineEdit *username, *sessionPath;
 	QCheckBox *retry, *autoConnect;
-	QLabel *status;
+	QLabel *status, *diagnostics;
+	QPushButton *connectButton, *reconnectButton;
+	SigningBundleManager *bundleManager;
+	QString preparationError;
 	QListWidget *list;
 	QElapsedTimer throughputClock;
 	uint64_t previousAccepted = 0;
 	double eventsPerSecond = 0;
-	void connectRoom();
+	void connectRoom(bool reconnect = false);
 	void refreshList();
 	void guarded(std::function<void()>);
 
@@ -31,5 +36,6 @@ public:
 	TikTokDock(PluginConfig &, TikTokConnectionManager &, EventDispatcher &, WidgetManager &);
 	void updateStatus(const QString &bridgeError);
 	void startAutoConnect();
+	void cancelPendingConnection();
 };
 } // namespace tt

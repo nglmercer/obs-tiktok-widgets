@@ -68,6 +68,34 @@ if(BUILD_TESTING)
   target_include_directories(bridge-test PRIVATE src vendor)
   target_link_libraries(bridge-test PRIVATE OBS::libobs Qt6::Core tiktok-native)
   add_test(NAME bridge-api COMMAND bridge-test)
+  add_executable(bundle-test tests/native/bundle-test.cpp src/core/SigningBundleManager.cpp src/core/PluginConfig.cpp)
+  target_include_directories(bundle-test PRIVATE src)
+  target_link_libraries(bundle-test PRIVATE Qt6::Core Qt6::Network)
+  add_test(NAME automatic-bundle COMMAND bundle-test)
+  file(GLOB DOCK_UI_SOURCES src/ui/*.cpp)
+  add_executable(
+    dock-test
+    tests/widgets/dock-test.cpp
+    ${DOCK_UI_SOURCES}
+    src/core/SigningBundleManager.cpp
+    src/core/PluginConfig.cpp
+    src/core/TikTokConnectionManager.cpp
+    src/core/EventNormalizer.cpp
+    src/core/EventDispatcher.cpp
+    src/widgets/WidgetManager.cpp
+    src/widgets/WidgetConfig.cpp
+    src/widgets/WidgetRegistry.cpp
+    src/obs/BrowserSourceManager.cpp
+    src/obs/OBSFrontendManager.cpp
+  )
+  target_include_directories(dock-test PRIVATE src)
+  target_compile_definitions(dock-test PRIVATE WIDGET_ASSETS="${CMAKE_CURRENT_SOURCE_DIR}/data/web")
+  target_link_libraries(
+    dock-test
+    PRIVATE OBS::libobs OBS::obs-frontend-api Qt6::Core Qt6::Widgets Qt6::Network tiktok-native
+  )
+  add_test(NAME tabbed-dock COMMAND dock-test)
+  set_tests_properties(tabbed-dock PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endif()
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})

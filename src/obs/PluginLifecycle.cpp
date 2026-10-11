@@ -71,6 +71,8 @@ void PluginLifecycle::stop()
 	started = false;
 	for (auto *timer : findChildren<QTimer *>())
 		timer->stop();
+	if (dock)
+		dock->cancelPendingConnection();
 	if (connection)
 		connection->shutdown();
 	for (const auto &e : dispatcher.take(2048))

@@ -3,6 +3,7 @@ set -euo pipefail
 widgets_project_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 flatpak info com.obsproject.Studio >/dev/null
 flatpak run --devel --socket=x11 --env=DISPLAY="${DISPLAY:-:0}" \
+  --env=LD_LIBRARY_PATH=/app/lib --env=QT_PLUGIN_PATH=/app/lib/qt/plugins \
   --filesystem="$widgets_project_dir" \
   --filesystem="$HOME/.cargo" \
   --command=sh com.obsproject.Studio -c '
@@ -19,9 +20,7 @@ flatpak run --devel --socket=x11 --env=DISPLAY="${DISPLAY:-:0}" \
 widgets_libdir="$(sed -n 's/^CMAKE_INSTALL_LIBDIR:PATH=//p' "$widgets_project_dir/build_flatpak/CMakeCache.txt")"
 widgets_install_dir="$HOME/.var/app/com.obsproject.Studio/config/obs-studio/plugins/obs-tiktok-widgets"
 mkdir -p "$widgets_install_dir/bin/64bit" "$widgets_install_dir/data"
-install -m 644 "$widgets_project_dir/build_flatpak/stage/$widgets_libdir/obs-plugins/obs-tiktok-widgets.so" "$widgets_install_dir/bin/64bit/"
-install -m 644 "$widgets_project_dir/build_flatpak/stage/$widgets_libdir/obs-plugins/libttl_live.so" "$widgets_install_dir/bin/64bit/"
-cp -a "$widgets_project_dir/build_flatpak/stage/share/obs/obs-plugins/obs-tiktok-widgets/." "$widgets_install_dir/data/"
+python3 "$widgets_project_dir/tools/install-staged.py" "$widgets_project_dir/build_flatpak/stage" "$widgets_libdir" "$widgets_install_dir"
 flatpak run --command=python3 com.obsproject.Studio -c '
 import ctypes, os
 path = os.path.join(os.environ["XDG_CONFIG_HOME"], "obs-studio/plugins/obs-tiktok-widgets/bin/64bit/obs-tiktok-widgets.so")

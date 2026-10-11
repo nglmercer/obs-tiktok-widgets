@@ -35,8 +35,7 @@ QString PluginConfig::verifiedBundle(const QString &local) const
 {
 	QFile f(local.isEmpty() ? directory + "/webmssdk-1.0.0.388.js" : local);
 	if (!f.open(QIODevice::ReadOnly))
-		throw std::runtime_error(
-			"Signing bundle missing. Select a trusted local bundle or download the pinned bundle in the dock.");
+		throw std::runtime_error("Signing bundle missing. Connect will automatically download and verify it.");
 	if (f.size() > 2 * 1024 * 1024)
 		throw std::runtime_error("Signing bundle exceeds size limit");
 	auto source = f.readAll();

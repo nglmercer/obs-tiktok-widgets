@@ -7,10 +7,9 @@ A standalone C++20 / Qt6 OBS plugin that shares one in-process TikTok LIVE clien
 Build using [docs/BUILD.md](docs/BUILD.md), then install the plugin, its Rust shared library, and its `data` assets together. Requires OBS 30+ with Qt6, OBS Browser and OBS WebSocket API v3. OBS's network WebSocket server can remain disabled. Linux was compiled against OBS 32.2.2; other OBS versions require compatibility verification.
 
 1. Open **Docks → TikTok LIVE Widgets**.
-2. Download the pinned signing bundle using the dock, or select a local copy with the documented SHA-256. Downloads are verified before caching or execution.
-3. Enter `@creator` and click **Connect**. Anonymous guest bootstrap is the default. An optional private account cookie-header file stays outside saved widget/plugin configuration.
-4. Create **chat** and **gifts** widgets, configure each, and add them to the current or a selected scene.
-5. Click **Generate test events** to exercise all widgets without a live room. **Preview widget** opens an ordinary browser in explicit fixture mode.
+2. In **Connection**, enter `@creator` and click **Connect**. The plugin automatically downloads, verifies and caches the pinned signing bundle when needed. Anonymous guest bootstrap is the default; account session configuration is optional.
+3. In **Widgets**, create **chat** and **gifts** widgets, configure each, and add them to the current or a selected scene.
+4. In **Events**, click **Generate test events** to exercise widgets without a live room. **Preview widget** opens an ordinary browser in fixture mode.
 
 Additional widgets, scene changes, and Browser Source reloads never create TikTok clients. Every loaded custom Browser Source can also subscribe directly:
 

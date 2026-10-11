@@ -5,6 +5,10 @@
 #include "obs/BrowserSourceManager.hpp"
 #include "obs/OBSFrontendManager.hpp"
 #include "core/EventNormalizer.hpp"
+#include "core/SigningBundleManager.hpp"
+#include <QTabWidget>
+#include <QGridLayout>
+#include <QGroupBox>
 #include <QVBoxLayout>
 #include <QFormLayout>
 #include <QLineEdit>
@@ -30,70 +34,77 @@ TikTokDock::TikTokDock(PluginConfig &c, TikTokConnectionManager &n, EventDispatc
 	  widgets(w)
 {
 	throughputClock.start();
-	auto *l = new QVBoxLayout(this);
-	auto *form = new QFormLayout;
+	auto *root = new QVBoxLayout(this);
+	root->setContentsMargins(8, 8, 8, 8);
+	auto *tabs = new QTabWidget(this);
+	tabs->setObjectName("tiktokTabs");
+	root->addWidget(tabs);
+	auto *connectionPage = new QWidget;
+	auto *connectionLayout = new QVBoxLayout(connectionPage);
+	auto *widgetsPage = new QWidget;
+	auto *widgetsLayout = new QVBoxLayout(widgetsPage);
+	auto *eventsPage = new QWidget;
+	auto *eventsLayout = new QVBoxLayout(eventsPage);
+	tabs->addTab(connectionPage, tr("Connection"));
+	tabs->addTab(widgetsPage, tr("Widgets"));
+	tabs->addTab(eventsPage, tr("Events"));
+	auto *intro = new QLabel(tr("Enter a TikTok username to connect. Setup is automatic."));
+	intro->setWordWrap(true);
+	connectionLayout->addWidget(intro);
 	username = new QLineEdit(c.settings["username"].toString());
-	bundlePath = new QLineEdit(c.settings["bundlePath"].toString());
-	sessionPath = new QLineEdit;
-	sessionPath->setPlaceholderText(tr("Optional private cookie-header file; never persisted"));
-	retry = new QCheckBox(tr("Auto reconnect (applies on next connection)"));
+	username->setObjectName("tiktokUsername");
+	username->setPlaceholderText(tr("@creator"));
+	connectionLayout->addWidget(username);
+	bundleManager = new SigningBundleManager(config, this);
+	auto *connectionActions = new QGridLayout;
+	connectionLayout->addLayout(connectionActions);
+	connectButton = new QPushButton(tr("Connect"));
+	reconnectButton = new QPushButton(tr("Reconnect"));
+	auto *disconnectButton = new QPushButton(tr("Disconnect"));
+	connectionActions->addWidget(connectButton, 0, 0);
+	connectionActions->addWidget(disconnectButton, 0, 1);
+	connectionActions->addWidget(reconnectButton, 1, 0, 1, 2);
+	connect(connectButton, &QPushButton::clicked, this, [this] { guarded([this] { connectRoom(); }); });
+	connect(reconnectButton, &QPushButton::clicked, this, [this] { guarded([this] { connectRoom(true); }); });
+	connect(disconnectButton, &QPushButton::clicked, this, [this] {
+		cancelPendingConnection();
+		connection.disconnect();
+	});
+	connect(username, &QLineEdit::returnPressed, connectButton, &QPushButton::click);
+	retry = new QCheckBox(tr("Reconnect automatically"));
 	retry->setChecked(c.settings["autoReconnect"].toBool(true));
+	connectionLayout->addWidget(retry);
 	autoConnect = new QCheckBox(tr("Connect when OBS starts"));
 	autoConnect->setChecked(c.settings["autoConnect"].toBool());
+	connectionLayout->addWidget(autoConnect);
 	status = new QLabel;
+	status->setObjectName("connectionStatus");
 	status->setWordWrap(true);
-	form->addRow(tr("TikTok username"), username);
-	form->addRow(tr("Trusted bundle path"), bundlePath);
-	form->addRow(tr("Session file"), sessionPath);
-	l->addLayout(form);
-	l->addWidget(retry);
-	l->addWidget(autoConnect);
-	l->addWidget(status);
-	auto button = [this, l](const QString &text, std::function<void()> fn) {
-		auto *b = new QPushButton(text);
-		l->addWidget(b);
-		connect(b, &QPushButton::clicked, this, [this, fn] { guarded(fn); });
-	};
-	button(tr("Connect"), [this] { connectRoom(); });
-	button(tr("Disconnect"), [this] { connection.disconnect(); });
-	button(tr("Reconnect"), [this] {
-		connection.disconnect();
-		connectRoom();
-	});
-	button(tr("Download pinned signing bundle"), [this] {
-		auto *network = new QNetworkAccessManager(this);
-		QNetworkRequest request(QUrl(PluginConfig::bundleUrl()));
-		request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::ManualRedirectPolicy);
-		auto *reply = network->get(request);
-		QTimer::singleShot(30000, reply, [reply] {
-			if (reply->isRunning())
-				reply->abort();
-		});
-		connect(reply, &QNetworkReply::downloadProgress, reply, [reply](qint64 bytes, qint64) {
-			if (bytes > 2 * 1024 * 1024)
-				reply->abort();
-		});
-		connect(reply, &QNetworkReply::finished, this, [this, reply, network] {
-			guarded([this, reply] {
-				auto bytes = reply->readAll();
-				if (reply->error() != QNetworkReply::NoError ||
-				    QCryptographicHash::hash(bytes, QCryptographicHash::Sha256).toHex() !=
-					    PluginConfig::bundleHash().toLatin1())
-					throw std::runtime_error("Trusted bundle download failed or checksum mismatch");
-				QSaveFile file(config.directory + "/webmssdk-1.0.0.388.js");
-				if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() ||
-				    !file.commit())
-					throw std::runtime_error("Cannot cache verified signing bundle");
-				bundlePath->clear();
-				status->setText(tr("Verified signing bundle cached"));
-			});
-			reply->deleteLater();
-			network->deleteLater();
-		});
-	});
+	connectionLayout->addWidget(status);
+	auto *advanced = new QGroupBox(tr("Account session (optional)"));
+	advanced->setCheckable(true);
+	advanced->setChecked(false);
+	auto *advancedLayout = new QVBoxLayout(advanced);
+	sessionPath = new QLineEdit;
+	sessionPath->setPlaceholderText(tr("Private session file"));
+	sessionPath->setVisible(false);
+	advancedLayout->addWidget(sessionPath);
+	connect(advanced, &QGroupBox::toggled, sessionPath, &QWidget::setVisible);
+	connectionLayout->addWidget(advanced);
+	connectionLayout->addStretch();
 	list = new QListWidget;
-	l->addWidget(list);
+	widgetsLayout->addWidget(list, 1);
 	refreshList();
+	auto *widgetActions = new QGridLayout;
+	widgetsLayout->addLayout(widgetActions);
+	int widgetActionIndex = 0;
+	std::function<void(const QString &, std::function<void()>)> button =
+		[this, widgetActions, &widgetActionIndex](const QString &text, std::function<void()> fn) {
+			auto *b = new QPushButton(text);
+			widgetActions->addWidget(b, widgetActionIndex / 2, widgetActionIndex % 2);
+			++widgetActionIndex;
+			connect(b, &QPushButton::clicked, this, [this, fn] { guarded(fn); });
+		};
 	button(tr("Create widget"), [this] {
 		auto type = WidgetGallery::choose(this);
 		if (type.isEmpty())
@@ -186,6 +197,11 @@ TikTokDock::TikTokDock(PluginConfig &c, TikTokConnectionManager &n, EventDispatc
 		widgets.save();
 		BrowserSourceManager::refresh(old, widgets.materialize(old));
 	});
+	button = [this, eventsLayout](const QString &text, std::function<void()> fn) {
+		auto *b = new QPushButton(text);
+		eventsLayout->addWidget(b);
+		connect(b, &QPushButton::clicked, this, [this, fn] { guarded(fn); });
+	};
 	button(tr("Generate test events"), [this] {
 		static int sequence = 0;
 		++sequence;
@@ -201,19 +217,22 @@ TikTokDock::TikTokDock(PluginConfig &c, TikTokConnectionManager &n, EventDispatc
 		}
 	});
 	monitor = new EventMonitor;
-	l->addWidget(monitor);
+	eventsLayout->addWidget(monitor, 1);
+	diagnostics = new QLabel;
+	diagnostics->setWordWrap(true);
+	eventsLayout->addWidget(diagnostics);
 	setMinimumWidth(320);
 	auto persist = [this] {
 		config.settings["autoConnect"] = autoConnect->isChecked();
 		config.settings["autoReconnect"] = retry->isChecked();
 		config.settings["username"] = username->text();
-		config.settings["bundlePath"] = bundlePath->text();
+		config.settings.remove("bundlePath");
 		guarded([this] { config.save(); });
 	};
 	connect(autoConnect, &QCheckBox::toggled, this, persist);
 	connect(retry, &QCheckBox::toggled, this, persist);
 	connect(username, &QLineEdit::editingFinished, this, persist);
-	connect(bundlePath, &QLineEdit::editingFinished, this, persist);
+	updateStatus({});
 }
 void TikTokDock::guarded(std::function<void()> fn)
 {
@@ -229,8 +248,17 @@ void TikTokDock::refreshList()
 	for (const auto &w : widgets.widgets)
 		list->addItem(w.name() + " (" + w.type() + ")");
 }
-void TikTokDock::connectRoom()
+void TikTokDock::connectRoom(bool forceReconnect)
 {
+	const auto requestedUsername = username->text().trimmed();
+	if (requestedUsername.isEmpty() || requestedUsername == "@") {
+		preparationError = tr("Enter a TikTok username first.");
+		updateStatus({});
+		username->setFocus();
+		return;
+	}
+	if (bundleManager->isDownloading())
+		return;
 	QString cookies;
 	if (!sessionPath->text().isEmpty()) {
 		QFile file(sessionPath->text());
@@ -238,14 +266,36 @@ void TikTokDock::connectRoom()
 			throw std::runtime_error("Cannot read private session file");
 		cookies = QString::fromUtf8(file.readAll()).trimmed();
 	}
-	connection.configure(config.verifiedBundle(bundlePath->text()), cookies);
-	connection.setAutoReconnect(retry->isChecked());
-	connection.connect(username->text());
-	config.settings["username"] = username->text();
-	config.settings["bundlePath"] = bundlePath->text();
+	config.settings["username"] = requestedUsername;
 	config.settings["autoConnect"] = autoConnect->isChecked();
 	config.settings["autoReconnect"] = retry->isChecked();
+	config.settings.remove("bundlePath");
 	config.save();
+	preparationError.clear();
+	const bool autoRetry = retry->isChecked();
+	bundleManager->ensure(
+		[this, requestedUsername, cookies, autoRetry, forceReconnect](QString bundle, QString error) {
+			if (!error.isEmpty()) {
+				preparationError = error;
+				updateStatus({});
+				return;
+			}
+			connection.configure(std::move(bundle), cookies);
+			connection.setAutoReconnect(autoRetry);
+			if (forceReconnect)
+				connection.disconnect();
+			connection.connect(requestedUsername);
+			updateStatus({});
+		});
+	updateStatus({});
+}
+void TikTokDock::cancelPendingConnection()
+{
+	bundleManager->cancel();
+	preparationError.clear();
+	username->setEnabled(true);
+	connectButton->setEnabled(true);
+	reconnectButton->setEnabled(true);
 }
 void TikTokDock::startAutoConnect()
 {
@@ -263,17 +313,27 @@ void TikTokDock::updateStatus(const QString &bridgeError)
 			static_cast<double>(stats.accepted - previousAccepted) * 1000.0 / throughputClock.restart();
 		previousAccepted = stats.accepted;
 	}
-	status->setText(
-		QString("%1 %2\n%3\nAccepted %4, delivered %5, overflow %6, oversized %7, duplicate %8, failed %9; %10 events/s; bus coalesced %11")
-			.arg(s["data"].toObject()["state"].toString(), connection.getUsername(),
-			     bridgeError.isEmpty() ? connection.lastError() : bridgeError)
+	const bool preparing = bundleManager->isDownloading();
+	username->setEnabled(!preparing);
+	connectButton->setEnabled(!preparing);
+	reconnectButton->setEnabled(!preparing);
+	QString text = preparing ? tr("Preparing connection… downloading and verifying setup files.")
+				 : s["data"].toObject()["state"].toString();
+	if (!connection.getUsername().isEmpty())
+		text += " · @" + connection.getUsername();
+	const auto error = !preparationError.isEmpty() ? preparationError
+						       : (bridgeError.isEmpty() ? connection.lastError() : bridgeError);
+	if (!error.isEmpty())
+		text += "\n" + error;
+	status->setText(text);
+	diagnostics->setText(
+		tr("%1 events/s · Received %2 · Delivered %3\nDropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7")
+			.arg(eventsPerSecond, 0, 'f', 1)
 			.arg(stats.accepted)
 			.arg(stats.delivered)
 			.arg(stats.overflow)
 			.arg(stats.oversize)
 			.arg(stats.duplicate)
-			.arg(stats.failed)
-			.arg(eventsPerSecond, 0, 'f', 1)
-			.arg(stats.coalesced));
+			.arg(stats.failed));
 }
 } // namespace tt
