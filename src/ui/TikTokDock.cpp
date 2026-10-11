@@ -7,6 +7,7 @@
 #include "core/EventNormalizer.hpp"
 #include "core/SigningBundleManager.hpp"
 #include <QTabWidget>
+#include <QComboBox>
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QVBoxLayout>
@@ -202,11 +203,21 @@ TikTokDock::TikTokDock(PluginConfig &c, TikTokConnectionManager &n, EventDispatc
 		eventsLayout->addWidget(b);
 		connect(b, &QPushButton::clicked, this, [this, fn] { guarded(fn); });
 	};
-	button(tr("Generate test events"), [this] {
+	auto *testType = new QComboBox;
+	testType->setObjectName("testEventType");
+	testType->addItem(tr("All test events"), "all");
+	for (auto type : {"chat", "gift", "like", "follow", "roomUser", "state", "unknown"})
+		testType->addItem(QString::fromLatin1(type), QString::fromLatin1(type));
+	eventsLayout->addWidget(testType);
+	button(tr("Generate test events"), [this, testType] {
 		static int sequence = 0;
 		++sequence;
+		const auto selected = testType->currentData().toString();
 		for (auto type : {"chat", "like", "follow", "roomUser", "state", "unknown"})
-			dispatcher.push(EventNormalizer::synthetic(type, sequence));
+			if (selected == "all" || selected == type)
+				dispatcher.push(EventNormalizer::synthetic(type, sequence));
+		if (selected != "all" && selected != "gift")
+			return;
 		for (int i = 1; i <= 3; ++i) {
 			auto e = EventNormalizer::synthetic("gift", i);
 			e["messageId"] = QString("fixture-gift-%1-%2").arg(sequence).arg(i);

@@ -9,7 +9,7 @@ Build using [docs/BUILD.md](docs/BUILD.md), then install the plugin, its Rust sh
 1. Open **Docks → TikTok LIVE Widgets**.
 2. In **Connection**, enter `@creator` and click **Connect**. The plugin automatically downloads, verifies and caches the pinned signing bundle when needed. Anonymous guest bootstrap is the default; account session configuration is optional.
 3. In **Widgets**, create **chat** and **gifts** widgets, configure each, and add them to the current or a selected scene.
-4. In **Events**, click **Generate test events** to exercise widgets without a live room. **Preview widget** opens an ordinary browser in fixture mode.
+4. In **Events**, select a test event type (or all events), then click **Generate test events** to exercise widgets without a live room. Expand events to inspect their JSON fields or use **Copy JSON** for formatted output. **Preview widget** opens an ordinary browser in fixture mode.
 
 Additional widgets, scene changes, and Browser Source reloads never create TikTok clients. Every loaded custom Browser Source can also subscribe directly:
 

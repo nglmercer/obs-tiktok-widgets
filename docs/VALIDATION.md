@@ -36,3 +36,5 @@ Rebuilt against the installed com.obsproject.Studio 32.2.2 `/app` libraries usin
 ## Simplified dock update
 
 The Flatpak SDK build passed all six CTest suites, including offline automatic-download/cache/checksum/redirect/size/cancellation fixtures and offscreen Qt dock tests. All three tabs rendered successfully. Test processes explicitly use `/app/lib` and `/app/lib/qt/plugins` to avoid incompatible Qt files supplied by another installed plugin. Installation replaces files atomically while OBS remains running; the update requires an OBS restart. Real live-room and CEF acceptance checks remain unverified for this update.
+
+The event selector and JSON tree update passed all six CTest suites in the Flatpak SDK. Dock tests verify selected-type generation, structured event fields, filtering existing records and the 200-event display bound. Updated installed plugin passed runtime loading; OBS restart is required.

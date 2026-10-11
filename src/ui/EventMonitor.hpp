@@ -1,12 +1,13 @@
 #pragma once
 #include <QWidget>
 #include <QJsonObject>
-class QPlainTextEdit;
+class QTreeWidget;
 class QLineEdit;
 class QCheckBox;
 namespace tt {
 class EventMonitor : public QWidget {
-	QPlainTextEdit *log;
+	QTreeWidget *log;
+	void applyFilter();
 	QLineEdit *filter;
 	QCheckBox *paused;
 
