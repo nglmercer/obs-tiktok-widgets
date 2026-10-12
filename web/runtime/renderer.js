@@ -104,8 +104,13 @@ export function runtime(handler, extra = {}) {
   window.addEventListener("tiktok:event", accept);
   window.addEventListener("tiktok:preview-settings", (event) => {
     if (window.TikTokPlaygroundPreview) {
-      config.animation = event.detail.animation;
-      config.sound = event.detail.sound;
+      Object.assign(config, event.detail);
+      document.documentElement.style.setProperty(
+        "--accent",
+        config.color || "#ff416c",
+      );
+      document.body.classList.toggle("light", config.theme === "light");
+      style.textContent = config.customCss || "";
     }
   });
   window.addEventListener("tiktok:state", (event) => {

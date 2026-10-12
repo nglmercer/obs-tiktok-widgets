@@ -1,4 +1,8 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { Layers } from "./features/Layers";
+import { ask, confirmAction } from "./components/Dialog";
+import { Canvas } from "./features/Canvas";
+import { DraftManager, mergeDraft } from "./features/drafts";
+import { lazy, Suspense, useEffect, useState, useRef } from "react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Action } from "./components/Action";
@@ -23,17 +27,37 @@ export default function App() {
     [saved, setSaved] = useState(""),
     [fileRevision, setFileRevision] = useState(""),
     [remote, setRemote] = useState<string>(),
+    [remoteRevision, setRemoteRevision] = useState(""),
     [tab, setTab] = useState("Design"),
     [schema, setSchema] = useState<any>({}),
     [preview, setPreview] = useState(""),
     [viewport, setViewport] = useState("600×400"),
     [busy, setBusy] = useState(""),
     [notice, setNotice] = useState(""),
+    [editorLocation, setEditorLocation] = useState<{
+      line: number;
+      column: number;
+      serial: number;
+    }>(),
+    [compilerLocations, setCompilerLocations] = useState<
+      { file: string; line: number; column: number; message: string }[]
+    >([]),
     [history, setHistory] = useState<any[]>([]),
     [editorCommand, setEditorCommand] = useState<{
       id: string;
       serial: number;
     }>();
+  const drafts = useRef(new DraftManager(sessionStorage));
+  const active = useRef({
+    id: project?.id,
+    file,
+    text,
+    saved,
+    fileRevision,
+    remote,
+  });
+  active.current = { id: project?.id, file, text, saved, fileRevision, remote };
+  const navigation = useRef(0);
   async function upload(kind: string) {
     const input = document.createElement("input");
     input.type = "file";
@@ -64,7 +88,7 @@ export default function App() {
         } else {
           const report = await call("studio.package.import", { base64, kind });
           if (
-            confirm(
+            await confirmAction(
               "Validated package preview: " +
                 JSON.stringify(report) +
                 "\nImport this trusted package?",
@@ -107,7 +131,10 @@ export default function App() {
   >([]);
   async function reverseFile(redo = false) {
     if (!project) return;
-    const op = fileUndo[fileUndo.length - 1];
+    const index = redo
+      ? fileUndo.findIndex((op) => op.undone)
+      : fileUndo.map((op) => op.undone).lastIndexOf(false);
+    const op = fileUndo[index];
     if (!op || op.expected !== project.revision)
       throw new Error(
         "External revision changed; use History to compare before restoring.",
@@ -117,17 +144,37 @@ export default function App() {
       revision: redo ? op.after : op.before,
       ifRevision: project.revision,
     });
+    ++navigation.current;
     setProject(m);
     setFiles(await call("widgets.files.list", { id: project.id }));
-    setFileUndo([
-      ...fileUndo.slice(0, -1),
-      { ...op, expected: m.revision, undone: !redo },
-    ]);
+    setFileUndo(
+      fileUndo.map((entry, i) => ({
+        ...entry,
+        expected: m.revision,
+        undone: i === index ? !redo : entry.undone,
+      })),
+    );
     setFile("");
     setText("");
     setSaved("");
   }
   const dirty = text !== saved;
+  const [visualDraft, setVisualDraft] = useState<Record<string, unknown>>();
+  const [visualPast, setVisualPast] = useState<Record<string, unknown>[]>([]);
+  const [visualFuture, setVisualFuture] = useState<Record<string, unknown>[]>(
+    [],
+  );
+  const studioSession = useRef(crypto.randomUUID());
+  const visualRevision = useRef("");
+  function visualChange(v: Record<string, unknown>, checkpoint = true) {
+    if (!visualDraft) visualRevision.current = project?.revision || "";
+    if (checkpoint)
+      setVisualPast((p) =>
+        [...p, visualDraft || project?.settings || {}].slice(-100),
+      );
+    setVisualFuture([]);
+    setVisualDraft(v);
+  }
   const [selectedLayer, setSelectedLayer] = useState<string>("");
   const [obsReady, setObsReady] = useState(false);
   useEffect(() => {
@@ -138,11 +185,12 @@ export default function App() {
   async function addScene() {
     if (!project) return;
     const scenes = await call<any[]>("obs.scenes.list");
-    const scene = prompt(
+    const scene = await ask(
       "Scene name: " +
         scenes.map((s) => (typeof s === "string" ? s : s.name)).join(", "),
+      "",
     );
-    if (scene && confirm("Add this widget to " + scene + "?"))
+    if (scene && (await confirmAction("Add this widget to " + scene + "?")))
       await call("obs.sources.add", { id: project.id, scene, confirm: true });
   }
 
@@ -150,15 +198,44 @@ export default function App() {
     setBusy(label);
     try {
       await fn();
+      if (["build", "publish"].includes(label)) setCompilerLocations([]);
       setNotice(label + " completed");
     } catch (e) {
+      if (e instanceof ApiError && Array.isArray(e.details.locations)) {
+        setCompilerLocations(e.details.locations as any);
+        const d = e.details.locations[0] as any;
+        if (d?.file) {
+          try {
+            await read(d.file);
+            setEditorLocation({
+              line: d.line,
+              column: d.column,
+              serial: Date.now(),
+            });
+          } catch {
+            /* preserve compiler error even if source was removed */
+          }
+        }
+      }
       setNotice(e instanceof ApiError ? e.code + ": " + e.message : String(e));
     } finally {
       setBusy("");
     }
   }
   const discover = async () => {
-    setTemplates(await call("templates.list"));
+    const installed = await call<Template[]>("templates.list");
+    const latest = new Map<string, Template>();
+    for (const t of installed.filter(
+      (t) => !t.build || t.build.mode === "static",
+    ))
+      if (
+        !latest.has(t.id) ||
+        t.version.localeCompare(latest.get(t.id)!.version, undefined, {
+          numeric: true,
+        }) > 0
+      )
+        latest.set(t.id, t);
+    setTemplates([...latest.values()]);
     const current = await call<Project[]>("widgets.list");
     setProjects(current);
     if (requestedWidget && !project) {
@@ -170,10 +247,30 @@ export default function App() {
     task("Loading", discover);
   }, []);
   async function open(p: Project) {
-    if (dirty && !confirm("Discard this unsaved editor draft?")) return;
+    const generation = ++navigation.current;
+    setFileUndo([]);
+    setVisualDraft(undefined);
+    setVisualPast([]);
+    setVisualFuture([]);
+
     const m = await call<Project>("widgets.show", { id: p.id });
+    if (generation !== navigation.current) return;
+    window.history.replaceState(
+      null,
+      "",
+      location.pathname + "?widget=" + encodeURIComponent(p.id),
+    );
+    setFile("");
+    setText("");
+    setSaved("");
+    setRemote(undefined);
+    setPreview("");
     setProject(m);
-    setFiles(await call("widgets.files.list", { id: p.id }));
+    const projectFiles = await call<string[]>("widgets.files.list", {
+      id: p.id,
+    });
+    if (generation !== navigation.current) return;
+    setFiles(projectFiles);
     setFile("");
     setText("");
     setSaved("");
@@ -185,51 +282,121 @@ export default function App() {
         id: p.id,
         file: "schema/settings.schema.json",
       });
+      if (generation !== navigation.current) return;
       setSchema(JSON.parse(s.text));
     } catch {
+      if (generation !== navigation.current) return;
       setSchema({});
     }
+    let lastFile: string | null = null;
+    try {
+      lastFile = sessionStorage.getItem("studio-active-file:" + p.id);
+    } catch {}
+    if (lastFile && projectFiles.includes(lastFile)) await read(lastFile, m);
   }
-  async function read(f: string) {
-    if (dirty && !confirm("Keep a local draft and switch files?")) return;
-    if (project) {
-      sessionStorage.setItem(project.id + ":" + file, text);
-      const data = await call<{ text: string; revision: string }>(
-        "widgets.files.read",
-        { id: project.id, file: f },
-      );
-      setFile(f);
-      setSaved(data.text);
-      setText(sessionStorage.getItem(project.id + ":" + f) || data.text);
-      setFileRevision(data.revision);
-      setRemote(undefined);
-      setTab("Code");
-    }
+  async function read(f: string, selectedProject = project) {
+    if (!selectedProject) return;
+    const generation = ++navigation.current;
+    const data = await call<{ text: string; revision: string }>(
+      "widgets.files.read",
+      { id: selectedProject.id, file: f },
+    );
+    if (generation !== navigation.current) return;
+    const draft = drafts.current.open(
+      selectedProject.id,
+      f,
+      data.text,
+      data.revision,
+    );
+    try {
+      sessionStorage.setItem("studio-active-file:" + selectedProject.id, f);
+    } catch {}
+    setFile(f);
+    setSaved(draft.base);
+    setText(draft.local);
+    setFileRevision(draft.revision);
+    setRemote(draft.remote);
+    setRemoteRevision(draft.remoteRevision || draft.revision);
+    setTab("Code");
   }
   useEffect(() => {
-    if (project && file) sessionStorage.setItem(project.id + ":" + file, text);
-  }, [text]);
+    if (project && file)
+      drafts.current.edit(project.id, file, {
+        base: saved,
+        local: text,
+        revision: fileRevision,
+        remote,
+        remoteRevision: project.revision,
+      });
+  }, [project?.id, file, text, saved, fileRevision, remote]);
   useEffect(() => {
     if (!project) return;
-    const id = setInterval(() => {
-      call<Project>("widgets.show", { id: project.id })
-        .then(async (m) => {
-          if (m.revision !== project.revision) {
-            if (file) {
-              const data = await call<{ text: string }>("widgets.files.read", {
-                id: project.id,
-                file,
-              });
-              if (data.text !== saved) setRemote(data.text);
-            }
-            setProject(m);
-            setFiles(await call("widgets.files.list", { id: project.id }));
-          }
-        })
-        .catch((e) => setNotice(String(e)));
+    const controller = new AbortController();
+    let cancelled = false,
+      pending = false;
+    const id = setInterval(async () => {
+      if (pending) return;
+      pending = true;
+      const generation = navigation.current,
+        selected = active.current.file;
+      try {
+        const m = await call<Project>(
+          "widgets.show",
+          { id: project.id },
+          controller.signal,
+        );
+        const data = selected
+          ? await call<{ text: string; revision: string }>(
+              "widgets.files.read",
+              { id: project.id, file: selected },
+              controller.signal,
+            )
+          : undefined;
+        if (
+          cancelled ||
+          generation !== navigation.current ||
+          active.current.id !== project.id
+        )
+          return;
+        if (data) {
+          const current = active.current;
+          drafts.current.edit(project.id, selected, {
+            base: current.saved,
+            local: current.text,
+            revision: current.fileRevision,
+            remote: current.remote,
+          });
+          const draft = drafts.current.open(
+            project.id,
+            selected,
+            data.text,
+            data.revision,
+          );
+          setSaved(draft.base);
+          setText(draft.local);
+          setFileRevision(draft.revision);
+          setRemote(draft.remote);
+          setRemoteRevision(draft.remoteRevision || draft.revision);
+        }
+        setProject(m);
+        const next = await call<string[]>(
+          "widgets.files.list",
+          { id: project.id },
+          controller.signal,
+        );
+        if (!cancelled) setFiles(next);
+      } catch (e) {
+        if (!cancelled) setNotice(String(e));
+      } finally {
+        pending = false;
+      }
     }, 2000);
-    return () => clearInterval(id);
-  }, [project?.id, project?.revision, file, saved]);
+    return () => {
+      cancelled = true;
+      controller.abort();
+      clearInterval(id);
+    };
+  }, [project?.id]);
   useEffect(() => {
     const listener = (e: KeyboardEvent) => {
       if (e.altKey && e.key.toLowerCase() === "c") {
@@ -248,6 +415,7 @@ export default function App() {
       text,
       ifRevision: fileRevision,
     });
+    ++navigation.current; // invalidate reads started before this commit
     setProject(m);
     setFileRevision(m.revision);
     setSaved(text);
@@ -275,6 +443,7 @@ export default function App() {
       id: project.id,
       ifRevision: project.revision,
     });
+    ++navigation.current;
     setProject(await call("widgets.show", { id: project.id }));
     if (op === "publish") await operation("preview");
   }
@@ -282,14 +451,18 @@ export default function App() {
     if (!project) return;
     if (dirty)
       throw new Error("Save or discard the editor draft before changing files");
-    let target = op === "new" ? prompt("New source path", "src/new.js") : file;
+    let target =
+      op === "new" ? await ask("New source path", "src/new.js") : file;
     if (!target) return;
     if (
       op === "delete" &&
-      !confirm("Delete " + target + "? A source snapshot is retained.")
+      !(await confirmAction(
+        "Delete " + target + "? A source snapshot is retained.",
+      ))
     )
       return;
-    const to = op === "rename" ? prompt("New source path", target) : undefined;
+    const to =
+      op === "rename" ? await ask("New source path", target) : undefined;
     if (op === "rename" && !to) return;
     const prior = project.revision;
     const m = await call<Project>(
@@ -307,9 +480,12 @@ export default function App() {
     );
     await call("widgets.snapshot", { id: project.id, ifRevision: m.revision });
     setFileUndo([
-      ...fileUndo,
+      ...fileUndo
+        .filter((op) => !op.undone)
+        .map((op) => ({ ...op, expected: m.revision })),
       { before: prior, after: m.revision, expected: m.revision, undone: false },
     ]);
+    ++navigation.current;
     setProject(m);
     setFiles(await call("widgets.files.list", { id: project.id }));
     setFile("");
@@ -361,7 +537,7 @@ export default function App() {
                     : ""
                 }
                 onClick={() =>
-                  fileUndo.length && !dirty
+                  fileUndo.length && !file
                     ? task("Undo file operation", () => reverseFile(false))
                     : setEditorCommand({ id: "undo", serial: Date.now() })
                 }
@@ -374,7 +550,7 @@ export default function App() {
                     : ""
                 }
                 onClick={() =>
-                  fileUndo.length && !dirty
+                  fileUndo.length && !file
                     ? task("Redo file operation", () => reverseFile(true))
                     : setEditorCommand({ id: "redo", serial: Date.now() })
                 }
@@ -385,7 +561,13 @@ export default function App() {
                     key={id}
                     id={id}
                     primary={["build", "publish"].includes(id)}
-                    disabledReason={disabled}
+                    disabledReason={
+                      disabled ||
+                      (["build", "publish", "validate"].includes(id) &&
+                      (dirty || visualDraft)
+                        ? "Save author drafts first; Preview is isolated"
+                        : "")
+                    }
                     onClick={() => task(id, () => operation(id))}
                   />
                 ),
@@ -597,24 +779,21 @@ export default function App() {
                         <button
                           className={f === file ? "selected" : ""}
                           key={f}
+                          disabled={!!busy}
                           onClick={() => task("Read", () => read(f))}
                         >
                           {f}
                         </button>
                       ))}
                     <h2>Layers</h2>
-                    {(schema["x-visual"]?.components || []).map((c: any) => (
-                      <button
-                        key={c.id}
-                        aria-pressed={selectedLayer === c.id}
-                        onClick={() => {
-                          setSelectedLayer(c.id);
-                          setTab("Design");
-                        }}
-                      >
-                        {c.label}
-                      </button>
-                    ))}
+                    <Layers
+                      components={schema["x-visual"]?.components || []}
+                      selected={selectedLayer}
+                      onSelect={(id) => {
+                        setSelectedLayer(id);
+                        setTab("Design");
+                      }}
+                    />
                     {nav === "Assets" && (
                       <button onClick={() => upload("asset")}>
                         Import asset
@@ -662,25 +841,48 @@ export default function App() {
                             Save source
                           </button>
                         </div>
+                        {compilerLocations.map((d, i) => (
+                          <button
+                            key={i}
+                            onClick={() =>
+                              task("Diagnostic", async () => {
+                                await read(d.file);
+                                setEditorLocation({
+                                  line: d.line,
+                                  column: d.column,
+                                  serial: Date.now(),
+                                });
+                              })
+                            }
+                          >
+                            {d.file}:{d.line}:{d.column} {d.message}
+                          </button>
+                        ))}
                         {remote !== undefined && (
                           <div role="alert" className="conflict">
                             <strong>
                               External change detected. Draft retained.
                             </strong>
                             <details>
-                              <summary>Compare saved version</summary>
+                              <summary>Compare base / local / remote</summary>
+                              <h3>Base</h3>
+                              <pre>{saved}</pre>
+                              <h3>Local draft</h3>
+                              <pre>{text}</pre>
+                              <h3>Remote</h3>
                               <pre>{remote}</pre>
                             </details>
                             <button
-                              onClick={() => {
+                              onClick={async () => {
                                 if (
-                                  confirm(
+                                  await confirmAction(
                                     "Discard draft and reload saved version?",
                                   )
                                 ) {
                                   setText(remote);
                                   setSaved(remote);
-                                  setFileRevision(project.revision);
+                                  ++navigation.current;
+                                  setFileRevision(remoteRevision);
                                   setRemote(undefined);
                                 }
                               }}
@@ -689,7 +891,9 @@ export default function App() {
                             </button>
                             <button
                               onClick={() => {
-                                setFileRevision(project.revision);
+                                ++navigation.current;
+                                setSaved(remote);
+                                setFileRevision(remoteRevision);
                                 setRemote(undefined);
                                 setNotice(
                                   "Review and merge your draft, then Save source explicitly.",
@@ -698,15 +902,34 @@ export default function App() {
                             >
                               Keep draft for manual merge
                             </button>
+                            <button
+                              onClick={() => {
+                                const merged = mergeDraft(saved, text, remote);
+                                if (merged === undefined) {
+                                  setNotice(
+                                    "Overlapping changes require manual merge; all three versions remain available.",
+                                  );
+                                  return;
+                                }
+                                ++navigation.current;
+                                setText(merged);
+                                setSaved(remote);
+                                setFileRevision(remoteRevision);
+                                setRemote(undefined);
+                              }}
+                            >
+                              Merge non-overlapping changes
+                            </button>
                           </div>
                         )}
                         {file && (
                           <Suspense fallback={<p>Loading syntax editor…</p>}>
                             <Code
-                              file={file}
+                              file={project.id + ":" + file}
                               text={text}
                               onChange={setText}
                               command={editorCommand}
+                              location={editorLocation}
                             />
                           </Suspense>
                         )}
@@ -721,7 +944,7 @@ export default function App() {
                               onClick={() =>
                                 task("Rollback", async () => {
                                   if (
-                                    confirm(
+                                    await confirmAction(
                                       "Restore this source revision? Publish separately to apply it.",
                                     )
                                   ) {
@@ -746,6 +969,71 @@ export default function App() {
                       </>
                     ) : (
                       <>
+                        {tab === "Design" && (
+                          <div className="canvas-tools">
+                            <button
+                              disabled={!visualPast.length}
+                              onClick={() => {
+                                const previous =
+                                  visualPast[visualPast.length - 1]!;
+                                setVisualFuture((f) => [
+                                  visualDraft || project.settings,
+                                  ...f,
+                                ]);
+                                setVisualPast((p) => p.slice(0, -1));
+                                setVisualDraft(previous);
+                              }}
+                            >
+                              Undo design
+                            </button>
+                            <button
+                              disabled={!visualFuture.length}
+                              onClick={() => {
+                                setVisualPast((p) => [
+                                  ...p,
+                                  visualDraft || project.settings,
+                                ]);
+                                setVisualDraft(visualFuture[0]);
+                                setVisualFuture((f) => f.slice(1));
+                              }}
+                            >
+                              Redo design
+                            </button>
+                            <button
+                              disabled={!visualDraft}
+                              onClick={() =>
+                                task("Save design", async () => {
+                                  const m = await call<Project>(
+                                    "widgets.settings.set",
+                                    {
+                                      id: project.id,
+                                      settings: Object.fromEntries(
+                                        Object.entries(
+                                          visualDraft || {},
+                                        ).filter(
+                                          ([key]) =>
+                                            key in (schema.properties || {}) &&
+                                            ![
+                                              "id",
+                                              "template",
+                                              "editableHtml",
+                                              "customHtml",
+                                            ].includes(key),
+                                        ),
+                                      ),
+                                      ifRevision: visualRevision.current,
+                                    },
+                                  );
+                                  ++navigation.current;
+                                  setProject(m);
+                                  setVisualDraft(undefined);
+                                })
+                              }
+                            >
+                              Save design
+                            </button>
+                          </div>
+                        )}
                         <p>
                           {tab === "Events"
                             ? "Isolated fixtures · Viewer123 sends Rose ×23"
@@ -757,21 +1045,34 @@ export default function App() {
                             declares no event handlers.
                           </p>
                         ) : preview ? (
-                          <iframe
-                            title="Isolated widget preview"
-                            sandbox="allow-scripts allow-same-origin"
-                            src={
-                              preview +
-                              (tab === "Design" ? "&studio=design" : "")
-                            }
-                            style={{
-                              width: Math.min(
-                                Number(viewport.split("×")[0]),
-                                900,
-                              ),
-                              height: Number(viewport.split("×")[1]),
-                            }}
-                          />
+                          tab === "Design" ? (
+                            <Canvas
+                              preview={preview}
+                              viewport={viewport}
+                              components={schema["x-visual"]?.components || []}
+                              selected={selectedLayer}
+                              onSelect={setSelectedLayer}
+                              settings={visualDraft || project.settings}
+                              onChange={visualChange}
+                              session={studioSession.current}
+                            />
+                          ) : (
+                            <iframe
+                              title="Isolated widget preview"
+                              sandbox="allow-scripts allow-same-origin"
+                              src={
+                                preview +
+                                (tab === "Design" ? "&studio=design" : "")
+                              }
+                              style={{
+                                width: Math.min(
+                                  Number(viewport.split("×")[0]),
+                                  900,
+                                ),
+                                height: Number(viewport.split("×")[1]),
+                              }}
+                            />
+                          )
                         ) : (
                           <div className="empty-preview">
                             <h2>Preview the published build</h2>
@@ -816,7 +1117,30 @@ export default function App() {
                             }
                           : schema
                       }
-                      settings={project.settings}
+                      settings={visualDraft || project.settings}
+                      onDraft={(v) => visualChange(v)}
+                      onTestAudio={async (path) => {
+                        const outer = document.querySelector<HTMLIFrameElement>(
+                          'iframe[title="Isolated widget preview"]',
+                        );
+                        const inner =
+                          outer?.contentDocument?.querySelector<HTMLIFrameElement>(
+                            "#preview",
+                          );
+                        const url = new URL(
+                          path,
+                          inner?.contentWindow?.location.href || location.href,
+                        );
+                        if (
+                          !path ||
+                          url.origin !== location.origin ||
+                          !["http:", "https:"].includes(url.protocol)
+                        )
+                          throw new Error(
+                            "Preview a published local audio asset first.",
+                          );
+                        await new Audio(url.href).play();
+                      }}
                       assets={files
                         .filter((f) => f.startsWith("assets/"))
                         .map(
@@ -832,7 +1156,9 @@ export default function App() {
                           settings,
                           ifRevision: revision,
                         });
+                        ++navigation.current;
                         setProject(m);
+                        setVisualDraft(undefined);
                         setNotice(
                           "Appearance saved; publish to update production.",
                         );

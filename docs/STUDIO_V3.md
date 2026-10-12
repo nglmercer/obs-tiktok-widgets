@@ -1,4 +1,10 @@
-# Widget Studio and controlled builders
+# Widget Studio
+
+## Installed-user requirements
+
+The supported user workflow is plain HTML/CSS/JavaScript. All built-in templates and Studio assets ship compiled. Installing the plugin, creating widgets, editing source, previewing and publishing require no Node.js, npm, React or TypeScript compiler. React/TypeScript remain repository development dependencies only. Framework starters are excluded from installed packages; new framework projects and toolchain installation are disabled. Existing projects and published releases are preserved; existing framework sources are not converted or deleted. To distribute a framework-authored widget, compile it during development and package its static HTML/CSS/JavaScript output.
+
+The framework sections below describe legacy compatibility/development internals, not supported installed-user authoring options.
 
 Studio is a static React/TypeScript application packaged by Vite/Tailwind. It uses accessible Radix tooltips, Lucide actions, resizable panels, React Hook Form/AJV and lazy CodeMirror 6. OBS executes prebuilt HTML/JS/CSS, not Node or a Vite development server. No Qt WebEngine or private CEF interfaces are used.
 
@@ -22,7 +28,7 @@ Templates / My Widgets / Live Events / Assets / Settings navigation leads to a p
 
 Build creates a candidate; Publish validates/builds and commits the stable output pointer. Preview uses the last published renderer with the existing isolated Playground session protocol and Viewer123 Rose ×23 fixture. It refuses an unpublished project rather than silently publishing. No synthetic events are sent to the OBS dispatcher. Live Events currently exposes isolated samples, not a second TikTok subscription. History rollback restores author source; publishing is a separate action. Package import validates/previews before confirmed installation; browser uploads have a 700 KB UI limit (1 MB request bound); larger files/packages use widgetctl. Asset uploads stay inside the selected project's assets tree.
 
-Inspector supports JSON Schema types/enums/ranges/descriptions and `x-ui.control` (`color`, `slider`, `asset`), `group`, and `visibleWhen: {field, equals}`. Unknown settings/schema keys stay preserved. `x-visual.components: [{id,label,properties:[...]}]` declares inspectable components. Visual editing changes declared properties such as position/font/color/size; it does not rewrite arbitrary DOM or reverse-compile JSX. Arbitrary templates without that metadata are source-edit-only. Drag/drop, unrestricted DOM canvases and embedded OBS browser docks are not advertised.
+Inspector supports JSON Schema types/enums/ranges/descriptions and `x-ui.control` (`color`, `slider`, `asset`), `group`, and `visibleWhen: {field, equals}`. Unknown settings/schema keys stay preserved. `x-visual.components: [{id,label,properties:[...]}]` declares inspectable components. Visual editing changes declared properties such as position/font/color/size; it does not rewrite arbitrary DOM or reverse-compile JSX. Arbitrary templates without that metadata are source-edit-only. Declared position/size bindings support the canvas described below; unrestricted DOM canvases and embedded OBS browser docks are not advertised.
 
 Actions share `web/shared/actions.json` IDs, descriptions, icons and shortcuts, compiled to Qt SVGs and browser controls. Primary tasks show text. Icon-only actions have labels, title fallbacks, hover/focus tooltips and focus outlines; disabled controls explain their reason.
 
@@ -54,4 +60,22 @@ See [validation](VALIDATION.md) for executed tests and platform limits. Studio/b
 
 ## Before and after
 
-The native fallback remains a Qt form/source dialog. The default dock Create/Edit actions now launch Studio, with the selected UUID in the URL when available. Studio separates appearance from Code, provides resizable preview/inspector panels, syntax-aware editing and explicit draft/conflict states. [Workspace](studio/workspace.png) and [typed preview](studio/preview-react-typescript.png) are captured from executed browser sessions. File operations create shared-service checkpoints; Undo/Redo restore the most recent operation under revision checks. `widgets snapshot <uuid> --if-revision TOKEN` exposes the same checkpoint service to CLI authors. Watchers in OBS and the standalone Studio process share the same registry; framework auto-publish requires Node in the process doing compilation.
+The native fallback remains a Qt form/source dialog. The default dock Create/Edit actions now launch Studio, with the selected UUID in the URL when available. Studio separates appearance from Code, provides resizable preview/inspector panels, syntax-aware editing and explicit draft/conflict states. [Workspace](studio/workspace.png) and [typed preview](studio/preview-react-typescript.png) are captured from executed browser sessions. File operations create shared-service checkpoints; Undo/Redo restore sequential file-operation checkpoints under revision checks. `widgets snapshot <uuid> --if-revision TOKEN` exposes the same checkpoint service to CLI authors. Watchers in OBS and the standalone Studio process share the same registry; framework auto-publish requires Node in the process doing compilation.
+
+## Studio fixes and declarative canvas
+
+The dock owns one `StudioLauncher` helper per session. Repeated clicks reuse it, including the latest selected UUID; stdout is newline-framed and bounded, with a 15-second startup timeout. Startup, ready, stopped and error states remain visible. Closing the dock terminates/reaps the child; the helper also watches the launching OBS PID to exit after an OBS crash. Its session URL stays in memory and is never logged. System-browser tab reuse depends on the browser; helper process reuse does not.
+
+Code drafts use a versioned per-project/per-file record containing base, local text and revision. Clean buffers follow external and atomic formatter saves automatically, preserving CRLF. Dirty buffers retain base/local/remote comparison. Reload is explicit; Merge combines independent changed lines, while overlapping/structural changes remain available for manual merge. Keep Draft advances the reviewed base without saving. Poll results are invalidated on navigation and commits, and overlapping polls are suppressed. Storage failure keeps in-memory drafts. CodeMirror history follows file/tab switches; file operation Undo/Redo walks revision-checked checkpoints and refuses restoration after unrelated mutations.
+
+The inspector accepts `x-ui.widget` and `x-ui.control`: `textarea`/`html`/`css`/`multiline`, color plus hexadecimal text, slider plus numeric field, searchable enum/filter arrays, and `asset`/`image`/`font`/`audio`. `group`, descriptions and `visibleWhen: {field, equals}` remain the supported safe subset. Unknown settings are preserved by patching declared editable keys. Audio tests use published local preview resources, with playback failures shown as errors. Save Appearance and Save Design persist author settings; Build and Publish refuse unsaved drafts.
+
+The 3.0.1 typed starters add explicit visual bindings and reactive preview settings. Existing 3.0.0 packages and projects remain intact; source is never auto-upgraded. Custom renderers can subscribe to `tiktok:preview-settings` to reflect draft values. Design sends bounded, public settings through a separate source/origin/session-validated channel to the existing Playground; its frame still validates the active preview session. This never writes production settings or emits production events.
+
+```json
+{"x-visual":{"components":[{"id":"alert","label":"Gift alert","properties":["x","y","width","height","color"],"bindings":{"x":"x","y":"y","width":"width","height":"height"}}]}}
+```
+
+Canvas overlays represent declared components, not arbitrary DOM inspection. Select a layer or overlay, drag to move, use the corner handle to resize, or arrow keys (Shift for 8px) to nudge. Grid snapping, zoom, viewport presets and design history operate on the same settings draft as the inspector. Save then Publish explicitly. Templates without position/size bindings explain the Code-mode fallback. Parent labels may describe hierarchy; this is not JSX reverse compilation or an unrestricted page designer.
+
+Builder provider API 1 exposes `static`, `vite-vanilla` and `vite-react`, backed by the existing snapshot/validation/publish services. `builders status` reports provider discovery. Type errors include `details.locations` with source file, line, column, TS code and message alongside legacy diagnostic text. Studio opens the corresponding source and scrolls to the location. The trusted toolchain policy changed to add structured diagnostics; explicitly reinstall the toolchain cache before compiling with the new policy. Existing published output remains usable without that installation.

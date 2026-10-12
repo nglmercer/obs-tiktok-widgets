@@ -153,16 +153,16 @@ void validateSettings(const QJsonObject &settings, const QJsonObject &schema)
 		else if (type == "object")
 			ok = v.isObject();
 		if (!ok)
-			throw DomainError("SETTINGS_INVALID", "Invalid type for " + it.key());
+			throw DomainError("SETTINGS_INVALID", "Invalid type for " + it.key(), {{"field", it.key()}});
 		if (rule.contains("enum") && !rule["enum"].toArray().contains(v))
-			throw DomainError("SETTINGS_INVALID", "Invalid choice for " + it.key());
+			throw DomainError("SETTINGS_INVALID", "Invalid choice for " + it.key(), {{"field", it.key()}});
 		if (v.isDouble() && ((rule.contains("minimum") && v.toDouble() < rule["minimum"].toDouble()) ||
 				     (rule.contains("maximum") && v.toDouble() > rule["maximum"].toDouble())))
-			throw DomainError("SETTINGS_INVALID", "Out of range: " + it.key());
+			throw DomainError("SETTINGS_INVALID", "Out of range: " + it.key(), {{"field", it.key()}});
 	}
 	for (const auto &r : schema["required"].toArray())
 		if (!settings.contains(r.toString()))
-			throw DomainError("SETTINGS_INVALID", "Missing required setting");
+			throw DomainError("SETTINGS_INVALID", "Missing required setting", {{"field", r.toString()}});
 }
 void syntaxCheck(const QString &path, const QString &node)
 {
@@ -330,6 +330,8 @@ QJsonObject WidgetProjectService::create(QString tid, QString name, QString vers
 {
 	ProjectLock lock(root);
 	const auto t = templates.resolve(tid, version);
+	if (t.value["build"].toObject()["mode"].toString("static") != "static")
+		throw DomainError("DEVELOPMENT_ONLY", "New user widgets support plain HTML/CSS/JavaScript only. Import a precompiled static template instead.");
 	if (id.isEmpty())
 		id = QUuid::createUuid().toString(QUuid::WithoutBraces);
 	const auto path = projectPath(id);
@@ -729,7 +731,7 @@ QJsonObject WidgetProjectService::buildUnlocked(const QString &id, bool publish)
 	for (const auto &f : files(id))
 		atomicWrite(safePath(staging.path() + "/dist", f), read(id, f));
 	auto entry = m["entry"].toString();
-	if (m["build"].toObject()["mode"] == "vite") {
+	if (builderProvider(m["build"].toObject())->id() != "static") {
 		compileWidget(root, assets, staging.path() + "/dist", staging.path() + "/compiled",
 			      m["build"].toObject(),
 			      [this, id, token] { return get(id)["revision"].toString() != token; });

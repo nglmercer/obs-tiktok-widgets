@@ -5,10 +5,18 @@ const root = document.getElementById("root")!;
 root.innerHTML =
   '<section id="alert"><h1></h1><p id="gift">Waiting for a gift</p></section>';
 const alert = document.getElementById("alert")!;
-alert.style.color = config.color || "#ff77cc";
-alert.style.fontSize = (config.fontSize || 32) + "px";
-alert.style.transform = `translate(${config.x || 0}px,${config.y || 0}px)`;
-root.querySelector("h1")!.textContent = config.title || "Rose alert";
+function appearance(config: Record<string, any>) {
+  alert.style.width = (config.width || 600) + "px";
+  alert.style.height = (config.height || 250) + "px";
+  alert.style.color = config.color || "#ff77cc";
+  alert.style.fontSize = (config.fontSize || 32) + "px";
+  alert.style.transform = `translate(${config.x || 0}px,${config.y || 0}px)`;
+  root.querySelector("h1")!.textContent = config.title || "Rose alert";
+}
+appearance(config);
+window.addEventListener("tiktok:preview-settings", (e) =>
+  appearance((e as CustomEvent).detail),
+);
 const groups = new Map<string, bigint>();
 onTikTokEvent("gift", (event) => {
   const data = event.data;

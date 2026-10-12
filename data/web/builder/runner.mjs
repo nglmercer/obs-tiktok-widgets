@@ -105,6 +105,23 @@ const program = ts.createProgram(files, options, host);
 const diagnostics = ts.getPreEmitDiagnostics(program);
 if (diagnostics.length) {
   console.error(
+    "WIDGET_DIAGNOSTICS:" +
+      JSON.stringify(
+        diagnostics.map((d) => {
+          const pos = d.file?.getLineAndCharacterOfPosition(d.start || 0);
+          return {
+            file: d.file
+              ? relative(snapshot, d.file.fileName).replaceAll("\\", "/")
+              : "",
+            line: pos ? pos.line + 1 : 0,
+            column: pos ? pos.character + 1 : 0,
+            code: d.code,
+            message: ts.flattenDiagnosticMessageText(d.messageText, "\n"),
+          };
+        }),
+      ),
+  );
+  console.error(
     ts.formatDiagnostics(diagnostics, {
       getCurrentDirectory: () => snapshot,
       getCanonicalFileName: (f) => f,

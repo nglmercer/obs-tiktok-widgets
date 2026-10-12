@@ -39,6 +39,14 @@ static void spin(int ms)
 		QThread::msleep(10);
 	}
 }
+static void until(const std::function<bool()> &condition)
+{
+	QElapsedTimer deadline;
+	deadline.start();
+	while (!condition() && deadline.elapsed() < 8000)
+		spin(20);
+	spin(300); // ensure bursts do not emit duplicate builds
+}
 int main(int argc, char **argv)
 {
 	QCoreApplication app(argc, argv);
@@ -167,13 +175,13 @@ int main(int argc, char **argv)
 	atomicWrite(stylePath, "body {color:rgb(12,34,56)}\r\n");
 	spin(150);
 	atomicWrite(stylePath, "body {color:rgb(12,34,57)}\r\n");
-	spin(1400);
+	until([&] { return published >= 1; });
 	check(published == 1, "atomic save debounce");
 	atomicWrite(stylePath, "body {");
-	spin(1400);
+	until([&] { return failures >= 1; });
 	check(failures == 1 && published == 1, "watcher failure replaces output");
 	atomicWrite(stylePath, "body {color:green}");
-	spin(1400);
+	until([&] { return published >= 2; });
 	check(published == 2, "watcher recovery");
 	WidgetCommands commands(service);
 	error("OBS_OFFLINE", [&] { commands.execute("obs.scenes.list", {}); });

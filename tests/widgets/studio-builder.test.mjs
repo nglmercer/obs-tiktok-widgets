@@ -89,6 +89,15 @@ test(
         const failed = run(root, ["widgets", "publish", id]);
         assert.equal(failed.error.code, "COMPILE_ERROR");
         assert.match(failed.error.message, /main\.tsx?.*error TS2322/s);
+        assert.ok(
+          failed.error.details.locations.some(
+            (d) =>
+              /src\/main\.tsx?$/.test(d.file) &&
+              d.line > 0 &&
+              d.column > 0 &&
+              d.code === 2322,
+          ),
+        );
         assert.deepEqual(
           fs.readFileSync(path.join(root, "widgets", id, "index.html")),
           pointer,
@@ -231,7 +240,7 @@ test(
 );
 test(
   "real Studio browser accessibility, drafts, conflict, schema and secure adapter",
-  { skip: !fs.existsSync(server) || !browserPath, timeout: 60000 },
+  { skip: !fs.existsSync(server) || !browserPath, timeout: 120000 },
   async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "widget-studio-"));
     const child = spawn(
@@ -285,6 +294,36 @@ test(
         body: secret,
       });
       const cookie = session.headers.get("set-cookie").split(";")[0];
+      assert.equal(
+        (
+          await fetch(origin + "/session", {
+            method: "POST",
+            headers: { Origin: origin },
+            body: "",
+          })
+        ).status,
+        403,
+      );
+      assert.equal(
+        (
+          await fetch(origin + "/session", {
+            method: "POST",
+            headers: { Origin: origin, Cookie: cookie },
+            body: "",
+          })
+        ).status,
+        200,
+      );
+      assert.equal(
+        (
+          await fetch(origin + "/session", {
+            method: "POST",
+            headers: { Origin: "https://hostile.example", Cookie: cookie },
+            body: "",
+          })
+        ).status,
+        403,
+      );
       const api = async (method, args = {}) => {
         const r = await fetch(origin + "/api", {
           method: "POST",
@@ -313,11 +352,11 @@ test(
       await page
         .getByRole("heading", { name: "Templates", exact: true })
         .waitFor();
-      await page.getByLabel("Search templates").fill("TypeScript Gift");
+      await page.getByLabel("Search templates").fill("Gift Alert");
       await page.getByRole("button", { name: "Use template" }).click();
       await page.getByRole("tab", { name: "Code", exact: true }).click();
       await page
-        .getByRole("button", { name: "src/main.ts", exact: true })
+        .getByRole("button", { name: "src/main.js", exact: true })
         .click();
       await page.locator(".cm-content").waitFor();
       // Every icon-only action exposes a label, title and a hover/focus tooltip.
@@ -325,7 +364,8 @@ test(
       for (let i = 0; i < (await buttons.count()); i++) {
         const b = buttons.nth(i);
         assert.ok(await b.getAttribute("aria-label"));
-        assert.ok(await b.getAttribute("title"));
+        assert.ok(await b.getAttribute("aria-description"));
+        assert.equal(await b.getAttribute("title"), null);
         if (await b.isEnabled()) {
           await b.hover();
           await page.getByRole("tooltip").waitFor();
@@ -345,17 +385,54 @@ test(
         await page.getByRole("tooltip").waitFor();
       }
       const project = (await api("widgets.list")).data[0];
-      const original = fs.readFileSync(
-        path.join(root, "projects", project.id, "src/main.ts"),
-        "utf8",
+      const original = "// Static JavaScript editing fixture\n";
+      // Atomic formatter save refreshes a clean buffer without creating a conflict.
+      const mainPath = path.join(root, "projects", project.id, "src/main.js");
+      fs.writeFileSync(
+        mainPath + ".tmp",
+        original.replaceAll("\n", "\r\n") + "\r\n// formatted externally",
+      );
+      fs.renameSync(mainPath + ".tmp", mainPath);
+      await page.waitForFunction(() =>
+        document
+          .querySelector(".cm-content")
+          ?.textContent.includes("formatted externally"),
+      );
+      assert.equal(
+        await page
+          .getByText("External change detected. Draft retained.")
+          .count(),
+        0,
       );
       await page.locator(".cm-content").click();
       await page.keyboard.press("Control+End");
       await page.keyboard.type("\n// Local draft");
       await page.getByText(/Unsaved draft/).waitFor();
-      fs.appendFileSync(
-        path.join(root, "projects", project.id, "src/main.ts"),
-        "\n// External edit",
+      await page.reload();
+      await page.locator(".cm-content").waitFor();
+      assert.match(
+        await page.locator(".cm-content").textContent(),
+        /Local draft/,
+      );
+      const external = path.join(root, "external.ts");
+      fs.writeFileSync(
+        external,
+        fs.readFileSync(mainPath, "utf8") + "\n// External edit",
+      );
+      const rev = run(root, ["widgets", "show", project.id]).data.revision;
+      assert.equal(
+        run(root, [
+          "widgets",
+          "files",
+          "write",
+          project.id,
+          "src/main.js",
+          "--from-file",
+          external,
+          "--if-revision",
+          rev,
+        ]).ok,
+        true,
       );
       await page
         .getByText("External change detected. Draft retained.")
@@ -373,7 +450,7 @@ test(
         .waitFor();
       assert.match(
         fs.readFileSync(
-          path.join(root, "projects", project.id, "src/main.ts"),
+          path.join(root, "projects", project.id, "src/main.js"),
           "utf8",
         ),
         /External edit/,
@@ -385,9 +462,22 @@ test(
         .getByRole("button", { name: "Save source", exact: true })
         .click();
       await page.getByText(/Source saved/).waitFor();
+      await page.locator(".cm-content").click();
+      await page.keyboard.press("Control+End");
+      await page.keyboard.type("// Undo fixture");
+      const savedCode = await page.locator(".cm-content").textContent();
+      await page.getByRole("button", { name: "Undo", exact: true }).click();
+      assert.notEqual(
+        await page.locator(".cm-content").textContent(),
+        savedCode,
+      );
+      await page.getByRole("button", { name: "Redo", exact: true }).click();
+      assert.equal(await page.locator(".cm-content").textContent(), savedCode);
+      await page.getByRole("button", { name: "Save source", exact: true }).click();
+      await page.getByText(/Source saved/).waitFor();
       await page.getByRole("tab", { name: "Design", exact: true }).click();
       assert.equal(await page.locator("input[type=color]").count(), 1);
-      await page.getByLabel("Heading", { exact: true }).fill("Studio authored");
+      await page.getByLabel("customCss", { exact: true }).fill("/* Studio authored */");
       await page
         .getByRole("button", { name: "Save appearance", exact: true })
         .click();
@@ -396,9 +486,89 @@ test(
         .filter({ hasText: "Appearance saved" })
         .waitFor();
       assert.equal(
-        (await api("widgets.show", { id: project.id })).data.settings.title,
-        "Studio authored",
+        (await api("widgets.show", { id: project.id })).data.settings.customCss,
+        "/* Studio authored */",
       );
+      if (process.env.WIDGET_BUILDER_TEST === "1") {
+        assert.equal(run(root, ["builders", "install", "--confirm"]).ok, true);
+        await page
+          .getByRole("button", { name: "Publish", exact: true })
+          .click();
+        await page
+          .getByRole("status")
+          .filter({ hasText: "publish completed" })
+          .waitFor();
+        const active = fs.readFileSync(
+          path.join(root, "widgets", project.id, "index.html"),
+        );
+        const layer = page.getByRole("button", {
+          name: "Select Gift alert",
+          exact: true,
+        });
+        await layer.waitFor();
+        const box = await layer.boundingBox();
+        await page.mouse.move(box.x + 30, box.y + 30);
+        await page.mouse.down();
+        await page.mouse.move(box.x + 62, box.y + 54);
+        await page.mouse.up();
+        assert.equal(
+          (await api("widgets.show", { id: project.id })).data.settings.x,
+          0,
+        );
+        await page
+          .getByRole("button", { name: "Undo design", exact: true })
+          .click();
+        await page
+          .getByRole("button", { name: "Redo design", exact: true })
+          .click();
+        await page
+          .getByRole("button", { name: "Save design", exact: true })
+          .click();
+        await page
+          .getByRole("status")
+          .filter({ hasText: "Save design completed" })
+          .waitFor();
+        assert.equal(
+          (await api("widgets.show", { id: project.id })).data.settings.x,
+          32,
+        );
+        assert.deepEqual(
+          fs.readFileSync(path.join(root, "widgets", project.id, "index.html")),
+          active,
+        );
+        await layer.focus();
+        await page.keyboard.press("ArrowRight");
+        assert.equal(
+          await page.getByLabel("x", { exact: true }).inputValue(),
+          "33",
+        );
+        const inner = page
+          .frameLocator('iframe[title="Isolated widget preview"]')
+          .frameLocator("#preview");
+        await inner.getByText("Studio authored").waitFor();
+        // Resize is a draft and must not publish to the stable loader.
+        const resize = page.getByRole("button", {
+          name: "Resize Gift alert",
+          exact: true,
+        });
+        const r = await resize.boundingBox();
+        await page.mouse.move(r.x + 5, r.y + 5);
+        await page.mouse.down();
+        await page.mouse.move(r.x + 21, r.y + 21);
+        await page.mouse.up();
+        assert.equal(
+          (await api("widgets.show", { id: project.id })).data.settings.width,
+          600,
+        );
+        await page
+          .getByRole("button", { name: "Save design", exact: true })
+          .click();
+        await page
+          .getByRole("status")
+          .filter({ hasText: "Save design completed" })
+          .waitFor();
+      }
+
       assert.equal(
         (
           await api("widgets.files.write", {
@@ -411,8 +581,15 @@ test(
         ).ok,
         false,
       );
-      page.once("dialog", (dialog) => dialog.accept("src/undo-test.js"));
       await page.getByRole("button", { name: "New file", exact: true }).click();
+      await page
+        .getByRole("dialog")
+        .getByRole("textbox")
+        .fill("src/undo-test.js");
+      await page
+        .getByRole("dialog")
+        .getByRole("button", { name: "Continue" })
+        .click();
       await page
         .getByRole("button", { name: "src/undo-test.js", exact: true })
         .waitFor();

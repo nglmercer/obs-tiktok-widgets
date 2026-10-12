@@ -1,3 +1,4 @@
+#include "StudioLauncher.hpp"
 #include "WidgetActions.hpp"
 #include <QProcess>
 #include <QCoreApplication>
@@ -118,43 +119,42 @@ TikTokDock::TikTokDock(PluginConfig &c, TikTokConnectionManager &n, EventDispatc
 	auto *studioButton = new QPushButton(tr("Open Studio"));
 	decorateWidgetButton(studioButton, widgets.projects.assetDirectory(), "studio");
 	widgetsLayout->addWidget(studioButton);
+	auto *studioState = new QLabel;
+	studioState->setWordWrap(true);
+	widgetsLayout->addWidget(studioState);
+	studioLauncher = new StudioLauncher(this);
+	studioLauncher->navigate = [](const QUrl &url) {
+		QDesktopServices::openUrl(url);
+	};
+	studioLauncher->changed = [studioButton, studioState](StudioLauncher::State state, const QString &message) {
+		studioButton->setText(state == StudioLauncher::State::Starting ? QObject::tr("Starting Studio…")
+									       : QObject::tr("Open Studio"));
+		studioButton->setToolTip(message);
+		studioState->setText(message);
+	};
 	connect(studioButton, &QPushButton::clicked, this, [this] {
 		guarded([this] {
-			if (QMessageBox::question(
-				    this, tr("Open Widget Studio"),
-				    tr("Start an authenticated, loopback-only authoring interface? Templates are trusted code. Close OBS to stop this session.")) !=
-			    QMessageBox::Yes)
-				return;
-			const auto executable =
-				QFileInfo(widgets.projects.assetDirectory() + "/../../bin/64bit/widgetstudio")
-					.absoluteFilePath();
-			QString tool = executable;
-			if (!QFileInfo::exists(tool))
-				tool = QStandardPaths::findExecutable("widgetstudio");
+			if (studioLauncher->state == StudioLauncher::State::Idle ||
+			    studioLauncher->state == StudioLauncher::State::Error) {
+				if (QMessageBox::question(
+					    this, tr("Open Widget Studio"),
+					    tr("Start an authenticated, loopback-only authoring interface? Templates are trusted code. Close OBS to stop this session.")) !=
+				    QMessageBox::Yes)
+					return;
+			}
+			const auto tool = StudioLauncher::executable(widgets.projects.assetDirectory());
 			if (tool.isEmpty())
-				tool = QCoreApplication::applicationDirPath() + "/widgetstudio";
-			auto *process = new QProcess(this);
-			connect(process, &QProcess::readyReadStandardOutput, this, [this, process] {
-				auto packet = QJsonDocument::fromJson(process->readAllStandardOutput()).object();
-				auto url = packet["data"].toObject()["url"].toString();
-				if (list->currentRow() >= 0) {
-					QUrl parsed(url);
-					QUrlQuery query(parsed);
-					query.addQueryItem("widget", widgets.widgets[list->currentRow()].id());
-					parsed.setQuery(query);
-					url = parsed.toString();
-				}
-				if (!url.isEmpty())
-					QDesktopServices::openUrl(QUrl(url));
-			});
-			connect(process, &QProcess::errorOccurred, this, [this](QProcess::ProcessError) {
-				QMessageBox::warning(this, tr("Studio unavailable"),
-						     tr("Install the widgetstudio executable beside widgetctl."));
-			});
-			process->start(tool, {"--confirm", "--config", widgets.projects.directory(), "--assets",
-					      widgets.projects.assetDirectory()});
+				throw std::runtime_error("Install widgetstudio beside widgetctl.");
+			const QString selected = list->currentRow() >= 0 ? widgets.widgets[list->currentRow()].id()
+									 : QString();
+			studioLauncher->open(tool,
+					     {"--parent-pid", QString::number(QCoreApplication::applicationPid()),
+					      "--confirm", "--config", widgets.projects.directory(), "--assets",
+					      widgets.projects.assetDirectory()},
+					     selected);
 		});
 	});
+
 	int widgetActionIndex = 0;
 	std::function<void(const QString &, std::function<void()>)> button =
 		[this, widgetActions, moreMenu, &widgetActionIndex](const QString &text, std::function<void()> fn) {

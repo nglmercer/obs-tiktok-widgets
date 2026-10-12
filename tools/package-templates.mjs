@@ -10,6 +10,9 @@ import {
 for (const id of readdirSync("web/templates", { withFileTypes: true })
   .filter((e) => e.isDirectory())
   .map((e) => e.name)) {
+  // Framework starters are repository development fixtures, not installed user templates.
+  if (["builtin.typescript-vanilla", "builtin.react-typescript"].includes(id))
+    continue;
   for (const version of readdirSync(`web/templates/${id}`)) {
     const source = `web/templates/${id}/${version}`,
       output = `data/web/templates/${id}/${version}`;

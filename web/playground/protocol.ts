@@ -12,7 +12,7 @@ export function validPacket(value: unknown, session: string): value is Record<st
   if (p.action === "updated") return Object.keys(p).length === 4;
   if (p.action === "loaded") return Object.keys(p).length === 4;
   if (p.action === "ready") return Object.keys(p).length === 4 || (Object.keys(p).length === 5 && (p.supported === null || (Array.isArray(p.supported) && p.supported.length <= 5 && p.supported.every(t => ["gift", "chat", "like", "follow", "roomUser"].includes(t)))));
-  if (p.action === "settings") return typeof p.animation === "boolean" && typeof p.sound === "boolean";
+  if (p.action === "settings") return typeof p.animation === "boolean" && typeof p.sound === "boolean" && (p.config === undefined || validPreviewConfig(p.config));
   if (p.action === "error") return typeof p.message === "string" && p.message.length <= 512;
   if (p.action !== "event") return false;
   const e = p.event as TikTokEvent;
@@ -30,4 +30,10 @@ function validData(e: TikTokEvent): boolean {
   if (e.type === "like") return uint(d.count) && uint(d.total);
   if (e.type === "roomUser") return uint(d.total);
   return e.type !== "chat" || typeof d.comment === "string";
+}
+
+export function validPreviewConfig(value: unknown): value is Record<string, unknown> {
+ if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+ const text=JSON.stringify(value); if (text.length>32768) return false;
+ return Object.entries(value).every(([key,v]) => !/secret|token|cookie|session|credential|password|signing|__proto__|constructor|prototype|customHtml|editableHtml|^id$|^template$/i.test(key) && (typeof v === "string" || typeof v === "boolean" || (typeof v === "number" && Number.isFinite(v)) || (Array.isArray(v) && v.every(x=>typeof x === "string"))));
 }

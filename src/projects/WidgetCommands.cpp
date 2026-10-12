@@ -40,9 +40,7 @@ QJsonValue WidgetCommands::execute(const QString &method, const QJsonObject &a)
 	if (method == "builders.status")
 		return builderStatus(service.directory());
 	if (method == "builders.install")
-		return dry ? QJsonValue(QJsonObject{{"dryRun", true}})
-			   : QJsonValue(installBuilder(service.directory(), service.assetDirectory(),
-						       a["confirm"].toBool()));
+		throw DomainError("DEVELOPMENT_ONLY", "Framework toolchains are no longer installed for users. Use plain HTML/CSS/JavaScript projects; built-in widgets require no Node.js.");
 	if (method == "doctor")
 		return QJsonObject{{"config", service.directory()},
 				   {"assets", service.assetDirectory()},
@@ -83,13 +81,20 @@ QJsonValue WidgetCommands::execute(const QString &method, const QJsonObject &a)
 		return service.get(id);
 	if (method == "widgets.files.list")
 		return QJsonArray::fromStringList(service.files(id));
-	if (method == "widgets.files.read")
-		return QJsonObject{{"path", a["file"]},
-				   {"text", QString::fromUtf8(service.read(id, a["file"].toString()))},
-				   {"revision", service.get(id)["revision"]}};
-	if (method == "widgets.settings.get")
-		return QJsonObject{{"settings", service.get(id)["settings"]},
-				   {"revision", service.get(id)["revision"]}};
+	if (method == "widgets.files.read") {
+		const auto before = service.get(id)["revision"].toString();
+		const auto text = QString::fromUtf8(service.read(id, a["file"].toString()));
+		const auto after = service.get(id)["revision"].toString();
+		if (before != after)
+			throw DomainError("REVISION_CONFLICT",
+					  "Source changed while reading; retry without replacing the draft",
+					  {{"current", after}});
+		return QJsonObject{{"path", a["file"]}, {"text", text}, {"revision", after}};
+	}
+	if (method == "widgets.settings.get") {
+		const auto m = service.get(id);
+		return QJsonObject{{"settings", m["settings"]}, {"revision", m["revision"]}};
+	}
 	if (method == "widgets.validate")
 		return service.validate(id);
 	if (method == "widgets.snapshot")

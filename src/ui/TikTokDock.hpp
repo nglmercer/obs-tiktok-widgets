@@ -10,6 +10,7 @@ class QListWidget;
 class QCheckBox;
 class QPushButton;
 namespace tt {
+class StudioLauncher;
 class EventMonitor;
 class SigningBundleManager;
 class TikTokDock : public QWidget {
@@ -23,6 +24,7 @@ class TikTokDock : public QWidget {
 	QPushButton *connectButton, *reconnectButton;
 	SigningBundleManager *bundleManager;
 	QString preparationError;
+	StudioLauncher *studioLauncher = nullptr;
 	QListWidget *list;
 	QLabel *projectDiagnostics;
 	QElapsedTimer throughputClock;
@@ -38,6 +40,6 @@ public:
 	void updateStatus(const QString &bridgeError);
 	void startAutoConnect();
 	void cancelPendingConnection();
-	void projectState(const QString &id,const QString &state,const QString &diagnostic);
+	void projectState(const QString &id, const QString &state, const QString &diagnostic);
 };
 } // namespace tt

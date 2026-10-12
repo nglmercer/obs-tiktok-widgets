@@ -5,28 +5,39 @@
     "label": "New Widget",
     "description": "Create an independent project",
     "shortcut": "",
-    "permission": "write"
+    "permission": "write",
+    "disabledReason": "",
+    "isDestructive": false
   },
   {
     "id": "edit",
     "icon": "Pencil",
     "label": "Edit",
     "description": "Open project",
-    "permission": "read"
+    "permission": "read",
+    "shortcut": "",
+    "disabledReason": "",
+    "isDestructive": false
   },
   {
     "id": "duplicate",
     "icon": "Copy",
     "label": "Duplicate",
     "description": "Copy source and settings",
-    "permission": "write"
+    "permission": "write",
+    "shortcut": "",
+    "disabledReason": "",
+    "isDestructive": false
   },
   {
     "id": "studio",
     "icon": "PanelsTopLeft",
     "label": "Open Studio",
     "description": "Open the authenticated authoring workspace",
-    "permission": "studio"
+    "permission": "studio",
+    "shortcut": "",
+    "disabledReason": "",
+    "isDestructive": false
   },
   {
     "id": "code",
@@ -34,63 +45,89 @@
     "label": "Code",
     "description": "Edit authoritative source",
     "shortcut": "Alt+C",
-    "permission": "read"
+    "permission": "read",
+    "disabledReason": "",
+    "isDestructive": false
   },
   {
     "id": "design",
     "icon": "Paintbrush",
     "label": "Design",
     "description": "Edit declared visual properties",
-    "permission": "read"
+    "permission": "read",
+    "shortcut": "",
+    "disabledReason": "",
+    "isDestructive": false
   },
   {
     "id": "preview",
     "icon": "Eye",
     "label": "Preview",
     "description": "Open isolated sample events",
-    "permission": "read"
+    "permission": "read",
+    "shortcut": "",
+    "disabledReason": "",
+    "isDestructive": false
   },
   {
     "id": "publish",
     "icon": "Rocket",
     "label": "Publish",
     "description": "Build and atomically replace the served release",
-    "permission": "write"
+    "permission": "write",
+    "shortcut": "",
+    "disabledReason": "",
+    "isDestructive": false
   },
   {
     "id": "build",
     "icon": "Hammer",
     "label": "Build",
     "description": "Build a candidate without publishing",
-    "permission": "write"
+    "permission": "write",
+    "shortcut": "",
+    "disabledReason": "",
+    "isDestructive": false
   },
   {
     "id": "validate",
     "icon": "ShieldCheck",
     "label": "Validate",
     "description": "Check source and settings",
-    "permission": "read"
+    "permission": "read",
+    "shortcut": "",
+    "disabledReason": "",
+    "isDestructive": false
   },
   {
     "id": "replay",
     "icon": "Play",
     "label": "Replay",
     "description": "Replay isolated sample",
-    "permission": "preview"
+    "permission": "preview",
+    "shortcut": "",
+    "disabledReason": "",
+    "isDestructive": false
   },
   {
     "id": "stop",
     "icon": "Square",
     "label": "Stop",
     "description": "Cancel pending sample events",
-    "permission": "preview"
+    "permission": "preview",
+    "shortcut": "",
+    "disabledReason": "",
+    "isDestructive": false
   },
   {
     "id": "reset",
     "icon": "RotateCcw",
     "label": "Reset",
     "description": "Invalidate the preview session",
-    "permission": "preview"
+    "permission": "preview",
+    "shortcut": "",
+    "disabledReason": "",
+    "isDestructive": false
   },
   {
     "id": "undo",
@@ -98,7 +135,9 @@
     "label": "Undo",
     "description": "Undo editor draft",
     "shortcut": "Ctrl+Z",
-    "permission": "draft"
+    "permission": "draft",
+    "disabledReason": "",
+    "isDestructive": false
   },
   {
     "id": "redo",
@@ -106,49 +145,69 @@
     "label": "Redo",
     "description": "Redo editor draft",
     "shortcut": "Ctrl+Shift+Z",
-    "permission": "draft"
+    "permission": "draft",
+    "disabledReason": "",
+    "isDestructive": false
   },
   {
     "id": "import",
     "icon": "Download",
     "label": "Import",
     "description": "Import a reviewed package",
-    "permission": "write"
+    "permission": "write",
+    "shortcut": "",
+    "disabledReason": "",
+    "isDestructive": false
   },
   {
     "id": "export",
     "icon": "Upload",
     "label": "Export",
     "description": "Export source and settings",
-    "permission": "read"
+    "permission": "read",
+    "shortcut": "",
+    "disabledReason": "",
+    "isDestructive": false
   },
   {
     "id": "files",
     "icon": "FolderOpen",
     "label": "Files",
     "description": "Navigate project source",
-    "permission": "read"
+    "permission": "read",
+    "shortcut": "",
+    "disabledReason": "",
+    "isDestructive": false
   },
   {
     "id": "settings",
     "icon": "SlidersHorizontal",
     "label": "Settings",
     "description": "Inspect project settings",
-    "permission": "read"
+    "permission": "read",
+    "shortcut": "",
+    "disabledReason": "",
+    "isDestructive": false
   },
   {
     "id": "history",
     "icon": "History",
     "label": "History",
     "description": "Inspect source revisions and restore explicitly",
-    "permission": "read"
+    "permission": "read",
+    "shortcut": "",
+    "disabledReason": "",
+    "isDestructive": false
   },
   {
     "id": "scene",
     "icon": "MonitorUp",
     "label": "Add to Scene",
     "description": "Place this widget in OBS",
-    "permission": "obs"
+    "permission": "obs",
+    "shortcut": "",
+    "disabledReason": "",
+    "isDestructive": false
   },
   {
     "id": "delete",
@@ -156,35 +215,49 @@
     "label": "Delete",
     "description": "Remove after confirmation; retain project history",
     "isDestructive": true,
-    "permission": "write"
+    "permission": "write",
+    "shortcut": "",
+    "disabledReason": ""
   },
   {
     "id": "help",
     "icon": "CircleHelp",
     "label": "Help",
     "description": "Authoring and safety information",
-    "permission": "read"
+    "permission": "read",
+    "shortcut": "",
+    "disabledReason": "",
+    "isDestructive": false
   },
   {
     "id": "refresh",
     "icon": "RefreshCw",
     "label": "Refresh",
     "description": "Read current revision",
-    "permission": "read"
+    "permission": "read",
+    "shortcut": "",
+    "disabledReason": "",
+    "isDestructive": false
   },
   {
     "id": "new-file",
     "icon": "Plus",
     "label": "New file",
     "description": "Create an author source file",
-    "permission": "write"
+    "permission": "write",
+    "shortcut": "",
+    "disabledReason": "",
+    "isDestructive": false
   },
   {
     "id": "rename-file",
     "icon": "Pencil",
     "label": "Rename file",
     "description": "Rename source with a history checkpoint",
-    "permission": "write"
+    "permission": "write",
+    "shortcut": "",
+    "disabledReason": "",
+    "isDestructive": false
   },
   {
     "id": "delete-file",
@@ -192,6 +265,8 @@
     "label": "Delete file",
     "description": "Confirm source removal; retain history",
     "permission": "write",
-    "isDestructive": true
+    "isDestructive": true,
+    "shortcut": "",
+    "disabledReason": ""
   }
 ]

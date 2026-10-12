@@ -1,5 +1,5 @@
 import { scenario, ScenarioEngine, type FixtureOptions } from "./engine.js";
-import { channel, targetOrigin, validPacket } from "./protocol.js";
+import { channel, targetOrigin, validPacket, validPreviewConfig } from "./protocol.js";
 import { uniqueId, integer } from "./engine.js";
 import type { TikTokEvent } from "../sdk/types.js";
 if (new URL(location.href).searchParams.get("studio") === "design")
@@ -26,11 +26,18 @@ const send = (data: Record<string, unknown>) => {
     origin,
   );
 };
+let studioDraft: Record<string,unknown> | undefined;
+const studioSession = new URL(location.href).searchParams.get("studioSession");
+window.addEventListener("message", e => {
+ if (e.source !== parent || parent === window || e.origin !== location.origin || !studioSession || e.data?.channel !== "tiktok-studio-draft" || e.data?.session !== studioSession || e.data?.version !== 1 || !validPreviewConfig(e.data.config)) return;
+ studioDraft=e.data.config; if (state === "ready") settings();
+});
 const settings = () =>
   send({
     action: "settings",
-    animation: input("animation").checked,
-    sound: input("sound").checked,
+    ...(studioDraft ? {config:studioDraft} : {}),
+    animation: typeof studioDraft?.animation === "boolean" ? studioDraft.animation : input("animation").checked,
+    sound: typeof studioDraft?.sound === "boolean" ? studioDraft.sound : input("sound").checked,
   });
 const engine = new ScenarioEngine((event) => {
   if (state !== "ready") return;

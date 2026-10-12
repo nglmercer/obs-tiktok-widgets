@@ -150,19 +150,23 @@ void StudioServer::receive(QTcpSocket *socket)
 	}
 	const auto path = QUrl::fromPercentEncoding(first[1].split('?').first());
 	const auto body = data.mid(end + 4, length);
+	const auto cookieName = "widgetstudio_" + QByteArray::number(serverPort());
+	bool auth = false;
+	for (const auto &cookie : h["cookie"].split(';'))
+		if (cookie.trimmed() == cookieName + "=" + token.toUtf8())
+			auth = true;
 	if (path == "/session" && first[0] == "POST") {
-		if (h["origin"] != origin.toUtf8() || body != token.toUtf8()) {
+		if (h["origin"] != origin.toUtf8() || (body != token.toUtf8() && !(body.isEmpty() && auth))) {
 			reply(403, "{}");
 			return;
 		}
-		reply(200, "{\"ok\":true}", "application/json",
-		      "Set-Cookie: widgetstudio=" + token.toUtf8() + "; HttpOnly; SameSite=Strict; Path=/\r\n");
+		// Reload recovery requires the existing HttpOnly cookie and exact same origin.
+		// The returned credential belongs only to Studio, never to OBS local IPC.
+		reply(200, QJsonDocument(QJsonObject{{"ok", true}, {"session", token}}).toJson(QJsonDocument::Compact),
+		      "application/json",
+		      "Set-Cookie: " + cookieName + "=" + token.toUtf8() + "; HttpOnly; SameSite=Strict; Path=/\r\n");
 		return;
 	}
-	bool auth = h["cookie"].split(';').contains("widgetstudio=" + token.toUtf8());
-	for (auto c : h["cookie"].split(';'))
-		if (c.trimmed() == "widgetstudio=" + token.toUtf8())
-			auth = true;
 	if (path == "/api") {
 		if (first[0] != "POST" || !auth || h["origin"] != origin.toUtf8() ||
 		    h["x-studio-session"] != token.toUtf8()) {

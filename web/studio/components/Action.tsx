@@ -97,7 +97,7 @@ export function Action({
           <button
             type="button"
             aria-label={action.label}
-            title={title}
+            aria-description={title}
             disabled={!!disabledReason}
             onClick={onClick}
             className={action.isDestructive ? "danger" : ""}

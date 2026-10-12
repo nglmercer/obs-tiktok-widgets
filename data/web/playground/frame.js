@@ -27,7 +27,7 @@
     if (p.action === "updated") return Object.keys(p).length === 4;
     if (p.action === "loaded") return Object.keys(p).length === 4;
     if (p.action === "ready") return Object.keys(p).length === 4 || Object.keys(p).length === 5 && (p.supported === null || Array.isArray(p.supported) && p.supported.length <= 5 && p.supported.every((t) => ["gift", "chat", "like", "follow", "roomUser"].includes(t)));
-    if (p.action === "settings") return typeof p.animation === "boolean" && typeof p.sound === "boolean";
+    if (p.action === "settings") return typeof p.animation === "boolean" && typeof p.sound === "boolean" && (p.config === void 0 || validPreviewConfig(p.config));
     if (p.action === "error") return typeof p.message === "string" && p.message.length <= 512;
     if (p.action !== "event") return false;
     const e = p.event;
@@ -41,6 +41,12 @@
     if (e.type === "like") return uint(d.count) && uint(d.total);
     if (e.type === "roomUser") return uint(d.total);
     return e.type !== "chat" || typeof d.comment === "string";
+  }
+  function validPreviewConfig(value) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+    const text = JSON.stringify(value);
+    if (text.length > 32768) return false;
+    return Object.entries(value).every(([key, v]) => !/secret|token|cookie|session|credential|password|signing|__proto__|constructor|prototype|customHtml|editableHtml|^id$|^template$/i.test(key) && (typeof v === "string" || typeof v === "boolean" || typeof v === "number" && Number.isFinite(v) || Array.isArray(v) && v.every((x) => typeof x === "string")));
   }
 
   // web/playground/frame.ts
@@ -56,7 +62,7 @@
     window.addEventListener("message", (e) => {
       if (e.source !== parent || origin !== "*" && e.origin !== origin || !validPacket(e.data, session2)) return;
       if (e.data.action === "settings" && (state === "loaded" || state === "ready")) {
-        previewWindow.TikTokWidgetConfig = { ...previewWindow.TikTokWidgetConfig, animation: e.data.animation, sound: e.data.sound };
+        previewWindow.TikTokWidgetConfig = { ...previewWindow.TikTokWidgetConfig, ...e.data.config, animation: e.data.animation, sound: e.data.sound };
         dispatchEvent(new CustomEvent("tiktok:preview-settings", { detail: previewWindow.TikTokWidgetConfig }));
         if (state === "loaded") {
           state = "ready";

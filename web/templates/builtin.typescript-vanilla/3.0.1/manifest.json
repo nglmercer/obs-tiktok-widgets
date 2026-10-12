@@ -1,8 +1,8 @@
 {
   "schemaVersion": 3,
-  "id": "builtin.react-typescript",
-  "version": "3.0.0",
-  "name": "React Gift",
+  "id": "builtin.typescript-vanilla",
+  "version": "3.0.1",
+  "name": "TypeScript Gift",
   "category": "alerts",
   "description": "Typed cumulative gift starter with an offline pinned builder",
   "entry": "src/index.html",
@@ -17,7 +17,7 @@
   "build": {
     "mode": "vite",
     "language": "typescript",
-    "framework": "react",
+    "framework": "vanilla",
     "target": "obs-browser",
     "assetBase": "./"
   },

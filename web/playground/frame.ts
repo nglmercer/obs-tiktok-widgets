@@ -12,7 +12,7 @@ import { channel, validPacket, targetOrigin } from "./protocol.js";
   window.addEventListener("message", (e) => {
     if (e.source !== parent || (origin !== "*" && e.origin !== origin) || !validPacket(e.data, session)) return;
     if (e.data.action === "settings" && (state === "loaded" || state === "ready")) {
-      previewWindow.TikTokWidgetConfig = { ...previewWindow.TikTokWidgetConfig, animation: e.data.animation, sound: e.data.sound };
+      previewWindow.TikTokWidgetConfig = { ...previewWindow.TikTokWidgetConfig, ...e.data.config, animation: e.data.animation, sound: e.data.sound };
       dispatchEvent(new CustomEvent("tiktok:preview-settings", { detail: previewWindow.TikTokWidgetConfig }));
       if (state === "loaded") {
         state = "ready";

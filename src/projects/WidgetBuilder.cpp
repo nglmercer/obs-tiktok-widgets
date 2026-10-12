@@ -5,6 +5,8 @@
 #include <QDir>
 #include <QElapsedTimer>
 #include <QFileInfo>
+#include <QJsonArray>
+#include <QJsonDocument>
 namespace tt {
 void validateBuildMode(const QJsonObject &b)
 {
@@ -74,15 +76,23 @@ static QByteArray run(const QString &program, const QStringList &args, const QSt
 		}
 	}
 	output += p.readAll();
-	if (p.exitStatus() != QProcess::NormalExit || p.exitCode() != 0)
+	if (p.exitStatus() != QProcess::NormalExit || p.exitCode() != 0) {
+		QJsonArray locations;
+		for (const auto &line : output.split('\n'))
+			if (line.startsWith("WIDGET_DIAGNOSTICS:"))
+				locations = QJsonDocument::fromJson(line.mid(19)).array();
 		throw DomainError("COMPILE_ERROR", QString::fromUtf8(output.left(128 * 1024)),
-				  {{"diagnostics", QString::fromUtf8(output.left(128 * 1024))}});
+				  {{"diagnostics", QString::fromUtf8(output.left(128 * 1024))},
+				   {"locations", locations}});
+	}
 	return output;
 }
 QJsonObject builderStatus(const QString &root)
 {
 	const auto dir = safePath(root, "cache/toolchain-v3");
-	return {{"installed", QFileInfo::exists(dir + "/node_modules/vite/package.json")},
+	return {{"providerApiVersion", 1},
+		{"providers", QJsonArray{"static", "vite-vanilla", "vite-react"}},
+		{"installed", QFileInfo::exists(dir + "/node_modules/vite/package.json")},
 		{"node", !QStandardPaths::findExecutable("node").isEmpty()},
 		{"networkDuringBuild", false},
 		{"policy", "Pinned Vite/React only; no author config, plugins or lifecycle scripts"}};
@@ -104,8 +114,8 @@ QJsonObject installBuilder(const QString &root, const QString &assets, bool cons
 	run(npm, {"ci", "--ignore-scripts", "--no-audit", "--no-fund"}, dir, 120000);
 	return builderStatus(root);
 }
-void compileWidget(const QString &root, const QString &assets, const QString &snapshot, const QString &out,
-		   const QJsonObject &b, std::function<bool()> stale)
+static void compilePinned(const QString &root, const QString &assets, const QString &snapshot, const QString &out,
+			  const QJsonObject &b, std::function<bool()> stale)
 {
 	validateBuildMode(b);
 	const auto dir = safePath(root, "cache/toolchain-v3");
@@ -126,5 +136,37 @@ void compileWidget(const QString &root, const QString &assets, const QString &sn
 		throw DomainError("BUILD_TOOL_REQUIRED", "Node is unavailable; last published output remains intact");
 	run(node, {dir + "/runner.mjs", snapshot, out}, dir, 30000, std::move(stale));
 	treeFiles(out); // size, symlink and file-count bounds before publication
+}
+class StaticProvider final : public BuilderProvider {
+public:
+	QString id() const override { return "static"; }
+	void compile(const BuilderRequest &r) const override
+	{
+		validateBuildMode(r.build);
+		copyTree(r.snapshot, r.output);
+	}
+};
+class ViteProvider final : public BuilderProvider {
+	QString framework;
+
+public:
+	explicit ViteProvider(QString value) : framework(std::move(value)) {}
+	QString id() const override { return "vite-" + framework; }
+	void compile(const BuilderRequest &r) const override
+	{
+		compilePinned(r.root, r.assets, r.snapshot, r.output, r.build, r.stale);
+	}
+};
+std::unique_ptr<BuilderProvider> builderProvider(const QJsonObject &build)
+{
+	validateBuildMode(build);
+	if (build.isEmpty() || build["mode"] == "static")
+		return std::make_unique<StaticProvider>();
+	return std::make_unique<ViteProvider>(build["framework"].toString());
+}
+void compileWidget(const QString &root, const QString &assets, const QString &snapshot, const QString &output,
+		   const QJsonObject &build, std::function<bool()> stale)
+{
+	builderProvider(build)->compile({root, assets, snapshot, output, build, std::move(stale)});
 }
 } // namespace tt

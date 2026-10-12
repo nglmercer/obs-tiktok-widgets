@@ -29,7 +29,16 @@ test(
     try {
       const doctor = run(["doctor"]).data;
       assert.equal(doctor.runtimeNodeRequired, false);
-      assert.equal(run(["templates", "list"]).data.length, 9);
+      assert.equal(run(["templates", "list"]).data.length, 7);
+      assert.ok(
+        run(["templates", "list"]).data.every(
+          (t) => !t.build || t.build.mode === "static",
+        ),
+      );
+      assert.equal(
+        run(["builders", "install", "--confirm"], 4).error.code,
+        "DEVELOPMENT_ONLY",
+      );
       assert.equal(
         run(["templates", "inspect", "builtin.gift-alert"]).data.entry,
         "src/index.html",
