@@ -1,4 +1,5 @@
 #include "WidgetProjectService.hpp"
+#include "WidgetBuilder.hpp"
 #include "widgets/WidgetConfig.hpp"
 #include "widgets/HtmlBootstrap.hpp"
 #include <QDir>
@@ -352,10 +353,15 @@ QJsonObject WidgetProjectService::create(QString tid, QString name, QString vers
 	for (const auto &prefix : {"src", "assets", "presets", "schema"})
 		if (QFileInfo::exists(t.root + "/" + prefix))
 			copyTree(t.root + "/" + prefix, staging.path() + "/" + prefix);
-	QJsonObject m{{"schemaVersion", 2}, {"id", id},
-		      {"counter", 1},       {"template", QJsonObject{{"id", t.id}, {"version", t.version}}},
-		      {"entry", t.entry},   {"events", t.value["events"]},
-		      {"settings", config}, {"autoPublish", true}};
+	QJsonObject m{{"schemaVersion", 2},
+		      {"id", id},
+		      {"counter", 1},
+		      {"template", QJsonObject{{"id", t.id}, {"version", t.version}}},
+		      {"entry", t.entry},
+		      {"events", t.value["events"]},
+		      {"settings", config},
+		      {"autoPublish", t.value["build"].toObject().isEmpty()},
+		      {"build", t.value["build"].toObject()}};
 	m["lastSourceHash"] = contentHash(staging.path(), sourceFiles(staging.path()));
 	writeObject(staging.path() + "/project.json", m);
 	QDir().mkpath(QFileInfo(path).absolutePath());
@@ -432,11 +438,12 @@ QJsonObject WidgetProjectService::configure(const QString &id, QJsonObject patch
 	checkRevision(id, expected);
 	auto m = get(id);
 	for (auto it = patch.begin(); it != patch.end(); ++it) {
-		if (!QStringList{"entry", "events", "autoPublish"}.contains(it.key()))
+		if (!QStringList{"entry", "events", "autoPublish", "build"}.contains(it.key()))
 			throw DomainError("IMMUTABLE_FIELD",
 					  "Only entry/events/autoPublish project options are configurable");
 		m[it.key()] = it.value();
 	}
+	validateBuildMode(m["build"].toObject());
 	const auto entry = m["entry"].toString();
 	if (!entry.startsWith("src/") || !QFileInfo(safePath(projectPath(id), entry)).isFile())
 		throw DomainError("MISSING_ENTRY", "Entry must be an existing project source file");
@@ -479,7 +486,8 @@ QStringList WidgetProjectService::files(const QString &id) const
 }
 QByteArray WidgetProjectService::read(const QString &id, const QString &file) const
 {
-	if (!file.startsWith("src/") && !file.startsWith("assets/") && !file.startsWith("presets/"))
+	if (!file.startsWith("src/") && !file.startsWith("assets/") && !file.startsWith("presets/") &&
+	    file != "schema/settings.schema.json")
 		throw DomainError("UNSAFE_PATH", "Only author files are accessible");
 	return readFile(safePath(projectPath(id), file));
 }
@@ -539,9 +547,25 @@ QJsonObject WidgetProjectService::validate(const QString &id) const
 		throw DomainError("MIGRATION_INCOMPLETE", get(id)["migrationError"].toString());
 	const auto m = get(id);
 	const auto path = projectPath(id);
+	validateBuildMode(m["build"].toObject());
 	const auto entry = m["entry"].toString();
 	if (!entry.startsWith("src/") || !QFileInfo::exists(safePath(path, entry)))
 		throw DomainError("MISSING_ENTRY", "Entry is missing");
+	if (m["build"].toObject()["mode"] == "vite") {
+		validateBuildMode(m["build"].toObject());
+		if (m["entry"] != "src/index.html")
+			throw DomainError("INVALID_BUILD", "Framework entry must be src/index.html");
+		readObject(safePath(path, "src/package.json"));
+		readObject(safePath(path, "src/package-lock.json"));
+		for (const auto &file : files(id))
+			if (file.endsWith(".css"))
+				cssCheck(QString::fromUtf8(read(id, file)));
+		return {{"valid", true},
+			{"revision", m["revision"]},
+			{"warnings",
+			 QJsonArray{
+				 "TypeScript syntax and compiled resources are checked by Build, not static Validate"}}};
+	}
 	const auto all = files(id);
 	QSet<QString> portable;
 	for (const auto &file : all) {
@@ -704,7 +728,29 @@ QJsonObject WidgetProjectService::buildUnlocked(const QString &id, bool publish)
 		throw DomainError("FILE_WRITE", "Cannot stage build");
 	for (const auto &f : files(id))
 		atomicWrite(safePath(staging.path() + "/dist", f), read(id, f));
-	const auto entry = m["entry"].toString();
+	auto entry = m["entry"].toString();
+	if (m["build"].toObject()["mode"] == "vite") {
+		compileWidget(root, assets, staging.path() + "/dist", staging.path() + "/compiled",
+			      m["build"].toObject(),
+			      [this, id, token] { return get(id)["revision"].toString() != token; });
+		// Validate compiled output using the same static validator in an isolated temporary service.
+		QTemporaryDir check(runtime + "/cache/check-XXXXXX");
+		WidgetProjectService compiled(check.path(), assets);
+		auto cm = compiled.create("builtin.custom", "Compiled", {}, id);
+		copyTree(staging.path() + "/compiled", compiled.projectPath(id) + "/src");
+		if (QFileInfo::exists(staging.path() + "/dist/assets"))
+			copyTree(staging.path() + "/dist/assets", compiled.projectPath(id) + "/assets");
+		auto compiledSettings = m["settings"].toObject();
+		for (const auto &key : {"id", "template", "customHtml", "editableHtml"})
+			compiledSettings.remove(key);
+		compiled.settings(id, compiledSettings, {});
+		compiled.validate(id);
+		QDir(staging.path() + "/dist").removeRecursively();
+		copyTree(staging.path() + "/compiled", staging.path() + "/dist/src");
+		if (QFileInfo::exists(compiled.projectPath(id) + "/assets"))
+			copyTree(compiled.projectPath(id) + "/assets", staging.path() + "/dist/assets");
+		entry = "src/index.html";
+	}
 	const auto release = runtime + "/releases/" + buildId;
 	auto publicSettings = m["settings"].toObject();
 	publicSettings["events"] = m["events"];
@@ -797,6 +843,14 @@ QJsonObject WidgetProjectService::build(const QString &id, const QString &expect
 	checkRevision(id, expected);
 	return buildUnlocked(id, publish);
 }
+QJsonObject WidgetProjectService::checkpoint(const QString &id, const QString &expected)
+{
+	ProjectLock lock(root);
+	checkRevision(id, expected);
+	auto m = get(id);
+	snapshot(id, m);
+	return m;
+}
 QJsonArray WidgetProjectService::history(const QString &id) const
 {
 	QJsonArray a;
@@ -873,6 +927,7 @@ QJsonObject WidgetProjectService::importProject(const QString &archive, bool dry
 			throw DomainError("VERSION_MISMATCH", "Embedded template identity mismatch");
 		needsTemplate = true;
 	}
+	validateBuildMode(m["build"].toObject());
 	const auto entry = m["entry"].toString();
 	if (!entry.startsWith("src/") || !QFileInfo::exists(safePath(staging.path(), entry)))
 		throw DomainError("MISSING_ENTRY", "Missing project entry");

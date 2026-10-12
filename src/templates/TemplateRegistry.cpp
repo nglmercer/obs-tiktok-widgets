@@ -1,4 +1,5 @@
 #include "TemplateRegistry.hpp"
+#include "projects/WidgetBuilder.hpp"
 #include <QDir>
 #include <QDirIterator>
 #include <QFileInfo>
@@ -24,7 +25,7 @@ TemplateManifest TemplateRegistry::validate(const QString &root)
 {
 	const auto m = readObject(safePath(root, "manifest.json"));
 	const auto id = m["id"].toString(), version = m["version"].toString();
-	if (m["schemaVersion"].toInt() != 2 ||
+	if (!QList<int>{2, 3}.contains(m["schemaVersion"].toInt()) ||
 	    !QRegularExpression("^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)+$").match(id).hasMatch() ||
 	    !QRegularExpression(
 		     "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$")
@@ -38,6 +39,7 @@ TemplateManifest TemplateRegistry::validate(const QString &root)
 		if (part.size() > 1 && part.startsWith('0') && QRegularExpression("^[0-9]+$").match(part).hasMatch())
 			throw DomainError("INVALID_MANIFEST",
 					  "Numeric prerelease identifiers cannot have leading zeroes");
+	validateBuildMode(m["build"].toObject());
 	const auto entry = m["entry"].toString();
 	if (!entry.startsWith("src/") || !QFileInfo::exists(safePath(root, entry)))
 		throw DomainError("MISSING_ENTRY", "Template entry must exist under src/");

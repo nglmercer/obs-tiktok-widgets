@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 3,
+  "id": "builtin.react-typescript",
+  "version": "3.0.0",
+  "name": "React Gift",
+  "category": "alerts",
+  "description": "Typed cumulative gift starter with an offline pinned builder",
+  "entry": "src/index.html",
+  "events": ["gift"],
+  "defaultSize": {
+    "width": 600,
+    "height": 400
+  },
+  "configSchema": "schema/settings.schema.json",
+  "presets": ["presets/default.json"],
+  "assets": ["src/style.css"],
+  "build": {
+    "mode": "vite",
+    "language": "typescript",
+    "framework": "react",
+    "target": "obs-browser",
+    "assetBase": "./"
+  },
+  "thumbnail": "assets/thumbnail.svg"
+}

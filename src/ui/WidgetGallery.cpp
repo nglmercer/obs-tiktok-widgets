@@ -1,3 +1,4 @@
+#include "WidgetActions.hpp"
 #include "WidgetGallery.hpp"
 #include "projects/WidgetProjectService.hpp"
 #include "widgets/WidgetRegistry.hpp"
@@ -40,8 +41,12 @@ QString WidgetGallery::choose(QWidget *p, WidgetProjectService *service)
 			if (!categories->currentData().toString().isEmpty() &&
 			    m["category"] != categories->currentData())
 				continue;
-			const auto text =
-				m["name"].toString() + " · " + m["id"].toString() + " @ " + m["version"].toString();
+			const auto text = m["name"].toString() + " · " + m["id"].toString() + " @ " +
+					  m["version"].toString() + " [" +
+					  (m["build"].toObject()["framework"] == "react" ? QString("React")
+					   : m["build"].toObject()["mode"] == "vite"     ? QString("TS")
+											 : QString("Vanilla")) +
+					  "]";
 			if (!text.contains(filter, Qt::CaseInsensitive))
 				continue;
 			auto *item = new QListWidgetItem(text, list);
@@ -134,6 +139,10 @@ QString WidgetGallery::choose(QWidget *p, WidgetProjectService *service)
 		if (list->currentItem())
 			d.accept();
 	});
+	for (auto *button : d.findChildren<QPushButton *>())
+		decorateWidgetButton(button, service->assetDirectory(),
+				     button->text().contains("Install") || button->text().contains("Import") ? "import"
+													     : "new");
 	if (d.exec() != QDialog::Accepted)
 		return {};
 	if (!importedId.isEmpty())

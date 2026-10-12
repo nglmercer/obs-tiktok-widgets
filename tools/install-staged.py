@@ -20,6 +20,8 @@ def replace(source, target):
 
 for name in ("obs-tiktok-widgets.so", "libttl_live.so"):
     replace(stage / libdir / "obs-plugins" / name, destination / "bin/64bit" / name)
+if (stage / "bin/widgetstudio").is_file():
+    replace(stage / "bin/widgetstudio", destination / "bin/64bit/widgetstudio")
 if (stage / "bin/widgetctl").is_file():
     replace(stage / "bin/widgetctl", destination / "bin/64bit/widgetctl")
 if (stage / "bin/widgetctl-flatpak.sh").is_file():

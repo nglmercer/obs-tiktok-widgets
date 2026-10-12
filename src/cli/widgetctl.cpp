@@ -6,6 +6,7 @@
 #include <QFileInfo>
 #include <QLocalSocket>
 #include <QTextStream>
+#include <QProcess>
 using namespace tt;
 int main(int argc, char **argv)
 {
@@ -17,11 +18,11 @@ int main(int argc, char **argv)
 		if (!args.isEmpty() && args.first() == "--version" &&
 		    (args.size() == 1 || (args.size() == 2 && args.last() == "--json"))) {
 			if (args.contains("--json"))
-				out << QJsonDocument(success(QJsonObject{{"version", "2.0.0"}, {"apiVersion", 1}}))
+				out << QJsonDocument(success(QJsonObject{{"version", "3.0.0"}, {"apiVersion", 1}}))
 						.toJson(QJsonDocument::Compact)
 				    << "\n";
 			else
-				out << "widgetctl 2.0.0 API 1\n";
+				out << "widgetctl 3.0.0 API 1\n";
 			return 0;
 		}
 		if (args.isEmpty() || args.contains("--help")) {
@@ -122,7 +123,7 @@ int main(int argc, char **argv)
 		if (words.isEmpty())
 			throw DomainError("USAGE", "Command required");
 		method = words.takeFirst();
-		if (QStringList{"templates", "widgets", "obs", "migration"}.contains(method)) {
+		if (QStringList{"templates", "widgets", "obs", "migration", "builders", "studio"}.contains(method)) {
 			if (words.isEmpty())
 				throw DomainError("USAGE", "Subcommand required");
 			method += '.' + words.takeFirst();
@@ -148,6 +149,20 @@ int main(int argc, char **argv)
 		if (!words.isEmpty())
 			throw DomainError("USAGE", "Unexpected positional argument");
 		request["settings"] = settings;
+		if (method == "studio.start") {
+			if (!request["confirm"].toBool())
+				throw DomainError(
+					"CONSENT_REQUIRED",
+					"Studio starts an authenticated loopback service; --confirm required");
+			QProcess process;
+			process.setProcessChannelMode(QProcess::ForwardedChannels);
+			process.start(QCoreApplication::applicationDirPath() + "/widgetstudio",
+				      {"--confirm", "--config", config, "--assets", assets});
+			if (!process.waitForStarted())
+				throw DomainError("STUDIO_START", "widgetstudio executable missing");
+			process.waitForFinished(-1);
+			return process.exitCode();
+		}
 		if (method.startsWith("obs.")) {
 			const auto statePath = safePath(config, "cache/ipc.json");
 			if (!QFileInfo::exists(statePath))

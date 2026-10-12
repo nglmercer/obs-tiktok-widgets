@@ -4,14 +4,33 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc && tsc -p tsconfig.playground.json && esbuild web/sdk/index.ts --bundle --format=iife --global-name=TikTokOBSSDK --outfile=data/web/sdk/tiktok-obs.js && esbuild web/sdk/index.ts --bundle --format=esm --outfile=data/web/sdk/tiktok-obs.mjs && esbuild web/playground/app.ts --bundle --format=iife --outfile=data/web/playground/app.js && esbuild web/playground/engine.ts --format=esm --outfile=data/web/playground/engine.mjs && esbuild web/playground/frame.ts --bundle --format=iife --outfile=data/web/playground/frame.js && node tools/package-web.mjs && node tools/package-templates.mjs",
+    "build": "node tools/studio-schemas.mjs && tsc && tsc -p tsconfig.playground.json && esbuild web/sdk/index.ts --bundle --format=iife --global-name=TikTokOBSSDK --outfile=data/web/sdk/tiktok-obs.js && esbuild web/sdk/index.ts --bundle --format=esm --outfile=data/web/sdk/tiktok-obs.mjs && esbuild web/playground/app.ts --bundle --format=iife --outfile=data/web/playground/app.js && esbuild web/playground/engine.ts --format=esm --outfile=data/web/playground/engine.mjs && esbuild web/playground/frame.ts --bundle --format=iife --outfile=data/web/playground/frame.js && node tools/package-web.mjs && node tools/package-templates.mjs && tsc -p tsconfig.studio.json && vite build --config web/studio/vite.config.ts && node tools/package-studio.mjs",
     "test": "node --test tests/widgets/*.test.mjs",
-    "format:check": "prettier --check web/runtime web/templates tools/package-templates.mjs tools/check-generated.mjs tests/widgets/widgetctl.test.mjs"
+    "format:check": "prettier --check web/runtime web/templates tools/package-templates.mjs tools/check-generated.mjs tests/widgets/widgetctl.test.mjs web/studio web/shared web/builder tools/package-studio.mjs tools/studio-schemas.mjs"
   },
   "devDependencies": {
+    "@codemirror/commands": "6.8.1",
+    "@codemirror/lang-css": "6.3.1",
+    "@codemirror/lang-html": "6.4.9",
+    "@codemirror/lang-javascript": "6.2.4",
+    "@codemirror/search": "6.5.11",
+    "@codemirror/state": "6.5.2",
+    "@codemirror/view": "6.38.2",
+    "@radix-ui/react-tooltip": "1.2.8",
+    "@tailwindcss/vite": "4.1.13",
+    "@types/react": "19.1.13",
+    "@types/react-dom": "19.1.9",
+    "ajv": "8.20.0",
     "esbuild": "0.25.11",
+    "lucide-react": "0.468.0",
     "playwright": "1.58.2",
     "prettier": "3.6.2",
-    "typescript": "5.9.3"
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "react-hook-form": "7.62.0",
+    "react-resizable-panels": "2.1.9",
+    "tailwindcss": "4.1.13",
+    "typescript": "5.9.3",
+    "vite": "6.4.4"
   }
 }

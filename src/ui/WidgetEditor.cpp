@@ -1,3 +1,4 @@
+#include "WidgetActions.hpp"
 #include "WidgetEditor.hpp"
 #include "projects/WidgetProjectService.hpp"
 #include <QFormLayout>
@@ -347,6 +348,20 @@ bool WidgetEditor::edit(WidgetConfig &w, QWidget *parent, WidgetProjectService *
 		});
 	});
 	QObject::connect(&buttons, &QDialogButtonBox::rejected, &d, &QDialog::reject);
+	if (service) {
+		for (auto *button : d.findChildren<QPushButton *>()) {
+			const auto text = button->text().toLower();
+			const auto id = text.contains("publish")                                ? "publish"
+					: text.contains("valid")                                ? "validate"
+					: text.contains("source folder")                        ? "files"
+					: text.contains("import")                               ? "import"
+					: text.contains("export")                               ? "export"
+					: text.contains("history") || text.contains("rollback") ? "history"
+					: text.contains("delete")                               ? "delete"
+												: "settings";
+			decorateWidgetButton(button, service->assetDirectory(), id);
+		}
+	}
 	return d.exec() == QDialog::Accepted;
 }
 } // namespace tt

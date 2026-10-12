@@ -32,6 +32,7 @@ public:
 	QJsonObject validate(const QString &id) const;
 	QJsonObject build(const QString &id, const QString &expected = {}, bool publish = false);
 	QJsonArray history(const QString &id) const;
+	QJsonObject checkpoint(const QString &id, const QString &expected);
 	QJsonObject rollback(const QString &id, const QString &revision, const QString &expected);
 	QJsonObject migration(const QJsonArray &legacy, bool dry = true);
 	QJsonObject restoreMigration(bool dry = true);

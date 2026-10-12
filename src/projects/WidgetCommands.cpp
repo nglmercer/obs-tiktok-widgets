@@ -1,4 +1,5 @@
 #include "WidgetCommands.hpp"
+#include "WidgetBuilder.hpp"
 #include <QDir>
 #include <QFileInfo>
 #include <QProcess>
@@ -10,50 +11,18 @@
 namespace tt {
 QStringList WidgetCommands::methods()
 {
-	return {"doctor",
-		"templates.list",
-		"templates.inspect",
-		"templates.install",
-		"templates.export",
-		"templates.create",
-		"widgets.list",
-		"widgets.create",
-		"widgets.show",
-		"widgets.project.get",
-		"widgets.project.set",
-		"widgets.fork",
-		"widgets.duplicate",
-		"widgets.delete",
-		"widgets.settings.get",
-		"widgets.settings.set",
-		"widgets.files.list",
-		"widgets.files.read",
-		"widgets.files.write",
-		"widgets.files.rename",
-		"widgets.files.remove",
-		"widgets.files.mkdir",
-		"widgets.files.format",
-		"widgets.assets.import",
-		"widgets.validate",
-		"widgets.build",
-		"widgets.publish",
-		"widgets.preview",
-		"widgets.history",
-		"widgets.rollback",
-		"widgets.export",
-		"widgets.import",
-		"migration.report",
-		"migration.apply",
-		"migration.rollback",
-		"obs.status",
-		"obs.scenes.list",
-		"obs.sources.list",
-		"obs.sources.add",
-		"obs.sources.refresh",
-		"obs.sources.remove",
-		"obs.sources.capture",
-		"obs.scenes.select",
-		"obs.shutdown"};
+	return {"studio.start",        "builders.status",      "builders.install",      "doctor",
+		"templates.list",      "templates.inspect",    "templates.install",     "templates.export",
+		"templates.create",    "widgets.list",         "widgets.create",        "widgets.show",
+		"widgets.project.get", "widgets.project.set",  "widgets.fork",          "widgets.duplicate",
+		"widgets.delete",      "widgets.settings.get", "widgets.settings.set",  "widgets.files.list",
+		"widgets.files.read",  "widgets.files.write",  "widgets.files.rename",  "widgets.files.remove",
+		"widgets.files.mkdir", "widgets.files.format", "widgets.assets.import", "widgets.validate",
+		"widgets.build",       "widgets.publish",      "widgets.preview",       "widgets.history",
+		"widgets.snapshot",    "widgets.rollback",     "widgets.export",        "widgets.import",
+		"migration.report",    "migration.apply",      "migration.rollback",    "obs.status",
+		"obs.scenes.list",     "obs.sources.list",     "obs.sources.add",       "obs.sources.refresh",
+		"obs.sources.remove",  "obs.sources.capture",  "obs.scenes.select",     "obs.shutdown"};
 }
 QJsonValue WidgetCommands::execute(const QString &method, const QJsonObject &a)
 {
@@ -68,6 +37,12 @@ QJsonValue WidgetCommands::execute(const QString &method, const QJsonObject &a)
 			throw DomainError("OBS_OFFLINE", "OBS local IPC is unavailable or disabled");
 		return obs(method, a);
 	}
+	if (method == "builders.status")
+		return builderStatus(service.directory());
+	if (method == "builders.install")
+		return dry ? QJsonValue(QJsonObject{{"dryRun", true}})
+			   : QJsonValue(installBuilder(service.directory(), service.assetDirectory(),
+						       a["confirm"].toBool()));
 	if (method == "doctor")
 		return QJsonObject{{"config", service.directory()},
 				   {"assets", service.assetDirectory()},
@@ -117,6 +92,8 @@ QJsonValue WidgetCommands::execute(const QString &method, const QJsonObject &a)
 				   {"revision", service.get(id)["revision"]}};
 	if (method == "widgets.validate")
 		return service.validate(id);
+	if (method == "widgets.snapshot")
+		return service.checkpoint(id, revision);
 	if (method == "widgets.history")
 		return service.history(id);
 	if (method == "migration.report" || method == "migration.apply") {

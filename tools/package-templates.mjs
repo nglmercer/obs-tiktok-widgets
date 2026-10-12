@@ -18,6 +18,10 @@ for (const id of readdirSync("web/templates", { withFileTypes: true })
       cpSync(`${source}/assets`, `${output}/assets`, { recursive: true });
     for (const p of ["manifest.json", "schema", "presets"])
       cpSync(`${source}/${p}`, `${output}/${p}`, { recursive: true });
+    if (!existsSync(`${source}/src/main.js`)) {
+      cpSync(`${source}/src`, `${output}/src`, { recursive: true });
+      continue;
+    }
     for (const file of ["index.html", "style.css"])
       copyFileSync(`${source}/src/${file}`, `${output}/src/${file}`);
     await build({

@@ -1,0 +1,11 @@
+# Studio and framework workflow
+
+Discover `templates list`, inspect manifest build metadata, then choose static (zero tools), TypeScript vanilla or React TypeScript. Run doctor and `builders status`. Node is needed only when compiling framework source. Obtain explicit consent before `builders install --confirm`; third-party compiler dependencies are trusted executable code, even with lifecycle scripts disabled. Never copy cookies, IPC tokens or signing state into projects or subprocess environments.
+
+Create from the pinned template. Read project revision, files and supported JSON schema. Edit TS/TSX/CSS/HTML through source write with --if-revision; keep shipped package/lock policy unchanged. Import individual assets; do not copy arbitrary directories. `onTikTokEvent` is the typed DOM API; React uses `useTikTokEvent` from the optional adapter. Both consume v1 events without another connection; gift counts are decimal cumulative strings and group totals must use maximum/latest cumulative count, not sum.
+
+Validate then Build then Publish with the current revision. Interpret compiler file(line,column) diagnostics against author source. Failed builds retain last-good output. Fix errors, reread revision and retry; concurrency conflicts require compare/merge rather than replacing human edits. Source maps are compiled artifacts, never editable source.
+
+Preview Viewer123 sending Rose ×23 locally, capture/render and compare color/layout, resize and repeated gift streaks. Preview fixtures never broadcast to production. Inspect OBS sources and get user authorization for scene add/remove. Capture actual CEF and verify only matching UUID sources reload. Check scene switch/restart, watcher atomic-save rename, formatting/source persistence, invalid-code last-good and unrelated-source stability. Do not call headless Chromium a real OBS test.
+
+Launch `studio start --confirm` for the browser shell; its URL is an ephemeral Studio credential. Never share it. Offline project editing works while the local service is available; scene operations return OBS_OFFLINE if authenticated OBS IPC is unavailable. See docs/STUDIO_V3.md and docs/VALIDATION.md for supported schema/visual subsets and actual platform evidence.

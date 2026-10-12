@@ -1,3 +1,9 @@
+#include "WidgetActions.hpp"
+#include <QProcess>
+#include <QCoreApplication>
+#include <QStandardPaths>
+#include <QUrlQuery>
+#include <QMessageBox>
 #include "TikTokDock.hpp"
 #include "EventMonitor.hpp"
 #include "WidgetEditor.hpp"
@@ -105,15 +111,67 @@ TikTokDock::TikTokDock(PluginConfig &c, TikTokConnectionManager &n, EventDispatc
 	auto *widgetActions = new QGridLayout;
 	widgetsLayout->addLayout(widgetActions);
 	auto *more = new QPushButton(tr("More actions…"));
+	decorateWidgetButton(more, widgets.projects.assetDirectory(), "settings");
 	auto *moreMenu = new QMenu(more);
 	more->setMenu(moreMenu);
 	widgetActions->addWidget(more, 2, 1);
+	auto *studioButton = new QPushButton(tr("Open Studio"));
+	decorateWidgetButton(studioButton, widgets.projects.assetDirectory(), "studio");
+	widgetsLayout->addWidget(studioButton);
+	connect(studioButton, &QPushButton::clicked, this, [this] {
+		guarded([this] {
+			if (QMessageBox::question(
+				    this, tr("Open Widget Studio"),
+				    tr("Start an authenticated, loopback-only authoring interface? Templates are trusted code. Close OBS to stop this session.")) !=
+			    QMessageBox::Yes)
+				return;
+			const auto executable =
+				QFileInfo(widgets.projects.assetDirectory() + "/../../bin/64bit/widgetstudio")
+					.absoluteFilePath();
+			QString tool = executable;
+			if (!QFileInfo::exists(tool))
+				tool = QStandardPaths::findExecutable("widgetstudio");
+			if (tool.isEmpty())
+				tool = QCoreApplication::applicationDirPath() + "/widgetstudio";
+			auto *process = new QProcess(this);
+			connect(process, &QProcess::readyReadStandardOutput, this, [this, process] {
+				auto packet = QJsonDocument::fromJson(process->readAllStandardOutput()).object();
+				auto url = packet["data"].toObject()["url"].toString();
+				if (list->currentRow() >= 0) {
+					QUrl parsed(url);
+					QUrlQuery query(parsed);
+					query.addQueryItem("widget", widgets.widgets[list->currentRow()].id());
+					parsed.setQuery(query);
+					url = parsed.toString();
+				}
+				if (!url.isEmpty())
+					QDesktopServices::openUrl(QUrl(url));
+			});
+			connect(process, &QProcess::errorOccurred, this, [this](QProcess::ProcessError) {
+				QMessageBox::warning(this, tr("Studio unavailable"),
+						     tr("Install the widgetstudio executable beside widgetctl."));
+			});
+			process->start(tool, {"--confirm", "--config", widgets.projects.directory(), "--assets",
+					      widgets.projects.assetDirectory()});
+		});
+	});
 	int widgetActionIndex = 0;
 	std::function<void(const QString &, std::function<void()>)> button =
 		[this, widgetActions, moreMenu, &widgetActionIndex](const QString &text, std::function<void()> fn) {
 			if (text != tr("Create widget") && text != tr("Edit widget") &&
 			    text != tr("Add to current scene") && text != tr("Preview widget")) {
-				auto *action = moreMenu->addAction(text);
+				const QMap<QString, QString> ids{
+					{tr("Duplicate widget"), "duplicate"},    {tr("Delete widget"), "delete"},
+					{tr("Open Event Playground"), "preview"}, {tr("Open widget project"), "files"},
+					{tr("Reload edited HTML"), "refresh"},    {tr("Export project"), "export"}};
+				auto *action = widgetAction(moreMenu, widgets.projects.assetDirectory(),
+							    ids.value(text, "settings"));
+				if (!action)
+					action = moreMenu->addAction(text);
+				else {
+					action->setText(text);
+					moreMenu->addAction(action);
+				}
 				action->setEnabled(list->currentRow() >= 0);
 				connect(list, &QListWidget::currentRowChanged, action,
 					[action](int row) { action->setEnabled(row >= 0); });
@@ -121,6 +179,11 @@ TikTokDock::TikTokDock(PluginConfig &c, TikTokConnectionManager &n, EventDispatc
 				return;
 			}
 			auto *b = new QPushButton(text);
+			const QMap<QString, QString> ids{{tr("Create widget"), "new"},
+							 {tr("Edit widget"), "edit"},
+							 {tr("Add to current scene"), "scene"},
+							 {tr("Preview widget"), "preview"}};
+			decorateWidgetButton(b, widgets.projects.assetDirectory(), ids.value(text, "settings"));
 			if (text != tr("Create widget")) {
 				b->setEnabled(list->currentRow() >= 0);
 				connect(list, &QListWidget::currentRowChanged, b,
@@ -130,14 +193,22 @@ TikTokDock::TikTokDock(PluginConfig &c, TikTokConnectionManager &n, EventDispatc
 			++widgetActionIndex;
 			connect(b, &QPushButton::clicked, this, [this, fn] { guarded(fn); });
 		};
-	button(tr("Create widget"), [this] {
-		auto type = WidgetGallery::choose(this,&widgets.projects);
+	button(tr("Create widget"), [studioButton] { studioButton->click(); });
+	button(tr("Native gallery"), [this] {
+		auto type = WidgetGallery::choose(this, &widgets.projects);
 		if (type.isEmpty())
 			return;
-if(type.startsWith("project:")){widgets.load();refreshList();return;}
+		if (type.startsWith("project:")) {
+			widgets.load();
+			refreshList();
+			return;
+		}
 		auto widget = widgets.create(type);
-		if (!WidgetEditor::edit(widget, this,&widgets.projects)) {widgets.erase(widget.id());return;}
-		widgets.widgets.last()=widget;
+		if (!WidgetEditor::edit(widget, this, &widgets.projects)) {
+			widgets.erase(widget.id());
+			return;
+		}
+		widgets.widgets.last() = widget;
 		try {
 			widgets.save();
 		} catch (...) {
@@ -147,12 +218,13 @@ if(type.startsWith("project:")){widgets.load();refreshList();return;}
 		refreshList();
 		list->setCurrentRow(widgets.widgets.size() - 1);
 	});
-	button(tr("Edit widget"), [this] {
+	button(tr("Edit widget"), [studioButton] { studioButton->click(); });
+	button(tr("Native settings editor"), [this] {
 		auto i = list->currentRow();
 		if (i < 0)
 			return;
 		auto copy = widgets.widgets[i];
-		if (WidgetEditor::edit(copy, this,&widgets.projects)) {
+		if (WidgetEditor::edit(copy, this, &widgets.projects)) {
 
 			widgets.widgets[i] = copy;
 			widgets.save();
@@ -230,14 +302,44 @@ if(type.startsWith("project:")){widgets.load();refreshList();return;}
 		BrowserSourceManager::refresh(old, widgets.materialize(old));
 	});
 	button(tr("Open widget project"), [this] {
-		const auto i=list->currentRow();if(i>=0)QDesktopServices::openUrl(QUrl::fromLocalFile(widgets.projects.projectPath(widgets.widgets[i].id())+"/src"));
+		const auto i = list->currentRow();
+		if (i >= 0)
+			QDesktopServices::openUrl(
+				QUrl::fromLocalFile(widgets.projects.projectPath(widgets.widgets[i].id()) + "/src"));
 	});
-	button(tr("Validate widget project"), [this] {const auto i=list->currentRow();if(i>=0){widgets.projects.validate(widgets.widgets[i].id());projectDiagnostics->setText("Project valid");}});
-	button(tr("Publish widget project"), [this] {const auto i=list->currentRow();if(i>=0){widgets.publish(widgets.widgets[i].id());BrowserSourceManager::refresh(widgets.widgets[i],widgets.materialize(widgets.widgets[i]));projectDiagnostics->setText("Published");}});
-	auto *ipcEnabled=new QCheckBox(tr("Enable authenticated local widgetctl control"));ipcEnabled->setChecked(config.settings["widgetctlEnabled"].toBool());widgetsLayout->addWidget(ipcEnabled);connect(ipcEnabled,&QCheckBox::toggled,this,[this](bool enabled){config.settings["widgetctlEnabled"]=enabled;guarded([this]{config.save();});});
-	projectDiagnostics=new QLabel;projectDiagnostics->setObjectName("projectDiagnostics");projectDiagnostics->setWordWrap(true);widgetsLayout->addWidget(projectDiagnostics);
+	button(tr("Validate widget project"), [this] {
+		const auto i = list->currentRow();
+		if (i >= 0) {
+			widgets.projects.validate(widgets.widgets[i].id());
+			projectDiagnostics->setText("Project valid");
+		}
+	});
+	button(tr("Publish widget project"), [this] {
+		const auto i = list->currentRow();
+		if (i >= 0) {
+			widgets.publish(widgets.widgets[i].id());
+			BrowserSourceManager::refresh(widgets.widgets[i], widgets.materialize(widgets.widgets[i]));
+			projectDiagnostics->setText("Published");
+		}
+	});
+	auto *ipcEnabled = new QCheckBox(tr("Enable authenticated local widgetctl control"));
+	ipcEnabled->setChecked(config.settings["widgetctlEnabled"].toBool());
+	widgetsLayout->addWidget(ipcEnabled);
+	connect(ipcEnabled, &QCheckBox::toggled, this, [this](bool enabled) {
+		config.settings["widgetctlEnabled"] = enabled;
+		guarded([this] { config.save(); });
+	});
+	projectDiagnostics = new QLabel;
+	projectDiagnostics->setObjectName("projectDiagnostics");
+	projectDiagnostics->setWordWrap(true);
+	widgetsLayout->addWidget(projectDiagnostics);
 	button = [this, eventsLayout](const QString &text, std::function<void()> fn) {
 		auto *b = new QPushButton(text);
+		const QMap<QString, QString> ids{{tr("Create widget"), "new"},
+						 {tr("Edit widget"), "edit"},
+						 {tr("Add to current scene"), "scene"},
+						 {tr("Preview widget"), "preview"}};
+		decorateWidgetButton(b, widgets.projects.assetDirectory(), ids.value(text, "settings"));
 		eventsLayout->addWidget(b);
 		connect(b, &QPushButton::clicked, this, [this, fn] { guarded(fn); });
 	};
@@ -390,4 +492,10 @@ void TikTokDock::updateStatus(const QString &bridgeError)
 }
 } // namespace tt
 
-void tt::TikTokDock::projectState(const QString&id,const QString&state,const QString&diagnostic){projectDiagnostics->setText(id.left(8)+" · "+state+(diagnostic.isEmpty()?QString{}:"\n"+diagnostic));if(state=="published")refreshList();}
+void tt::TikTokDock::projectState(const QString &id, const QString &state, const QString &diagnostic)
+{
+	projectDiagnostics->setText(id.left(8) + " · " + state +
+				    (diagnostic.isEmpty() ? QString{} : "\n" + diagnostic));
+	if (state == "published")
+		refreshList();
+}

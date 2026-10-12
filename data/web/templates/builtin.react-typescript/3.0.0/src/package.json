@@ -1,0 +1,14 @@
+{
+  "name": "obs-tiktok-audited-builder",
+  "version": "3.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "vite": "6.4.4",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "typescript": "5.9.3",
+    "@types/react": "19.1.13",
+    "@types/react-dom": "19.1.9"
+  }
+}

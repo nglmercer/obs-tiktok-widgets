@@ -74,3 +74,7 @@ For Flatpak, the running application has a private local socket namespace. Use `
 `obs.sources.capture` returns a bounded PNG data URL through the existing in-process OBS screenshot API. It needs no WebSocket server. Scene selection and confirmed graceful shutdown support isolated acceptance/restart tests. Shutdown is always opt-in with `--confirm`.
 
 Custom projects declare supported event types explicitly with `widgets project set --set 'events=["gift"]'`. The custom starter declares no handlers; Playground reports unsupported combinations until declarations are saved. This changes project metadata, not author source. The editor exposes the same event declarations and entry selection.
+
+## Studio/builders (API 1 extensions)
+
+`builders status --json` reports installed tooling and Node availability. `builders install --confirm --json` explicitly installs the shipped pinned toolchain with lifecycle scripts disabled; `--dry-run` reports without fetching. `studio start --confirm` launches the installed widgetstudio adapter and returns an ephemeral browser URL, keeping the local service running. Its URL is a credential; do not share it. Existing create/files/revision/build/publish/preview commands work with schema-v3 TypeScript/React templates. Vue/Svelte, unapproved dependencies/plugins/config and modified policy locks return errors. See [Studio v3](STUDIO_V3.md).

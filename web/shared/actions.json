@@ -1,0 +1,197 @@
+[
+  {
+    "id": "new",
+    "icon": "Plus",
+    "label": "New Widget",
+    "description": "Create an independent project",
+    "shortcut": "",
+    "permission": "write"
+  },
+  {
+    "id": "edit",
+    "icon": "Pencil",
+    "label": "Edit",
+    "description": "Open project",
+    "permission": "read"
+  },
+  {
+    "id": "duplicate",
+    "icon": "Copy",
+    "label": "Duplicate",
+    "description": "Copy source and settings",
+    "permission": "write"
+  },
+  {
+    "id": "studio",
+    "icon": "PanelsTopLeft",
+    "label": "Open Studio",
+    "description": "Open the authenticated authoring workspace",
+    "permission": "studio"
+  },
+  {
+    "id": "code",
+    "icon": "Code2",
+    "label": "Code",
+    "description": "Edit authoritative source",
+    "shortcut": "Alt+C",
+    "permission": "read"
+  },
+  {
+    "id": "design",
+    "icon": "Paintbrush",
+    "label": "Design",
+    "description": "Edit declared visual properties",
+    "permission": "read"
+  },
+  {
+    "id": "preview",
+    "icon": "Eye",
+    "label": "Preview",
+    "description": "Open isolated sample events",
+    "permission": "read"
+  },
+  {
+    "id": "publish",
+    "icon": "Rocket",
+    "label": "Publish",
+    "description": "Build and atomically replace the served release",
+    "permission": "write"
+  },
+  {
+    "id": "build",
+    "icon": "Hammer",
+    "label": "Build",
+    "description": "Build a candidate without publishing",
+    "permission": "write"
+  },
+  {
+    "id": "validate",
+    "icon": "ShieldCheck",
+    "label": "Validate",
+    "description": "Check source and settings",
+    "permission": "read"
+  },
+  {
+    "id": "replay",
+    "icon": "Play",
+    "label": "Replay",
+    "description": "Replay isolated sample",
+    "permission": "preview"
+  },
+  {
+    "id": "stop",
+    "icon": "Square",
+    "label": "Stop",
+    "description": "Cancel pending sample events",
+    "permission": "preview"
+  },
+  {
+    "id": "reset",
+    "icon": "RotateCcw",
+    "label": "Reset",
+    "description": "Invalidate the preview session",
+    "permission": "preview"
+  },
+  {
+    "id": "undo",
+    "icon": "Undo2",
+    "label": "Undo",
+    "description": "Undo editor draft",
+    "shortcut": "Ctrl+Z",
+    "permission": "draft"
+  },
+  {
+    "id": "redo",
+    "icon": "Redo2",
+    "label": "Redo",
+    "description": "Redo editor draft",
+    "shortcut": "Ctrl+Shift+Z",
+    "permission": "draft"
+  },
+  {
+    "id": "import",
+    "icon": "Download",
+    "label": "Import",
+    "description": "Import a reviewed package",
+    "permission": "write"
+  },
+  {
+    "id": "export",
+    "icon": "Upload",
+    "label": "Export",
+    "description": "Export source and settings",
+    "permission": "read"
+  },
+  {
+    "id": "files",
+    "icon": "FolderOpen",
+    "label": "Files",
+    "description": "Navigate project source",
+    "permission": "read"
+  },
+  {
+    "id": "settings",
+    "icon": "SlidersHorizontal",
+    "label": "Settings",
+    "description": "Inspect project settings",
+    "permission": "read"
+  },
+  {
+    "id": "history",
+    "icon": "History",
+    "label": "History",
+    "description": "Inspect source revisions and restore explicitly",
+    "permission": "read"
+  },
+  {
+    "id": "scene",
+    "icon": "MonitorUp",
+    "label": "Add to Scene",
+    "description": "Place this widget in OBS",
+    "permission": "obs"
+  },
+  {
+    "id": "delete",
+    "icon": "Trash2",
+    "label": "Delete",
+    "description": "Remove after confirmation; retain project history",
+    "isDestructive": true,
+    "permission": "write"
+  },
+  {
+    "id": "help",
+    "icon": "CircleHelp",
+    "label": "Help",
+    "description": "Authoring and safety information",
+    "permission": "read"
+  },
+  {
+    "id": "refresh",
+    "icon": "RefreshCw",
+    "label": "Refresh",
+    "description": "Read current revision",
+    "permission": "read"
+  },
+  {
+    "id": "new-file",
+    "icon": "Plus",
+    "label": "New file",
+    "description": "Create an author source file",
+    "permission": "write"
+  },
+  {
+    "id": "rename-file",
+    "icon": "Pencil",
+    "label": "Rename file",
+    "description": "Rename source with a history checkpoint",
+    "permission": "write"
+  },
+  {
+    "id": "delete-file",
+    "icon": "Trash2",
+    "label": "Delete file",
+    "description": "Confirm source removal; retain history",
+    "permission": "write",
+    "isDestructive": true
+  }
+]

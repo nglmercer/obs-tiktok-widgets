@@ -25,6 +25,7 @@ try {
     "package.json",
     "tsconfig.json",
     "tsconfig.playground.json",
+    "tsconfig.studio.json",
   ])
     cpSync(file, join(staging, file), { recursive: true });
   // Reuse the locked developer tool installation without fetching or changing sources.

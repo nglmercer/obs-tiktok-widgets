@@ -123,6 +123,8 @@
   }
 
   // web/playground/app.ts
+  if (new URL(location.href).searchParams.get("studio") === "design")
+    document.body.classList.add("studio-preview");
   var el = (id) => document.getElementById(id);
   var input = (id) => el(id);
   var frame = el("preview");
@@ -138,7 +140,10 @@
   var origin = targetOrigin(new URL("preview.html", location.href).href);
   var send = (data) => {
     if (state === "closed" || state === "error") return;
-    frame.contentWindow?.postMessage({ channel, version: 1, session: session2, ...data }, origin);
+    frame.contentWindow?.postMessage(
+      { channel, version: 1, session: session2, ...data },
+      origin
+    );
   };
   var settings = () => send({
     action: "settings",
@@ -180,7 +185,8 @@
       if (!Number.isFinite(interval) || interval < 0 || interval > 6e4 || !Number.isInteger(repetitions) || repetitions < 1 || repetitions > 100)
         throw new Error("Invalid interval or simulation count");
       const speed = Number(input("speed").value);
-      if (!Number.isFinite(speed) || speed <= 0) throw new Error("Invalid playback speed");
+      if (!Number.isFinite(speed) || speed <= 0)
+        throw new Error("Invalid playback speed");
       scenario(o, input("streak").checked);
       if (state !== "ready") return;
       settings();
@@ -209,7 +215,8 @@
     }, 1e4);
   }
   window.addEventListener("message", (e) => {
-    if (e.source !== frame.contentWindow || origin !== "*" && e.origin !== origin || !validPacket(e.data, session2)) return;
+    if (e.source !== frame.contentWindow || origin !== "*" && e.origin !== origin || !validPacket(e.data, session2))
+      return;
     if (e.data.action === "loaded" && state === "loading") {
       state = "initializing";
       settings();
@@ -227,7 +234,8 @@
     } else if (e.data.action === "updated" && state === "ready") {
       initialReplay = false;
       loadPreview();
-    } else if (e.data.action === "error" && state === "ready") status.textContent = e.data.message;
+    } else if (e.data.action === "error" && state === "ready")
+      status.textContent = e.data.message;
   });
   frame.onload = () => {
     if (state === "ready") {
@@ -243,7 +251,13 @@
     status.textContent = "Preview failed to load. Reset to retry.";
   };
   var initialOptions = new URL(location.href).searchParams;
-  for (const [key, id] of [["event", "type"], ["user", "username"], ["gift", "giftName"], ["count", "count"]]) if (initialOptions.has(key)) input(id).value = initialOptions.get(key);
+  for (const [key, id] of [
+    ["event", "type"],
+    ["user", "username"],
+    ["gift", "giftName"],
+    ["count", "count"]
+  ])
+    if (initialOptions.has(key)) input(id).value = initialOptions.get(key);
   loadPreview();
   el("replay").onclick = play;
   el("stop").onclick = () => {
@@ -270,9 +284,10 @@
       input("giftName").value = el("gift").selectedOptions[0].text;
     }
   };
-  for (const id of ["animation", "sound"]) input(id).onchange = () => {
-    if (state === "ready") settings();
-  };
+  for (const id of ["animation", "sound"])
+    input(id).onchange = () => {
+      if (state === "ready") settings();
+    };
   el("copy").onclick = async () => {
     if (!last) return;
     const text = JSON.stringify(last, null, 2);

@@ -29,7 +29,7 @@ test(
     try {
       const doctor = run(["doctor"]).data;
       assert.equal(doctor.runtimeNodeRequired, false);
-      assert.equal(run(["templates", "list"]).data.length, 7);
+      assert.equal(run(["templates", "list"]).data.length, 9);
       assert.equal(
         run(["templates", "inspect", "builtin.gift-alert"]).data.entry,
         "src/index.html",
@@ -255,13 +255,13 @@ test(
       assert.match(help.stdout, /widgets.publish/);
       assert.equal(
         spawnSync(binary, ["--version"], { encoding: "utf8" }).stdout.trim(),
-        "widgetctl 2.0.0 API 1",
+        "widgetctl 3.0.0 API 1",
       );
       assert.equal(run(["unknown"], 4).error.code, "UNKNOWN_METHOD");
       const version = JSON.parse(
         spawnSync(binary, ["--version", "--json"], { encoding: "utf8" }).stdout,
       );
-      assert.equal(version.data.version, "2.0.0");
+      assert.equal(version.data.version, "3.0.0");
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

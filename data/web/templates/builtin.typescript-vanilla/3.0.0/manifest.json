@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 3,
+  "id": "builtin.typescript-vanilla",
+  "version": "3.0.0",
+  "name": "TypeScript Gift",
+  "category": "alerts",
+  "description": "Typed cumulative gift starter with an offline pinned builder",
+  "entry": "src/index.html",
+  "events": ["gift"],
+  "defaultSize": {
+    "width": 600,
+    "height": 400
+  },
+  "configSchema": "schema/settings.schema.json",
+  "presets": ["presets/default.json"],
+  "assets": ["src/style.css"],
+  "build": {
+    "mode": "vite",
+    "language": "typescript",
+    "framework": "vanilla",
+    "target": "obs-browser",
+    "assetBase": "./"
+  },
+  "thumbnail": "assets/thumbnail.svg"
+}

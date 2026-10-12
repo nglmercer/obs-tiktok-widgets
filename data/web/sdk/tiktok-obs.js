@@ -23,7 +23,8 @@ var TikTokOBSSDK = (() => {
   __export(index_exports, {
     CONTRACT_VERSION: () => CONTRACT_VERSION,
     TikTokOBS: () => TikTokOBS,
-    TikTokOBSClient: () => TikTokOBSClient
+    TikTokOBSClient: () => TikTokOBSClient,
+    onTikTokEvent: () => onTikTokEvent
   });
 
   // web/sdk/types.ts
@@ -85,5 +86,16 @@ var TikTokOBSSDK = (() => {
     }
   };
   var TikTokOBS = new TikTokOBSClient();
+
+  // web/sdk/events.ts
+  function onTikTokEvent(type, callback, target = window) {
+    const channel = type === "*" ? "tiktok:event" : `tiktok:${type}`;
+    const listener = (event) => {
+      const payload = event.detail;
+      if (payload?.version === 1 && (type === "*" || payload.type === type)) callback(payload);
+    };
+    target.addEventListener(channel, listener);
+    return () => target.removeEventListener(channel, listener);
+  }
   return __toCommonJS(index_exports);
 })();
