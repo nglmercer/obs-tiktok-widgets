@@ -887,7 +887,7 @@ QString WidgetProjectService::preview(const QString &id)
 		build(id, {}, true);
 	const auto dir = safePath(root, "playground/" + id);
 	QDir().mkpath(dir);
-	for (const auto &file : {"index.html", "app.js", "playground.css", "frame.js"})
+	for (const auto &file : {"index.html", "app.js", "playground.css", "tokens.css", "frame.js"})
 		atomicWrite(dir + "/" + file, readFile(assets + "/playground/" + file));
 	atomicWrite(dir + "/preview.html",
 		    htmlLoader(outputPath(id), {}, true, {}, root + "/playground/" + id + "/preview.html").toUtf8());

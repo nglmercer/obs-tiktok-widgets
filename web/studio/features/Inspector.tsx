@@ -1,3 +1,4 @@
+import { translateMessage, t as tr } from "../../shared/i18n";
 import { useForm } from "react-hook-form";
 import { validateAppearance } from "../api/validators";
 import { useEffect, useState, useRef } from "react";
@@ -87,12 +88,12 @@ export function Inspector({
           type: "server",
           message: problem.message,
         });
-      setError(String(e));
+      setError(e instanceof Error ? e.message : String(e));
     }
   });
   return (
     <form onSubmit={submit}>
-      <h2>Appearance</h2>
+      <h2>{tr("Appearance")}</h2>
       {properties
         .filter(
           ([key]) =>
@@ -115,10 +116,10 @@ export function Inspector({
             values[ui.visibleWhen.field] !== ui.visibleWhen.equals
           )
             return null;
-          const label = p.title || key;
+          const label = tr(p.title || key);
           return (
             <div className="field" key={key}>
-              {ui.group && <small>{ui.group}</small>}
+              {ui.group && <small>{tr(ui.group)}</small>}
               <span>{label}</span>
               {p.enum ? (
                 <select
@@ -134,7 +135,7 @@ export function Inspector({
                 >
                   {p.enum.map((v: any) => (
                     <option value={String(v)} key={String(v)}>
-                      {String(v)}
+                      {tr(String(v))}
                     </option>
                   ))}
                 </select>
@@ -144,7 +145,7 @@ export function Inspector({
                 <span className="paired-control">
                   {control === "slider" && (
                     <input
-                      aria-label={`${label} slider`}
+                      aria-label={tr("{label} slider", { label })}
                       type="range"
                       min={p.minimum}
                       max={p.maximum}
@@ -180,10 +181,11 @@ export function Inspector({
                           : v,
                   })}
                 >
-                  <option value="">None</option>
+                  <option value="">{tr("None")}</option>
                   {!!values[key] && !assets.includes(String(values[key])) && (
                     <option value={String(values[key])}>
-                      {String(values[key])} (existing reference)
+                      {String(values[key])}
+                      {tr("(existing reference)")}
                     </option>
                   )}
                   {assets
@@ -222,7 +224,7 @@ export function Inspector({
                   <span className="paired-control">
                     <input
                       type="color"
-                      aria-label={`${label} picker`}
+                      aria-label={tr("{label} picker", { label })}
                       value={
                         /^#[0-9a-f]{6}$/i.test(String(values[key]))
                           ? String(values[key])
@@ -248,31 +250,31 @@ export function Inspector({
                   <input aria-label={label} type="text" {...register(key)} />
                 )
               ) : (
-                <p>Complex value retained. Edit using widgetctl.</p>
+                <p>{tr("Complex value retained. Edit using widgetctl.")}</p>
               )}
               {(control === "audio" || /soundUrl/i.test(key)) && (
                 <button
                   type="button"
                   onClick={() =>
                     onTestAudio?.(String(values[key] || "")).catch((e) =>
-                      setError(String(e)),
+                      setError(e instanceof Error ? e.message : String(e)),
                     )
                   }
                 >
-                  Test audio
+                  {tr("Test audio")}
                 </button>
               )}
-              {p.description && <small>{p.description}</small>}
+              {p.description && <small>{tr(p.description)}</small>}
               {errors[key] && (
                 <small role="alert">
-                  {String(errors[key]?.message || "Invalid value")}
+                  {tr(String(errors[key]?.message || "Invalid value"))}
                 </small>
               )}
             </div>
           );
         })}
-      <button disabled={!isDirty}>Save appearance</button>
-      <p role="alert">{error}</p>
+      <button disabled={!isDirty}>{tr("Save appearance")}</button>
+      <p role="alert">{translateMessage(error)}</p>
     </form>
   );
 }
@@ -293,7 +295,7 @@ function EventOptions({
     <fieldset>
       <legend>{label}</legend>
       <input
-        aria-label={`Search ${label}`}
+        aria-label={tr("Search {label}", { label })}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />

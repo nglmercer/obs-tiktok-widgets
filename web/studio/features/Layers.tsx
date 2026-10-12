@@ -1,3 +1,4 @@
+import { t as tr } from "../../shared/i18n";
 import type { VisualComponent } from "./Canvas";
 export function Layers({
   components,
@@ -31,7 +32,7 @@ export function Layers({
       });
   const roots = branch(undefined);
   return (
-    <div role="tree" aria-label="Widget layers">
+    <div role="tree" aria-label={tr("Widget layers")}>
       {roots}
       {components
         .filter((c) => !seen.has(c.id))
@@ -43,7 +44,8 @@ export function Layers({
             key={c.id}
             onClick={() => onSelect(c.id)}
           >
-            {c.label} (unresolved parent)
+            {c.label}
+            {tr("(unresolved parent)")}
           </button>
         ))}
     </div>

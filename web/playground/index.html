@@ -4,114 +4,186 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>OBS TikTok Event Playground</title>
+    <link rel="stylesheet" href="tokens.css" />
     <link rel="stylesheet" href="playground.css" />
   </head>
   <body>
-    <header>
-      <h1>Event Playground</h1>
-      <p>Local preview · OBS scenes and live connections are unaffected</p>
+    <header class="page-header">
+      <h1 data-i18n="Event Playground">Event Playground</h1>
+      <p
+        data-i18n="Local preview · OBS scenes and live connections are unaffected"
+      >
+        Local preview · OBS scenes and live connections are unaffected
+      </p>
+      <div class="ui-preferences">
+        <label
+          ><span data-i18n="Language">Language</span
+          ><select
+            id="language"
+            aria-label="Language"
+            data-i18n-aria="Language"
+          >
+            <option value="en">English</option>
+            <option value="es">Español</option>
+          </select></label
+        ><label
+          ><span data-i18n="Theme">Theme</span
+          ><select id="theme" aria-label="Theme" data-i18n-aria="Theme">
+            <option value="system" data-i18n="System">System</option>
+            <option value="dark" data-i18n="Dark">Dark</option>
+            <option value="light" data-i18n="Light">Light</option>
+          </select></label
+        >
+      </div>
     </header>
     <main>
-      <section class="controls">
+      <section
+        class="controls"
+        aria-label="Simulation controls"
+        data-i18n-aria="Simulation controls"
+      >
+        <h2 data-i18n="Event type">Event type</h2>
         <label
-          >Event type<select id="type">
-            <option value="gift">Gift</option>
-            <option value="chat">Chat</option>
-            <option value="like">Like</option>
-            <option value="follow">Follow</option>
-            <option value="roomUser">Viewers</option>
+          ><span data-i18n="Event type">Event type</span
+          ><select id="type">
+            <option value="gift" data-i18n="Gift">Gift</option>
+            <option value="chat" data-i18n="Chat">Chat</option>
+            <option value="like" data-i18n="Like">Like</option>
+            <option value="follow" data-i18n="Follow">Follow</option>
+            <option value="roomUser" data-i18n="Viewers">Viewers</option>
           </select></label
         >
         <label
-          >Username<input
-            id="username"
-            value="Viewer123"
-            maxlength="100" /></label
-        ><label
-          >User ID<input
-            id="userId"
-            value="9007199254740993"
-            inputmode="numeric"
+          ><span data-i18n="Username">Username</span
+          ><input id="username" value="Viewer123" maxlength="100"
         /></label>
+        <div id="gift-controls">
+          <label
+            ><span data-i18n="Gift">Gift</span
+            ><select id="gift">
+              <option value="5655">Rose</option>
+              <option value="5269">TikTok</option>
+              <option value="5760">GG</option>
+              <option value="custom" data-i18n="Custom gift">
+                Custom gift
+              </option>
+            </select></label
+          >
+          <label
+            ><span data-i18n="Gift name">Gift name</span
+            ><input id="giftName" value="Rose" maxlength="100"
+          /></label>
+        </div>
         <label
-          >Gift<select id="gift">
-            <option value="5655">Rose</option>
-            <option value="5269">TikTok</option>
-            <option value="5760">GG</option>
-            <option value="custom">Custom gift</option>
-          </select></label
-        ><label
-          >Gift ID<input id="giftId" value="5655" inputmode="numeric" /></label
-        ><label
-          >Gift name<input id="giftName" value="Rose" maxlength="100"
+          ><span data-i18n="Repeat count">Repeat count</span
+          ><input id="count" type="number" min="1" max="1000000" value="23"
         /></label>
-        <label
-          >Repeat count<input
-            id="count"
-            type="number"
-            min="1"
-            max="1000000"
-            value="23" /></label
-        ><input
+        <input
           id="range"
           aria-label="Repeat count slider"
+          data-i18n-aria="Repeat count slider"
           type="range"
           min="1"
           max="1000"
           value="23"
         />
-        <label
-          ><input id="completed" type="checkbox" checked />Completed
-          streak</label
-        ><label
-          ><input id="streak" type="checkbox" />Cumulative streak 1 → 5 →
-          total</label
-        >
-        <label
-          >Interval (milliseconds)<input
-            id="interval"
-            type="number"
-            min="0"
-            max="60000"
-            value="600" /></label
-        ><label
-          >Speed<select id="speed">
-            <option value="0.5">0.5×</option>
-            <option value="1" selected>1×</option>
-            <option value="2">2×</option>
-            <option value="4">4×</option>
-          </select></label
-        ><label
-          >Simulations<input
-            id="repetitions"
-            type="number"
-            min="1"
-            max="100"
-            value="1"
-        /></label>
-        <label><input id="animation" type="checkbox" checked />Animation</label
-        ><label
-          ><input id="sound" type="checkbox" />Sound (uses widget sound
-          URL)</label
-        >
-        <div class="actions">
-          <button id="replay">Replay</button><button id="stop">Stop</button
-          ><button id="reset">Reset</button>
+        <div id="streak-controls">
+          <label class="check"
+            ><input id="completed" type="checkbox" checked /><span
+              data-i18n="Completed streak"
+              >Completed streak</span
+            ></label
+          ><label class="check"
+            ><input id="streak" type="checkbox" /><span
+              data-i18n="Cumulative streak 1 → 5 → total"
+              >Cumulative streak 1 → 5 → total</span
+            ></label
+          >
         </div>
-        <p id="status" role="status">Loading renderer…</p>
+        <details>
+          <summary data-i18n="More event options">More event options</summary>
+          <label
+            ><span data-i18n="User ID">User ID</span
+            ><input
+              id="userId"
+              value="9007199254740993"
+              inputmode="numeric" /></label
+          ><label id="gift-id-control"
+            ><span data-i18n="Gift ID">Gift ID</span
+            ><input id="giftId" value="5655" inputmode="numeric"
+          /></label>
+        </details>
+        <details open>
+          <summary data-i18n="Playback">Playback</summary>
+          <div class="control-grid">
+            <label
+              ><span data-i18n="Interval (milliseconds)"
+                >Interval (milliseconds)</span
+              ><input
+                id="interval"
+                type="number"
+                min="0"
+                max="60000"
+                value="600" /></label
+            ><label
+              ><span data-i18n="Speed">Speed</span
+              ><select id="speed">
+                <option value="0.5">0.5×</option>
+                <option value="1" selected>1×</option>
+                <option value="2">2×</option>
+                <option value="4">4×</option>
+              </select></label
+            >
+          </div>
+          <label
+            ><span data-i18n="Simulations">Simulations</span
+            ><input id="repetitions" type="number" min="1" max="100" value="1"
+          /></label>
+        </details>
+        <details>
+          <summary data-i18n="Renderer options">Renderer options</summary>
+          <label class="check"
+            ><input id="animation" type="checkbox" checked /><span
+              data-i18n="Animation"
+              >Animation</span
+            ></label
+          ><label class="check"
+            ><input id="sound" type="checkbox" /><span
+              data-i18n="Sound (uses widget sound URL)"
+              >Sound (uses widget sound URL)</span
+            ></label
+          >
+        </details>
+        <div class="actions">
+          <button id="replay" data-i18n="Replay">Replay</button
+          ><button id="stop" data-i18n="Stop">Stop</button
+          ><button id="reset" data-i18n="Reset">Reset</button>
+        </div>
+        <p
+          id="status"
+          role="status"
+          aria-live="polite"
+          data-i18n="Loading renderer…"
+        >
+          Loading renderer…
+        </p>
       </section>
       <section>
-        <h2>Live widget preview</h2>
+        <h2 data-i18n="Live widget preview">Live widget preview</h2>
         <iframe
           id="preview"
           title="Real widget renderer"
+          data-i18n-title="Real widget renderer"
           sandbox="allow-scripts allow-same-origin"
           src="about:blank"
         ></iframe>
-        <h2>Event JSON</h2>
-        <button id="copy">Copy JSON</button>
-        <pre id="json" tabindex="0"></pre>
-        <h2>Timeline</h2>
+        <details class="json-inspector">
+          <summary data-i18n="Event JSON">Event JSON</summary>
+          <button id="copy" data-i18n="Copy JSON">Copy JSON</button>
+          <pre id="json" tabindex="0"></pre>
+        </details>
+        <h2 data-i18n="Timeline">Timeline</h2>
+        <p id="event-count" role="status"></p>
         <ol id="history"></ol>
       </section>
     </main>

@@ -1,3 +1,4 @@
+#include "UiLocale.hpp"
 #include "EventMonitor.hpp"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -18,12 +19,12 @@ void appendJsonField(QTreeWidgetItem *parent, const QString &key, const QJsonVal
 	item->setText(0, key);
 	if (value.isObject()) {
 		const auto object = value.toObject();
-		item->setText(1, QObject::tr("Object (%1 fields)").arg(object.size()));
+		item->setText(1, uiTr("Object (%1 fields)").arg(object.size()));
 		for (auto it = object.begin(); it != object.end(); ++it)
 			appendJsonField(item, it.key(), it.value());
 	} else if (value.isArray()) {
 		const auto array = value.toArray();
-		item->setText(1, QObject::tr("Array (%1 items)").arg(array.size()));
+		item->setText(1, uiTr("Array (%1 items)").arg(array.size()));
 		for (int i = 0; i < array.size(); ++i)
 			appendJsonField(item, QString::number(i), array[i]);
 	} else {
@@ -46,21 +47,21 @@ EventMonitor::EventMonitor(QWidget *p) : QWidget(p)
 	auto *layout = new QVBoxLayout(this);
 	filter = new QComboBox;
 	filter->setObjectName("eventTypeFilter");
-	filter->addItem(tr("LIVE events (hide connection state)"), "live");
-	filter->addItem(tr("All events"), "all");
+	filter->addItem(uiTr("LIVE events (hide connection state)"), "live");
+	filter->addItem(uiTr("All events"), "all");
 	for (auto type : {"chat", "gift", "like", "follow", "member", "social", "roomUser", "state", "unknown"})
 		filter->addItem(QString::fromLatin1(type), QString::fromLatin1(type));
-	paused = new QCheckBox(tr("Pause"));
+	paused = new QCheckBox(uiTr("Pause"));
 	auto *controls = new QHBoxLayout;
-	auto *clear = new QPushButton(tr("Clear"));
-	auto *copy = new QPushButton(tr("Copy JSON"));
+	auto *clear = new QPushButton(uiTr("Clear"));
+	auto *copy = new QPushButton(uiTr("Copy JSON"));
 	controls->addWidget(paused);
 	controls->addStretch();
 	controls->addWidget(copy);
 	controls->addWidget(clear);
 	log = new QTreeWidget;
 	log->setObjectName("eventJsonTree");
-	log->setHeaderLabels({tr("Event / field"), tr("Value")});
+	log->setHeaderLabels({uiTr("Event / field"), uiTr("Value")});
 	log->setAlternatingRowColors(true);
 	log->setUniformRowHeights(true);
 	log->header()->setSectionResizeMode(0, QHeaderView::Interactive);
@@ -109,7 +110,7 @@ void EventMonitor::append(const QJsonObject &event)
 	auto *root = new QTreeWidgetItem(log);
 	const auto type = event["type"].toString();
 	root->setText(0, type);
-	root->setText(1, event["synthetic"].toBool() ? tr("Test event") : event["method"].toString());
+	root->setText(1, event["synthetic"].toBool() ? uiTr("Test event") : event["method"].toString());
 	root->setData(0, Qt::UserRole, type);
 	root->setData(0, Qt::UserRole + 1, QString::fromUtf8(QJsonDocument(copy).toJson(QJsonDocument::Indented)));
 	for (auto it = copy.begin(); it != copy.end(); ++it)

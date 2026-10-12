@@ -1,3 +1,4 @@
+import { t, subscribe } from "../../shared/i18n";
 import { useEffect, useRef } from "react";
 import { EditorState, Annotation, Compartment } from "@codemirror/state";
 import {
@@ -76,7 +77,7 @@ export default function Code({
                 language,
                 syntaxHighlighting(defaultHighlightStyle),
                 EditorView.contentAttributes.of({
-                  "aria-label": "Source editor",
+                  "aria-label": t("Source editor"),
                 }),
                 EditorView.updateListener.of((u) => {
                   if (
@@ -88,21 +89,28 @@ export default function Code({
                 EditorView.theme({
                   "&": {
                     height: "100%",
-                    background: "#101827",
-                    color: "#dce6f6",
+                    background: "var(--ui-bg)",
+                    color: "var(--ui-text)",
                   },
                   ".cm-content": { fontFamily: "monospace" },
                   ".cm-scroller": { overflow: "auto" },
-                  ".cm-gutters": { background: "#172137", color: "#98a8c0" },
+                  ".cm-gutters": {
+                    background: "var(--ui-panel)",
+                    color: "var(--ui-muted)",
+                  },
                 }),
               ],
             }),
     });
     view.current = editor;
+    const unsubscribe = subscribe(() =>
+      editor.contentDOM.setAttribute("aria-label", t("Source editor")),
+    );
     return () => {
       if (states.current.size >= 100 && !states.current.has(file))
         states.current.delete(states.current.keys().next().value!);
       states.current.set(file, editor.state);
+      unsubscribe();
       editor.destroy();
     };
   }, [file]);

@@ -1,3 +1,4 @@
+#include <QSettings>
 #include "StudioServer.hpp"
 #include <QDir>
 #include <QFileInfo>
@@ -19,23 +20,18 @@ StudioServer::StudioServer(WidgetProjectService &s, QString assets, QObject *par
 	  assetRoot(assets)
 {
 	token = QUuid::createUuid().toString(QUuid::WithoutBraces) + QUuid::createUuid().toString(QUuid::WithoutBraces);
-	allowed = {"studio.package.import", "studio.project.export",
-		   "studio.asset.import",   "obs.status",
-		   "obs.scenes.list",       "obs.sources.list",
-		   "obs.sources.add",       "obs.sources.remove",
-		   "obs.sources.refresh",   "doctor",
-		   "builders.status",       "templates.list",
-		   "templates.inspect",     "widgets.list",
-		   "widgets.create",        "widgets.show",
-		   "widgets.duplicate",     "widgets.delete",
-		   "widgets.project.get",   "widgets.project.set",
-		   "widgets.settings.get",  "widgets.settings.set",
-		   "widgets.files.list",    "widgets.files.read",
-		   "widgets.files.write",   "widgets.files.rename",
-		   "widgets.files.remove",  "widgets.files.mkdir",
-		   "widgets.validate",      "widgets.build",
-		   "widgets.publish",       "widgets.preview",
-		   "widgets.history",       "widgets.snapshot",
+	allowed = {"studio.preferences.get", "studio.preferences.set", "studio.package.import",
+		   "studio.project.export",  "studio.asset.import",    "obs.status",
+		   "obs.scenes.list",        "obs.sources.list",       "obs.sources.add",
+		   "obs.sources.remove",     "obs.sources.refresh",    "doctor",
+		   "builders.status",        "templates.list",         "templates.inspect",
+		   "widgets.list",           "widgets.create",         "widgets.show",
+		   "widgets.duplicate",      "widgets.delete",         "widgets.project.get",
+		   "widgets.project.set",    "widgets.settings.get",   "widgets.settings.set",
+		   "widgets.files.list",     "widgets.files.read",     "widgets.files.write",
+		   "widgets.files.rename",   "widgets.files.remove",   "widgets.files.mkdir",
+		   "widgets.validate",       "widgets.build",          "widgets.publish",
+		   "widgets.preview",        "widgets.history",        "widgets.snapshot",
 		   "widgets.rollback"};
 	commands.obs = [this](const QString &method, const QJsonObject &args) -> QJsonValue {
 		const auto path = safePath(service.directory(), "cache/ipc.json");
@@ -210,7 +206,23 @@ void StudioServer::receive(QTcpSocket *socket)
 					"NOT_PUBLISHED",
 					"Publish a validated build before opening the production-equivalent preview");
 			QJsonValue result;
-			if (method == "studio.package.import") {
+			if (method == "studio.preferences.get" || method == "studio.preferences.set") {
+				QSettings preferences(service.directory() + "/ui-preferences.ini",
+						      QSettings::IniFormat);
+				if (method == "studio.preferences.set") {
+					const auto locale = args["locale"].toString(), theme = args["theme"].toString();
+					if (!QStringList{"en", "es"}.contains(locale) ||
+					    !QStringList{"dark", "light", "system"}.contains(theme))
+						throw DomainError("INVALID_PREFERENCE", "Invalid language or theme");
+					preferences.setValue("locale", locale);
+					preferences.setValue("theme", theme);
+					preferences.sync();
+					if (preferences.status() != QSettings::NoError)
+						throw DomainError("FILE_WRITE", "Cannot save UI preferences");
+				}
+				result = QJsonObject{{"locale", preferences.value("locale").toString()},
+						     {"theme", preferences.value("theme").toString()}};
+			} else if (method == "studio.package.import") {
 				QTemporaryDir temp(safePath(service.directory(), "cache") + "-studio-import-XXXXXX");
 				auto path = temp.path() + "/upload.tiktokwidget";
 				auto bytes = QByteArray::fromBase64(args["base64"].toString().toUtf8());

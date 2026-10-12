@@ -1,3 +1,4 @@
+#include <QSettings>
 #include "ui/TikTokDock.hpp"
 #include "ui/EventMonitor.hpp"
 #include "core/EventNormalizer.hpp"
@@ -41,16 +42,17 @@ int main(int argc, char **argv)
 	check(connection.getState() == TTL_CONNECTION_DISCONNECTED, "no connection for empty username");
 	bool playgroundAction = false;
 	for (auto *action : dock.findChildren<QAction *>())
-		if (action->text() == "Open Event Playground") {
+		if (action->objectName() == "widget.action.preview") {
 			playgroundAction = true;
-			check(!action->isEnabled(), "playground requires selected widget");
+			check(!dock.findChild<QPushButton *>("widget.action.preview")->isEnabled(),
+			      "playground requires selected widget");
 		}
 	check(playgroundAction, "native playground action exists");
 	auto *selector = dock.findChild<QComboBox *>("testEventType");
 	check(selector && selector->count() == 8, "test event selector");
 	selector->setCurrentIndex(selector->findData("chat"));
 	for (auto *button : dock.findChildren<QPushButton *>())
-		if (button->text() == "Broadcast synthetic events to OBS (integration test)")
+		if (button->objectName() == "widget.action.integration-test")
 			button->click();
 	auto events = dispatcher.take();
 	check(events.size() == 1 && events[0]["type"] == "chat", "selected event only");
@@ -75,7 +77,7 @@ int main(int argc, char **argv)
 	check(tree->topLevelItemCount() == 200, "bounded rendered history");
 	monitor->append(events[0]);
 	tree->topLevelItem(199)->setExpanded(true);
-	dock.resize(480, 680);
+	dock.resize(280, 680);
 	dock.show();
 	app.processEvents();
 	for (int i = 0; i < tabs->count(); ++i) {
@@ -83,6 +85,32 @@ int main(int argc, char **argv)
 		app.processEvents();
 		check(dock.grab().save(QString("dock-tab-%1.png").arg(i)), "tab render");
 	}
+	check(dock.width() == 280, "narrow dock remains 280px");
+	auto *language = dock.findChild<QComboBox *>("uiLanguage");
+	check(language != nullptr, "language selector");
+	language->setCurrentIndex(language->findData("es"));
+	app.processEvents();
+	check(tabs->tabText(0) == "Conexión" && tabs->tabText(1) == "Widgets" && tabs->tabText(2) == "Eventos",
+	      "runtime Spanish tabs");
+	check(config.settings["uiLocale"] == "es", "locale saved");
+	for (const auto &id : {"new", "studio", "preview", "scene"}) {
+		auto *button = dock.findChild<QPushButton *>(QString("widget.action.") + id);
+		check(button != nullptr, "stable primary action ID");
+		check(button->width() <= 280, "primary button fits narrow dock");
+		check(!button->accessibleName().isEmpty(), "action accessible name");
+	}
+	tabs->setCurrentIndex(1);
+	app.processEvents();
+	check(dock.grab().save("dock-spanish-280.png"), "Spanish narrow screenshot");
+	language->setCurrentIndex(language->findData("en"));
+	app.processEvents();
+	check(tabs->tabText(0) == "Connection", "runtime English restore");
+	QSettings sharedPreferences(temp.path() + "/ui-preferences.ini", QSettings::IniFormat);
+	sharedPreferences.setValue("locale", "es");
+	sharedPreferences.sync();
+	dock.updateStatus({});
+	app.processEvents();
+	check(tabs->tabText(0) == "Conexión", "Studio preference changes synchronize into dock");
 	dock.cancelPendingConnection();
 	std::cout << "Tabbed dock, simplified connect controls and inline validation passed\n";
 }

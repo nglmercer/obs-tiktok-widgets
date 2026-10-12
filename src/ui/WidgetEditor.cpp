@@ -1,3 +1,4 @@
+#include "UiLocale.hpp"
 #include "WidgetActions.hpp"
 #include "WidgetEditor.hpp"
 #include "projects/WidgetProjectService.hpp"
@@ -25,7 +26,7 @@ namespace tt {
 bool WidgetEditor::edit(WidgetConfig &w, QWidget *parent, WidgetProjectService *service)
 {
 	QDialog d(parent);
-	d.setWindowTitle(QObject::tr("Widget project — save source, then publish"));
+	d.setWindowTitle(uiTr("Widget project — save source, then publish"));
 	d.resize(1000, 720);
 	auto *root = new QVBoxLayout(&d);
 	auto *split = new QSplitter;
@@ -76,7 +77,7 @@ bool WidgetEditor::edit(WidgetConfig &w, QWidget *parent, WidgetProjectService *
 		} else if (rule.contains("enum")) {
 			auto *e = new QComboBox;
 			for (const auto &v : rule["enum"].toArray())
-				e->addItem(v.toVariant().toString(), v.toVariant());
+				e->addItem(uiTr(v.toVariant().toString()), v.toVariant());
 			e->setCurrentIndex(e->findData(w.value[key].toVariant()));
 			field = e;
 		} else if (rule["x-ui"].toObject()["widget"] == "textarea") {
@@ -92,7 +93,7 @@ bool WidgetEditor::edit(WidgetConfig &w, QWidget *parent, WidgetProjectService *
 			field = e;
 		}
 		fields[key] = field;
-		form->addRow(rule["title"].toString(key), field);
+		form->addRow(uiTr(rule["title"].toString(key)), field);
 	}
 	auto *diagnostic = new QLabel;
 	diagnostic->setWordWrap(true);
@@ -157,15 +158,15 @@ bool WidgetEditor::edit(WidgetConfig &w, QWidget *parent, WidgetProjectService *
 		load();
 		QObject::connect(files, &QComboBox::currentTextChanged, &d, [&, files, code, load] {
 			if (code->document()->isModified() &&
-			    QMessageBox::question(&d, "Unsaved source", "Discard unsaved source edits?",
-						  QMessageBox::Discard | QMessageBox::Cancel) != QMessageBox::Discard) {
+			    uiQuestion(&d, "Unsaved source", "Discard unsaved source edits?",
+				       QMessageBox::Discard | QMessageBox::Cancel) != QMessageBox::Discard) {
 				QSignalBlocker blocker(files);
 				files->setCurrentText(code->property("loadedFile").toString());
 				return;
 			}
 			guarded(load);
 		});
-		auto *saveSource = new QPushButton(QObject::tr("Save source"));
+		auto *saveSource = new QPushButton(uiTr("Save source"));
 		layout->addWidget(saveSource);
 		QObject::connect(saveSource, &QPushButton::clicked, &d, [&, files, code] {
 			guarded([&] {
@@ -173,7 +174,7 @@ bool WidgetEditor::edit(WidgetConfig &w, QWidget *parent, WidgetProjectService *
 							      code->toPlainText().toUtf8(), revision);
 				revision = m["revision"].toString();
 				code->document()->setModified(false);
-				diagnostic->setText("Source saved; automatic publish follows when enabled.");
+				diagnostic->setText(uiTr("Source saved; automatic publish follows when enabled."));
 			});
 		});
 
@@ -189,7 +190,7 @@ bool WidgetEditor::edit(WidgetConfig &w, QWidget *parent, WidgetProjectService *
 		auto *manage = new QHBoxLayout;
 		layout->addLayout(manage);
 		for (const auto &operation : QStringList{"New file", "Rename", "Remove"}) {
-			auto *button = new QPushButton(operation);
+			auto *button = new QPushButton(uiTr(operation));
 			manage->addWidget(button);
 			QObject::connect(button, &QPushButton::clicked, &d, [&, operation, files, code, refreshFiles] {
 				guarded([&] {
@@ -199,7 +200,7 @@ bool WidgetEditor::edit(WidgetConfig &w, QWidget *parent, WidgetProjectService *
 					QString name;
 					QJsonObject result;
 					if (operation == "Remove") {
-						if (QMessageBox::question(
+						if (uiQuestion(
 							    &d, "Remove author file",
 							    "Remove selected file? A history snapshot is retained.") !=
 						    QMessageBox::Yes)
@@ -208,7 +209,7 @@ bool WidgetEditor::edit(WidgetConfig &w, QWidget *parent, WidgetProjectService *
 										{}, revision);
 					} else {
 						name = QInputDialog::getText(&d, operation,
-									     "Project-relative path (src/...)",
+									     uiTr("Project-relative path (src/...)"),
 									     QLineEdit::Normal, "src/");
 						if (name.isEmpty())
 							return;
@@ -225,20 +226,20 @@ bool WidgetEditor::edit(WidgetConfig &w, QWidget *parent, WidgetProjectService *
 					refreshFiles();
 					if (!name.isEmpty())
 						files->setCurrentText(name);
-					diagnostic->setText("Author files updated; publication is separate.");
+					diagnostic->setText(uiTr("Author files updated; publication is separate."));
 				});
 			});
 		}
-		auto *importAsset = new QPushButton("Import asset…");
+		auto *importAsset = new QPushButton(uiTr("Import asset…"));
 		layout->addWidget(importAsset);
 		QObject::connect(importAsset, &QPushButton::clicked, &d, [&, refreshFiles] {
 			guarded([&] {
 				const auto external =
-					QFileDialog::getOpenFileName(&d, "Import individual trusted resource");
+					QFileDialog::getOpenFileName(&d, uiTr("Import individual trusted resource"));
 				if (external.isEmpty())
 					return;
 				const auto name = QInputDialog::getText(&d, "Import asset",
-									"Project-relative destination",
+									uiTr("Project-relative destination"),
 									QLineEdit::Normal,
 									"assets/" + QFileInfo(external).fileName());
 				if (name.isEmpty())
@@ -248,24 +249,24 @@ bool WidgetEditor::edit(WidgetConfig &w, QWidget *parent, WidgetProjectService *
 				refreshFiles();
 			});
 		});
-		auto *exportProject = new QPushButton("Export source project…");
+		auto *exportProject = new QPushButton(uiTr("Export source project…"));
 		layout->addWidget(exportProject);
 		QObject::connect(exportProject, &QPushButton::clicked, &d, [&] {
 			guarded([&] {
-				const auto output = QFileDialog::getSaveFileName(&d, "Export project", {},
+				const auto output = QFileDialog::getSaveFileName(&d, uiTr("Export project"), {},
 										 "TikTok widget (*.tiktokwidget)");
 				if (!output.isEmpty()) {
 					service->exportProject(w.id(), output);
-					diagnostic->setText("Exported saved source/settings/assets");
+					diagnostic->setText(uiTr("Exported saved source/settings/assets"));
 				}
 			});
 		});
-		auto *open = new QPushButton(QObject::tr("Open source folder"));
+		auto *open = new QPushButton(uiTr("Open source folder"));
 		layout->addWidget(open);
 		QObject::connect(open, &QPushButton::clicked, &d, [&] {
 			QDesktopServices::openUrl(QUrl::fromLocalFile(service->projectPath(w.id()) + "/src"));
 		});
-		auto *validate = new QPushButton(QObject::tr("Validate project"));
+		auto *validate = new QPushButton(uiTr("Validate project"));
 		layout->addWidget(validate);
 		QObject::connect(validate, &QPushButton::clicked, &d, [&] {
 			guarded([&] {
@@ -273,25 +274,25 @@ bool WidgetEditor::edit(WidgetConfig &w, QWidget *parent, WidgetProjectService *
 					QString::fromUtf8(QJsonDocument(service->validate(w.id())).toJson()));
 			});
 		});
-		auto *publish = new QPushButton(QObject::tr("Publish saved project"));
+		auto *publish = new QPushButton(uiTr("Publish saved project"));
 		layout->addWidget(publish);
 		QObject::connect(publish, &QPushButton::clicked, &d, [&] {
 			guarded([&] {
 				const auto result = service->build(w.id(), revision, true);
 				revision = service->get(w.id())["revision"].toString();
-				diagnostic->setText("Published " + result["buildId"].toString());
+				diagnostic->setText(uiTr("Published ") + result["buildId"].toString());
 			});
 		});
-		auto *preview = new QPushButton(QObject::tr("Preview published project"));
+		auto *preview = new QPushButton(uiTr("Preview published project"));
 		layout->addWidget(preview);
 		QObject::connect(preview, &QPushButton::clicked, &d, [&] {
 			guarded([&] { QDesktopServices::openUrl(QUrl::fromLocalFile(service->preview(w.id()))); });
 		});
 		auto *declaredEvents = new QLineEdit(QString::fromUtf8(
 			QJsonDocument(service->get(w.id())["events"].toArray()).toJson(QJsonDocument::Compact)));
-		layout->addWidget(new QLabel("Declared event types (JSON array)"));
+		layout->addWidget(new QLabel(uiTr("Declared event types (JSON array)")));
 		layout->addWidget(declaredEvents);
-		auto *saveProject = new QPushButton("Save event declarations");
+		auto *saveProject = new QPushButton(uiTr("Save event declarations"));
 		layout->addWidget(saveProject);
 		QObject::connect(saveProject, &QPushButton::clicked, &d, [&, declaredEvents] {
 			guarded([&] {
@@ -301,10 +302,10 @@ bool WidgetEditor::edit(WidgetConfig &w, QWidget *parent, WidgetProjectService *
 							  "Enter a JSON array of supported event names");
 				const auto m = service->configure(w.id(), {{"events", doc.array()}}, revision);
 				revision = m["revision"].toString();
-				diagnostic->setText("Project event declarations saved");
+				diagnostic->setText(uiTr("Project event declarations saved"));
 			});
 		});
-		auto *setEntry = new QPushButton("Use selected HTML as entry");
+		auto *setEntry = new QPushButton(uiTr("Use selected HTML as entry"));
 		layout->addWidget(setEntry);
 		QObject::connect(setEntry, &QPushButton::clicked, &d, [&, files] {
 			guarded([&] {
@@ -312,21 +313,21 @@ bool WidgetEditor::edit(WidgetConfig &w, QWidget *parent, WidgetProjectService *
 					throw DomainError("MISSING_ENTRY", "Select an HTML file");
 				const auto m = service->configure(w.id(), {{"entry", files->currentText()}}, revision);
 				revision = m["revision"].toString();
-				diagnostic->setText("Saved entry: " + files->currentText());
+				diagnostic->setText(uiTr("Saved entry: ") + files->currentText());
 			});
 		});
 		auto *history = new QComboBox;
 		for (const auto &r : service->history(w.id()))
 			history->addItem(r.toObject()["revision"].toString());
 		layout->addWidget(history);
-		auto *rollback = new QPushButton(QObject::tr("Restore selected source revision"));
+		auto *rollback = new QPushButton(uiTr("Restore selected source revision"));
 		layout->addWidget(rollback);
 		QObject::connect(rollback, &QPushButton::clicked, &d, [&, history, load] {
 			guarded([&] {
 				const auto m = service->rollback(w.id(), history->currentText(), revision);
 				revision = m["revision"].toString();
 				load();
-				diagnostic->setText("Source revision restored; publish to apply.");
+				diagnostic->setText(uiTr("Source revision restored; publish to apply."));
 			});
 		});
 	}

@@ -1,3 +1,7 @@
+#include <QSettings>
+#include <QSignalBlocker>
+#include <QLocale>
+#include "UiLocale.hpp"
 #include "StudioLauncher.hpp"
 #include "WidgetActions.hpp"
 #include <QProcess>
@@ -56,22 +60,22 @@ TikTokDock::TikTokDock(PluginConfig &c, TikTokConnectionManager &n, EventDispatc
 	auto *widgetsLayout = new QVBoxLayout(widgetsPage);
 	auto *eventsPage = new QWidget;
 	auto *eventsLayout = new QVBoxLayout(eventsPage);
-	tabs->addTab(connectionPage, tr("Connection"));
-	tabs->addTab(widgetsPage, tr("Widgets"));
-	tabs->addTab(eventsPage, tr("Events"));
-	auto *intro = new QLabel(tr("Enter a TikTok username to connect. Setup is automatic."));
+	tabs->addTab(connectionPage, uiTr("Connection"));
+	tabs->addTab(widgetsPage, uiTr("Widgets"));
+	tabs->addTab(eventsPage, uiTr("Events"));
+	auto *intro = new QLabel(uiTr("Enter a TikTok username to connect. Setup is automatic."));
 	intro->setWordWrap(true);
 	connectionLayout->addWidget(intro);
 	username = new QLineEdit(c.settings["username"].toString());
 	username->setObjectName("tiktokUsername");
-	username->setPlaceholderText(tr("@creator"));
+	username->setPlaceholderText(uiTr("@creator"));
 	connectionLayout->addWidget(username);
 	bundleManager = new SigningBundleManager(config, this);
 	auto *connectionActions = new QGridLayout;
 	connectionLayout->addLayout(connectionActions);
-	connectButton = new QPushButton(tr("Connect"));
-	reconnectButton = new QPushButton(tr("Reconnect"));
-	auto *disconnectButton = new QPushButton(tr("Disconnect"));
+	connectButton = new QPushButton(uiTr("Connect"));
+	reconnectButton = new QPushButton(uiTr("Reconnect"));
+	auto *disconnectButton = new QPushButton(uiTr("Disconnect"));
 	connectionActions->addWidget(connectButton, 0, 0);
 	connectionActions->addWidget(disconnectButton, 0, 1);
 	connectionActions->addWidget(reconnectButton, 1, 0, 1, 2);
@@ -82,28 +86,28 @@ TikTokDock::TikTokDock(PluginConfig &c, TikTokConnectionManager &n, EventDispatc
 		connection.disconnect();
 	});
 	connect(username, &QLineEdit::returnPressed, connectButton, &QPushButton::click);
-	retry = new QCheckBox(tr("Reconnect automatically"));
+	retry = new QCheckBox(uiTr("Reconnect automatically"));
 	retry->setChecked(c.settings["autoReconnect"].toBool(true));
 	connectionLayout->addWidget(retry);
-	autoConnect = new QCheckBox(tr("Connect when OBS starts"));
+	autoConnect = new QCheckBox(uiTr("Connect when OBS starts"));
 	autoConnect->setChecked(c.settings["autoConnect"].toBool());
 	connectionLayout->addWidget(autoConnect);
 	status = new QLabel;
 	status->setObjectName("connectionStatus");
 	status->setWordWrap(true);
 	connectionLayout->addWidget(status);
-	auto *advanced = new QGroupBox(tr("Account session (optional)"));
+	auto *advanced = new QGroupBox(uiTr("Account session (optional)"));
 	advanced->setCheckable(true);
 	advanced->setChecked(false);
 	auto *advancedLayout = new QVBoxLayout(advanced);
 	sessionPath = new QLineEdit;
-	sessionPath->setPlaceholderText(tr("Private session file"));
+	sessionPath->setPlaceholderText(uiTr("Private session file"));
 	sessionPath->setVisible(false);
 	advancedLayout->addWidget(sessionPath);
 	connect(advanced, &QGroupBox::toggled, sessionPath, &QWidget::setVisible);
 	connectionLayout->addWidget(advanced);
 	connectionLayout->addStretch();
-	auto *help = new QLabel(tr("1. Create a widget   2. Edit its appearance   3. Add it to a scene"));
+	auto *help = new QLabel(uiTr("1. Create a widget   2. Edit its appearance   3. Add it to a scene"));
 	help->setWordWrap(true);
 	widgetsLayout->addWidget(help);
 	list = new QListWidget;
@@ -111,34 +115,41 @@ TikTokDock::TikTokDock(PluginConfig &c, TikTokConnectionManager &n, EventDispatc
 	refreshList();
 	auto *widgetActions = new QGridLayout;
 	widgetsLayout->addLayout(widgetActions);
-	auto *more = new QPushButton(tr("More actions…"));
+	auto *more = new QPushButton(uiTr("More actions…"));
 	decorateWidgetButton(more, widgets.projects.assetDirectory(), "settings");
 	auto *moreMenu = new QMenu(more);
 	more->setMenu(moreMenu);
-	widgetActions->addWidget(more, 2, 1);
-	auto *studioButton = new QPushButton(tr("Open Studio"));
+	widgetActions->addWidget(more, 2, 0, 1, 2);
+	auto *manageMenu = moreMenu->addMenu(uiTr("Manage"));
+	auto *projectMenu = moreMenu->addMenu(uiTr("Project"));
+	auto *advancedMenu = moreMenu->addMenu(uiTr("Advanced"));
+	auto *studioButton = new QPushButton(uiTr("Open Studio"));
 	decorateWidgetButton(studioButton, widgets.projects.assetDirectory(), "studio");
-	widgetsLayout->addWidget(studioButton);
+	widgetActions->addWidget(studioButton, 0, 1);
 	auto *studioState = new QLabel;
 	studioState->setWordWrap(true);
 	widgetsLayout->addWidget(studioState);
 	studioLauncher = new StudioLauncher(this);
-	studioLauncher->navigate = [](const QUrl &url) {
-		QDesktopServices::openUrl(url);
+	studioLauncher->navigate = [this](const QUrl &url) {
+		auto localized = url;
+		QUrlQuery query(localized);
+		query.addQueryItem("lang", config.settings["uiLocale"].toString("en"));
+		localized.setQuery(query);
+		QDesktopServices::openUrl(localized);
 	};
 	studioLauncher->changed = [studioButton, studioState](StudioLauncher::State state, const QString &message) {
-		studioButton->setText(state == StudioLauncher::State::Starting ? QObject::tr("Starting Studio…")
-									       : QObject::tr("Open Studio"));
-		studioButton->setToolTip(message);
-		studioState->setText(message);
+		studioButton->setText(state == StudioLauncher::State::Starting ? uiTr("Starting Studio…")
+									       : uiTr("Open Studio"));
+		studioButton->setToolTip(uiTr(message));
+		studioState->setText(uiTr(message));
 	};
 	connect(studioButton, &QPushButton::clicked, this, [this] {
 		guarded([this] {
 			if (studioLauncher->state == StudioLauncher::State::Idle ||
 			    studioLauncher->state == StudioLauncher::State::Error) {
-				if (QMessageBox::question(
-					    this, tr("Open Widget Studio"),
-					    tr("Start an authenticated, loopback-only authoring interface? Templates are trusted code. Close OBS to stop this session.")) !=
+				if (uiQuestion(
+					    this, uiTr("Open Widget Studio"),
+					    uiTr("Start an authenticated, loopback-only authoring interface? Templates are trusted code. Close OBS to stop this session.")) !=
 				    QMessageBox::Yes)
 					return;
 			}
@@ -155,46 +166,43 @@ TikTokDock::TikTokDock(PluginConfig &c, TikTokConnectionManager &n, EventDispatc
 		});
 	});
 
-	int widgetActionIndex = 0;
-	std::function<void(const QString &, std::function<void()>)> button =
-		[this, widgetActions, moreMenu, &widgetActionIndex](const QString &text, std::function<void()> fn) {
-			if (text != tr("Create widget") && text != tr("Edit widget") &&
-			    text != tr("Add to current scene") && text != tr("Preview widget")) {
-				const QMap<QString, QString> ids{
-					{tr("Duplicate widget"), "duplicate"},    {tr("Delete widget"), "delete"},
-					{tr("Open Event Playground"), "preview"}, {tr("Open widget project"), "files"},
-					{tr("Reload edited HTML"), "refresh"},    {tr("Export project"), "export"}};
-				auto *action = widgetAction(moreMenu, widgets.projects.assetDirectory(),
-							    ids.value(text, "settings"));
+	std::function<void(const QString &, const QString &, const QString &, std::function<void()>)> button =
+		[this, widgetActions, manageMenu, projectMenu, advancedMenu](
+			const QString &id, const QString &source, const QString &group, std::function<void()> fn) {
+			const auto text = uiTr(source);
+			if (group != "primary") {
+				auto *menu = group == "manage"    ? manageMenu
+					     : group == "project" ? projectMenu
+								  : advancedMenu;
+				auto *action = widgetAction(menu, widgets.projects.assetDirectory(), id);
 				if (!action)
-					action = moreMenu->addAction(text);
-				else {
-					action->setText(text);
-					moreMenu->addAction(action);
-				}
-				action->setEnabled(list->currentRow() >= 0);
-				connect(list, &QListWidget::currentRowChanged, action,
-					[action](int row) { action->setEnabled(row >= 0); });
+					action = new QAction(menu);
+				action->setObjectName("widget.action." + id);
+				action->setData(id);
+				action->setText(text);
+				menu->addAction(action);
+				action->setEnabled(id == "native-gallery" || list->currentRow() >= 0);
+				connect(list, &QListWidget::currentRowChanged, action, [action, id](int row) {
+					action->setEnabled(id == "native-gallery" || row >= 0);
+				});
 				connect(action, &QAction::triggered, this, [this, fn] { guarded(fn); });
 				return;
 			}
 			auto *b = new QPushButton(text);
-			const QMap<QString, QString> ids{{tr("Create widget"), "new"},
-							 {tr("Edit widget"), "edit"},
-							 {tr("Add to current scene"), "scene"},
-							 {tr("Preview widget"), "preview"}};
-			decorateWidgetButton(b, widgets.projects.assetDirectory(), ids.value(text, "settings"));
-			if (text != tr("Create widget")) {
+			decorateWidgetButton(b, widgets.projects.assetDirectory(), id);
+			b->setObjectName("widget.action." + id);
+			b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+			if (id != "new") {
 				b->setEnabled(list->currentRow() >= 0);
 				connect(list, &QListWidget::currentRowChanged, b,
 					[b](int row) { b->setEnabled(row >= 0); });
 			}
-			widgetActions->addWidget(b, widgetActionIndex / 2, widgetActionIndex % 2);
-			++widgetActionIndex;
+			const int row = id == "new" ? 0 : 1, col = id == "scene" ? 1 : 0;
+			widgetActions->addWidget(b, row, col);
 			connect(b, &QPushButton::clicked, this, [this, fn] { guarded(fn); });
 		};
-	button(tr("Create widget"), [studioButton] { studioButton->click(); });
-	button(tr("Native gallery"), [this] {
+	button("new", "Create widget", "primary", [studioButton] { studioButton->click(); });
+	button("native-gallery", "Native gallery", "advanced", [this] {
 		auto type = WidgetGallery::choose(this, &widgets.projects);
 		if (type.isEmpty())
 			return;
@@ -218,8 +226,8 @@ TikTokDock::TikTokDock(PluginConfig &c, TikTokConnectionManager &n, EventDispatc
 		refreshList();
 		list->setCurrentRow(widgets.widgets.size() - 1);
 	});
-	button(tr("Edit widget"), [studioButton] { studioButton->click(); });
-	button(tr("Native settings editor"), [this] {
+	button("edit", "Edit widget", "manage", [studioButton] { studioButton->click(); });
+	button("native-editor", "Native settings editor", "advanced", [this] {
 		auto i = list->currentRow();
 		if (i < 0)
 			return;
@@ -232,21 +240,20 @@ TikTokDock::TikTokDock(PluginConfig &c, TikTokConnectionManager &n, EventDispatc
 			refreshList();
 		}
 	});
-	button(tr("Duplicate widget"), [this] {
+	button("duplicate", "Duplicate widget", "manage", [this] {
 		auto i = list->currentRow();
 		if (i >= 0) {
 			widgets.duplicate(widgets.widgets[i].id());
 			refreshList();
 		}
 	});
-	button(tr("Delete widget"), [this] {
+	button("delete", "Delete widget", "manage", [this] {
 		auto i = list->currentRow();
 		if (i < 0)
 			return;
 		auto id = widgets.widgets[i].id();
-		auto answer = QMessageBox::question(this, tr("Delete widget"),
-						    tr("Remove its OBS Browser Sources too?"),
-						    QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+		auto answer = uiQuestion(this, uiTr("Delete widget"), uiTr("Remove its OBS Browser Sources too?"),
+					 QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
 		if (answer == QMessageBox::Cancel)
 			return;
 		if (answer == QMessageBox::Yes)
@@ -254,42 +261,41 @@ TikTokDock::TikTokDock(PluginConfig &c, TikTokConnectionManager &n, EventDispatc
 		widgets.erase(id);
 		refreshList();
 	});
-	button(tr("Remove widget Browser Sources"), [this] {
+	button("remove-sources", "Remove widget Browser Sources", "advanced", [this] {
 		auto i = list->currentRow();
-		if (i >= 0 &&
-		    QMessageBox::question(this, tr("Remove sources"),
-					  tr("Remove all Browser Sources for this widget?")) == QMessageBox::Yes)
+		if (i >= 0 && uiQuestion(this, uiTr("Remove sources"),
+					 uiTr("Remove all Browser Sources for this widget?")) == QMessageBox::Yes)
 			BrowserSourceManager::remove(widgets.widgets[i].id());
 	});
-	button(tr("Add to current scene"), [this] {
+	button("scene", "Add to scene", "primary", [this] {
 		auto i = list->currentRow();
 		if (i >= 0 && !BrowserSourceManager::add(widgets.widgets[i], widgets.materialize(widgets.widgets[i])))
 			throw std::runtime_error("Cannot create browser_source in current scene");
 	});
-	button(tr("Add to selected scene"), [this] {
+	button("scene-select", "Add to selected scene", "manage", [this] {
 		auto i = list->currentRow();
 		if (i < 0)
 			return;
 		bool ok = false;
-		auto scene = QInputDialog::getItem(this, tr("Select scene"), tr("Scene"), OBSFrontendManager::scenes(),
-						   0, false, &ok);
+		auto scene = QInputDialog::getItem(this, uiTr("Select scene"), uiTr("Scene"),
+						   OBSFrontendManager::scenes(), 0, false, &ok);
 		if (ok &&
 		    !BrowserSourceManager::add(widgets.widgets[i], widgets.materialize(widgets.widgets[i]), scene))
 			throw std::runtime_error("Cannot create Browser Source");
 	});
-	button(tr("Preview widget"), [this] {
+	button("preview-html", "Preview widget", "advanced", [this] {
 		auto i = list->currentRow();
 		if (i >= 0)
 			QDesktopServices::openUrl(
 				QUrl::fromLocalFile(widgets.materialize(widgets.widgets[i])).toString() + "?preview=1");
 	});
-	button(tr("Open Event Playground"), [this] {
+	button("preview", "Preview", "primary", [this] {
 		const auto i = list->currentRow();
 		if (i >= 0 &&
 		    !QDesktopServices::openUrl(QUrl::fromLocalFile(widgets.materializePlayground(widgets.widgets[i]))))
 			throw std::runtime_error("Cannot open Event Playground in the system browser");
 	});
-	button(tr("Reset widget settings"), [this] {
+	button("reset", "Reset widget settings", "advanced", [this] {
 		auto i = list->currentRow();
 		if (i < 0)
 			return;
@@ -301,28 +307,29 @@ TikTokDock::TikTokDock(PluginConfig &c, TikTokConnectionManager &n, EventDispatc
 		widgets.save();
 		BrowserSourceManager::refresh(old, widgets.materialize(old));
 	});
-	button(tr("Open widget project"), [this] {
+	button("files", "Open widget project", "project", [this] {
 		const auto i = list->currentRow();
 		if (i >= 0)
 			QDesktopServices::openUrl(
 				QUrl::fromLocalFile(widgets.projects.projectPath(widgets.widgets[i].id()) + "/src"));
 	});
-	button(tr("Validate widget project"), [this] {
+	button("validate", "Validate widget project", "project", [this] {
 		const auto i = list->currentRow();
 		if (i >= 0) {
 			widgets.projects.validate(widgets.widgets[i].id());
-			projectDiagnostics->setText("Project valid");
+			projectDiagnostics->setText(uiTr("Project valid"));
 		}
 	});
-	button(tr("Publish widget project"), [this] {
+	button("publish", "Publish widget project", "project", [this] {
 		const auto i = list->currentRow();
 		if (i >= 0) {
 			widgets.publish(widgets.widgets[i].id());
 			BrowserSourceManager::refresh(widgets.widgets[i], widgets.materialize(widgets.widgets[i]));
-			projectDiagnostics->setText("Published");
+			projectDiagnostics->setText(uiTr("Published"));
 		}
 	});
-	auto *ipcEnabled = new QCheckBox(tr("Enable authenticated local widgetctl control"));
+	auto *ipcEnabled = new QCheckBox(uiTr("CLI access (local)"));
+	ipcEnabled->setToolTip(uiTr("Enable authenticated local widgetctl control"));
 	ipcEnabled->setChecked(config.settings["widgetctlEnabled"].toBool());
 	widgetsLayout->addWidget(ipcEnabled);
 	connect(ipcEnabled, &QCheckBox::toggled, this, [this](bool enabled) {
@@ -333,23 +340,17 @@ TikTokDock::TikTokDock(PluginConfig &c, TikTokConnectionManager &n, EventDispatc
 	projectDiagnostics->setObjectName("projectDiagnostics");
 	projectDiagnostics->setWordWrap(true);
 	widgetsLayout->addWidget(projectDiagnostics);
-	button = [this, eventsLayout](const QString &text, std::function<void()> fn) {
-		auto *b = new QPushButton(text);
-		const QMap<QString, QString> ids{{tr("Create widget"), "new"},
-						 {tr("Edit widget"), "edit"},
-						 {tr("Add to current scene"), "scene"},
-						 {tr("Preview widget"), "preview"}};
-		decorateWidgetButton(b, widgets.projects.assetDirectory(), ids.value(text, "settings"));
-		eventsLayout->addWidget(b);
-		connect(b, &QPushButton::clicked, this, [this, fn] { guarded(fn); });
-	};
 	auto *testType = new QComboBox;
 	testType->setObjectName("testEventType");
-	testType->addItem(tr("All test events"), "all");
+	testType->addItem(uiTr("All test events"), "all");
 	for (auto type : {"chat", "gift", "like", "follow", "roomUser", "state", "unknown"})
 		testType->addItem(QString::fromLatin1(type), QString::fromLatin1(type));
 	eventsLayout->addWidget(testType);
-	button(tr("Broadcast synthetic events to OBS (integration test)"), [this, testType] {
+	auto *integrationButton = new QPushButton(uiTr("Integration test"));
+	integrationButton->setObjectName("widget.action.integration-test");
+	integrationButton->setToolTip(uiTr("Broadcast synthetic events to OBS (integration test)"));
+	eventsLayout->addWidget(integrationButton);
+	connect(integrationButton, &QPushButton::clicked, this, [this, testType] {
 		static int sequence = 0;
 		++sequence;
 		const auto selected = testType->currentData().toString();
@@ -372,7 +373,33 @@ TikTokDock::TikTokDock(PluginConfig &c, TikTokConnectionManager &n, EventDispatc
 	diagnostics = new QLabel;
 	diagnostics->setWordWrap(true);
 	eventsLayout->addWidget(diagnostics);
-	setMinimumWidth(320);
+	setMinimumWidth(280);
+	auto *language = new QComboBox;
+	uiLanguage = language;
+	language->setObjectName("uiLanguage");
+	language->setAccessibleName(uiTr("Language"));
+	language->addItem("English", "en");
+	language->addItem("Español", "es");
+	root->addWidget(language);
+	auto *locale = new UiLocale(widgets.projects.assetDirectory(), this);
+	uiLocale = locale;
+	locale->bind(this);
+	QSettings preferences(config.directory + "/ui-preferences.ini", QSettings::IniFormat);
+	const auto selectedLocale = preferences.value("locale", config.settings["uiLocale"].toString("en")).toString();
+	language->setCurrentIndex(selectedLocale == "es" ? 1 : 0);
+	preferences.setValue("locale", selectedLocale);
+	preferences.sync();
+	config.settings["uiLocale"] = selectedLocale;
+	locale->setLocale(language->currentData().toString());
+	connect(language, &QComboBox::currentIndexChanged, this, [this, language, locale] {
+		config.settings["uiLocale"] = language->currentData().toString();
+		QSettings preferences(config.directory + "/ui-preferences.ini", QSettings::IniFormat);
+		preferences.setValue("locale", language->currentData().toString());
+		preferences.sync();
+		locale->setLocale(language->currentData().toString());
+		guarded([this] { config.save(); });
+		updateStatus({});
+	});
 	auto persist = [this] {
 		config.settings["autoConnect"] = autoConnect->isChecked();
 		config.settings["autoReconnect"] = retry->isChecked();
@@ -390,7 +417,7 @@ void TikTokDock::guarded(std::function<void()> fn)
 	try {
 		fn();
 	} catch (const std::exception &e) {
-		projectDiagnostics->setText(QString::fromUtf8(e.what()));
+		projectDiagnostics->setText(uiTr(QString::fromUtf8(e.what())));
 	}
 }
 void TikTokDock::refreshList()
@@ -406,7 +433,7 @@ void TikTokDock::connectRoom(bool forceReconnect)
 {
 	const auto requestedUsername = username->text().trimmed();
 	if (requestedUsername.isEmpty() || requestedUsername == "@") {
-		preparationError = tr("Enter a TikTok username first.");
+		preparationError = "Enter a TikTok username first.";
 		updateStatus({});
 		username->setFocus();
 		return;
@@ -458,9 +485,17 @@ void TikTokDock::startAutoConnect()
 }
 void TikTokDock::updateStatus(const QString &bridgeError)
 {
+	QSettings preferences(config.directory + "/ui-preferences.ini", QSettings::IniFormat);
+	const auto selectedLocale = preferences.value("locale", "en").toString();
+	if (uiLanguage && uiLocale && uiLanguage->currentData().toString() != selectedLocale) {
+		const QSignalBlocker blocker(uiLanguage);
+		uiLanguage->setCurrentIndex(selectedLocale == "es" ? 1 : 0);
+		config.settings["uiLocale"] = selectedLocale;
+		uiLocale->setLocale(selectedLocale);
+	}
 	auto s = connection.stateSnapshot();
 	if (!widgets.restorationError.isEmpty())
-		status->setToolTip(tr("Widget restore: ") + widgets.restorationError);
+		status->setToolTip(uiTr("Widget restore: ") + widgets.restorationError);
 	auto stats = dispatcher.snapshot();
 	if (throughputClock.elapsed() >= 1000) {
 		eventsPerSecond =
@@ -471,24 +506,25 @@ void TikTokDock::updateStatus(const QString &bridgeError)
 	username->setEnabled(!preparing);
 	connectButton->setEnabled(!preparing);
 	reconnectButton->setEnabled(!preparing);
-	QString text = preparing ? tr("Preparing connection… downloading and verifying setup files.")
-				 : s["data"].toObject()["state"].toString();
+	QString text = preparing ? uiTr("Preparing connection… downloading and verifying setup files.")
+				 : uiTr(s["data"].toObject()["state"].toString());
 	if (!connection.getUsername().isEmpty())
 		text += " · @" + connection.getUsername();
 	const auto error = !preparationError.isEmpty() ? preparationError
 						       : (bridgeError.isEmpty() ? connection.lastError() : bridgeError);
 	if (!error.isEmpty())
-		text += "\n" + error;
+		text += "\n" + uiTr(error);
 	status->setText(text);
+	const QLocale locale(config.settings["uiLocale"].toString("en"));
 	diagnostics->setText(
-		tr("%1 events/s · Received %2 · Delivered %3\nDropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7")
-			.arg(eventsPerSecond, 0, 'f', 1)
-			.arg(stats.accepted)
-			.arg(stats.delivered)
-			.arg(stats.overflow)
-			.arg(stats.oversize)
-			.arg(stats.duplicate)
-			.arg(stats.failed));
+		uiTr("%1 events/s · Received %2 · Delivered %3\nDropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7")
+			.arg(locale.toString(eventsPerSecond, 'f', 1))
+			.arg(locale.toString(static_cast<qulonglong>(stats.accepted)))
+			.arg(locale.toString(static_cast<qulonglong>(stats.delivered)))
+			.arg(locale.toString(static_cast<qulonglong>(stats.overflow)))
+			.arg(locale.toString(static_cast<qulonglong>(stats.oversize)))
+			.arg(locale.toString(static_cast<qulonglong>(stats.duplicate)))
+			.arg(locale.toString(static_cast<qulonglong>(stats.failed))));
 }
 } // namespace tt
 

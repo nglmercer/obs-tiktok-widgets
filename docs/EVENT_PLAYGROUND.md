@@ -46,3 +46,7 @@ The Chromium integration suite now also runs native `build/widget-test` to gener
 ## Template Engine v2 integration
 
 Instance code now lives in `projects/<uuid>/src`, not the legacy editable generated folder. **Open widget project** opens that authoritative tree. Independent manifest templates share only the event runtime; they no longer need a central renderer switch. Both Browser Sources and Playground resolve the selected immutable release through the original stable `widgets/<uuid>/index.html` entry. A local script-pointer check requests a session reset after publication, without a server or cross-frame synthetic event dispatch. Saved edits become visible after explicit publish, or auto-publish while OBS's project watcher is running. Preview-only animation/sound settings remain separate from persisted settings. See [Template Engine v2](TEMPLATE_ENGINE_V2.md) and [widgetctl](WIDGETCTL.md).
+
+## Responsive UI v4
+
+The compact event-aware controls, shared theme/locale preferences, collapsible JSON inspector and bounded timeline are described in [Studio v4](UI_V4.md). The fixture engine and preview session protocol are unchanged. English/Spanish labels never modify event names or JSON payloads. Standalone file previews use only bundled assets and browser-local preferences; no Node or additional connection is required.

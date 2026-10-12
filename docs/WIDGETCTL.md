@@ -77,4 +77,8 @@ Custom projects declare supported event types explicitly with `widgets project s
 
 ## Studio/builders (API 1 extensions)
 
-`builders status --json` reports installed tooling and Node availability. `builders install --confirm --json` explicitly installs the shipped pinned toolchain with lifecycle scripts disabled; `--dry-run` reports without fetching. `studio start --confirm` launches the installed widgetstudio adapter and returns an ephemeral browser URL, keeping the local service running. Its URL is a credential; do not share it. Existing create/files/revision/build/publish/preview commands work with schema-v3 TypeScript/React templates. Vue/Svelte, unapproved dependencies/plugins/config and modified policy locks return errors. See [Studio v3](STUDIO_V3.md).
+`builders status --json` reports legacy tooling and Node availability for diagnostics. Installed-user projects use plain HTML/CSS/JavaScript; `builders install` returns `DEVELOPMENT_ONLY` and never fetches packages. Existing framework projects and published releases are preserved, but their compilation remains a development workflow. `studio start --confirm` launches the installed widgetstudio adapter and returns an ephemeral browser URL, keeping the local service running. Its URL is a credential; do not share it. See [UI v4](UI_V4.md).
+
+## Installed-user policy and Studio preferences
+
+User projects use static HTML/CSS/JavaScript. `builders install` returns `DEVELOPMENT_ONLY`; framework starter sources are excluded from installed packages. Existing source projects/releases are retained. UI v4 uses the same widgetctl domain methods; its authenticated adapter additionally exposes allowlisted `studio.preferences.get/set` for non-secret locale/theme preferences. They never alter widget configuration/revisions. See [UI v4](UI_V4.md).

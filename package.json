@@ -6,7 +6,8 @@
   "scripts": {
     "build": "node tools/studio-schemas.mjs && tsc && tsc -p tsconfig.playground.json && esbuild web/sdk/index.ts --bundle --format=iife --global-name=TikTokOBSSDK --outfile=data/web/sdk/tiktok-obs.js && esbuild web/sdk/index.ts --bundle --format=esm --outfile=data/web/sdk/tiktok-obs.mjs && esbuild web/playground/app.ts --bundle --format=iife --outfile=data/web/playground/app.js && esbuild web/playground/engine.ts --format=esm --outfile=data/web/playground/engine.mjs && esbuild web/playground/frame.ts --bundle --format=iife --outfile=data/web/playground/frame.js && node tools/package-web.mjs && node tools/package-templates.mjs && tsc -p tsconfig.studio.json && vite build --config web/studio/vite.config.ts && node tools/package-studio.mjs",
     "test": "node --test tests/widgets/*.test.mjs",
-    "format:check": "prettier --check web/runtime web/templates tools/package-templates.mjs tools/check-generated.mjs tests/widgets/widgetctl.test.mjs web/studio web/shared web/builder tools/package-studio.mjs tools/studio-schemas.mjs"
+    "format:check": "prettier --check web/runtime web/templates tools/package-templates.mjs tools/check-generated.mjs tests/widgets/widgetctl.test.mjs web/studio web/shared web/builder tools/package-studio.mjs tools/studio-schemas.mjs web/playground tools/package-web.mjs tools/check-locales.mjs tests/widgets/ui-v4.test.mjs tools/package-locales.mjs",
+    "locales:check": "node tools/check-locales.mjs"
   },
   "devDependencies": {
     "@codemirror/commands": "6.8.1",

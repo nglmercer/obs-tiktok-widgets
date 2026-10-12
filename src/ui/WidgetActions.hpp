@@ -1,3 +1,4 @@
+#include "UiLocale.hpp"
 #pragma once
 #include <QAction>
 #include <QPushButton>
@@ -28,9 +29,11 @@ inline QAction *widgetAction(QObject *parent, const QString &assets, const QStri
 		auto a = v.toObject();
 		if (a["id"] != id)
 			continue;
-		auto *action = new QAction(QIcon(assets + "/icons/" + id + ".svg"), a["label"].toString(), parent);
+		auto *action =
+			new QAction(QIcon(assets + "/icons/" + id + ".svg"), uiTr(a["label"].toString()), parent);
 		action->setObjectName("widget.action." + id);
-		action->setToolTip(a["label"].toString() + " · " + a["description"].toString() + " · " +
+		action->setData(id);
+		action->setToolTip(uiTr(a["label"].toString()) + " · " + uiTr(a["description"].toString()) + " · " +
 				   a["shortcut"].toString());
 		if (!a["shortcut"].toString().isEmpty())
 			action->setShortcut(QKeySequence(a["shortcut"].toString()));

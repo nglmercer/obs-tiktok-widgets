@@ -9,8 +9,10 @@ class QLabel;
 class QListWidget;
 class QCheckBox;
 class QPushButton;
+class QComboBox;
 namespace tt {
 class StudioLauncher;
+class UiLocale;
 class EventMonitor;
 class SigningBundleManager;
 class TikTokDock : public QWidget {
@@ -25,6 +27,8 @@ class TikTokDock : public QWidget {
 	SigningBundleManager *bundleManager;
 	QString preparationError;
 	StudioLauncher *studioLauncher = nullptr;
+	UiLocale *uiLocale = nullptr;
+	QComboBox *uiLanguage = nullptr;
 	QListWidget *list;
 	QLabel *projectDiagnostics;
 	QElapsedTimer throughputClock;

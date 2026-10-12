@@ -21,6 +21,7 @@ function files(root, base = root) {
 try {
   for (const file of [
     "web",
+    "src/ui/i18n",
     "tools",
     "package.json",
     "tsconfig.json",

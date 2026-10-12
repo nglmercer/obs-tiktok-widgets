@@ -41,7 +41,7 @@ test(
       await page.waitForFunction(() => !!document.querySelector("textarea"));
       assert.deepEqual(errors, []);
       await page
-        .getByLabel("customCss", { exact: true })
+        .getByLabel("Custom CSS", { exact: true })
         .fill("body { color:red; }\n/* Unicode 🙂 */");
       assert.equal(
         await page.getByLabel("conditional", { exact: true }).count(),
@@ -49,10 +49,10 @@ test(
       );
       await page.getByLabel("enabled", { exact: true }).check();
       await page.getByLabel("conditional", { exact: true }).waitFor();
-      await page.getByLabel("color", { exact: true }).fill("#invalid");
+      await page.getByLabel("Accent color", { exact: true }).fill("#invalid");
       await page.getByRole("button", { name: "Save appearance" }).click();
       await page.getByText("Use a six-digit hexadecimal color").waitFor();
-      await page.getByLabel("color", { exact: true }).fill("#112233");
+      await page.getByLabel("Accent color", { exact: true }).fill("#112233");
       await page.getByLabel("size", { exact: true }).fill("48");
       assert.equal(await page.getByLabel("size slider").inputValue(), "48");
       await page.getByLabel("Search events").fill("gift");
@@ -68,7 +68,7 @@ test(
         .getByLabel("font", { exact: true })
         .selectOption("../assets/a.woff2");
       await page
-        .getByLabel("soundUrl", { exact: true })
+        .getByLabel("Audio", { exact: true })
         .selectOption("../assets/a.wav");
       await page.getByRole("button", { name: "Test audio" }).click();
       await page

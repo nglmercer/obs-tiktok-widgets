@@ -1,3 +1,4 @@
+import { getLocale, getTheme, t as tr } from "../../shared/i18n";
 import { useRef, useState, useEffect } from "react";
 export interface VisualComponent {
   id: string;
@@ -29,10 +30,26 @@ export function Canvas({
   const [zoom, setZoom] = useState(1),
     [snap, setSnap] = useState(true);
   const [width, height] = viewport.split("×").map(Number);
+  const scroll = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState(true),
+    [available, setAvailable] = useState(width);
+  const scale = fit ? Math.min(1, available / width) : zoom;
+  useEffect(() => {
+    const element = scroll.current;
+    if (!element) return;
+    const observer = new ResizeObserver(() =>
+      setAvailable(element.clientWidth),
+    );
+    observer.observe(element);
+    setAvailable(element.clientWidth);
+    return () => observer.disconnect();
+  }, []);
   const send = () =>
     frame.current?.contentWindow?.postMessage(
       {
         channel: "tiktok-studio-draft",
+        locale: getLocale(),
+        theme: getTheme(),
         version: 1,
         session,
         config: Object.fromEntries(
@@ -46,7 +63,7 @@ export function Canvas({
           ),
         ),
       },
-      location.origin,
+      location.origin === "null" ? "*" : location.origin,
     );
   useEffect(() => {
     send();
@@ -67,8 +84,8 @@ export function Canvas({
     const g = gesture.current;
     if (!g) return;
     const quant = (n: number) => (snap ? Math.round(n / 8) * 8 : Math.round(n));
-    const dx = (x - g.x) / zoom,
-      dy = (y - g.y) / zoom;
+    const dx = (x - g.x) / scale,
+      dy = (y - g.y) / scale;
     onChange(
       {
         ...g.values,
@@ -94,11 +111,15 @@ export function Canvas({
     <>
       <div className="canvas-tools">
         <label>
-          Zoom{" "}
+          {tr("Zoom")}{" "}
           <select
-            value={zoom}
-            onChange={(e) => setZoom(Number(e.target.value))}
+            value={fit ? "fit" : zoom}
+            onChange={(e) => {
+              setFit(e.target.value === "fit");
+              if (e.target.value !== "fit") setZoom(Number(e.target.value));
+            }}
           >
+            <option value="fit">{tr("Fit")}</option>
             {[0.5, 0.75, 1, 1.5].map((n) => (
               <option key={n} value={n}>
                 {n * 100}%
@@ -112,26 +133,27 @@ export function Canvas({
             checked={snap}
             onChange={(e) => setSnap(e.target.checked)}
           />{" "}
-          Snap to 8px grid
+          {tr("Snap to 8px grid")}
         </label>
       </div>
-      <div className="canvas-scroll">
+      <div className="canvas-scroll" ref={scroll}>
         <div
           className="visual-canvas"
-          style={{ width: width * zoom, height: height * zoom }}
+          style={{ width: width * scale, height: height * scale }}
         >
           <div
             style={{
               width,
               height,
-              transform: `scale(${zoom})`,
+              transform: `scale(${scale})`,
               transformOrigin: "top left",
               position: "relative",
             }}
           >
             <iframe
+              data-widget-preview
               ref={frame}
-              title="Isolated widget preview"
+              title={tr("Isolated widget preview")}
               sandbox="allow-scripts allow-same-origin"
               src={preview + "&studio=design&studioSession=" + session}
               onLoad={send}
@@ -145,7 +167,7 @@ export function Canvas({
                   <div
                     key={c.id}
                     role="button"
-                    aria-label={`Select ${c.label}`}
+                    aria-label={tr("Select {label}", { label: c.label })}
                     tabIndex={0}
                     className={
                       "visual-component " +
@@ -179,6 +201,7 @@ export function Canvas({
                     }}
                     onPointerDown={(e) => {
                       onSelect(c.id);
+                      onChange({ ...settings }, true);
                       e.currentTarget.setPointerCapture(e.pointerId);
                       gesture.current = {
                         x: e.clientX,
@@ -195,7 +218,8 @@ export function Canvas({
                     }}
                     onPointerUp={(e) => {
                       gesture.current = undefined;
-                      e.currentTarget.releasePointerCapture(e.pointerId);
+                      if (e.currentTarget.hasPointerCapture(e.pointerId))
+                        e.currentTarget.releasePointerCapture(e.pointerId);
                     }}
                     onPointerCancel={() => {
                       gesture.current = undefined;
@@ -205,7 +229,7 @@ export function Canvas({
                     <button
                       type="button"
                       data-resize="true"
-                      aria-label={`Resize ${c.label}`}
+                      aria-label={tr("Resize {label}", { label: c.label })}
                       className="resize-handle"
                     />
                   </div>
@@ -216,8 +240,9 @@ export function Canvas({
       </div>
       {!components.some((c) => c.bindings) && (
         <p>
-          This template has no declared position/size bindings. Edit its source
-          in Code mode.
+          {tr(
+            "This template has no declared position/size bindings. Edit its source in Code mode.",
+          )}
         </p>
       )}
     </>

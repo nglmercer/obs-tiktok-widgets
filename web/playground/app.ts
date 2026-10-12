@@ -1,5 +1,22 @@
+import {
+  t,
+  getLocale,
+  getTheme,
+  setLocale,
+  setTheme,
+  subscribe,
+  localizeDocument,
+  eventCount,
+  type Locale,
+  type Theme,
+} from "../shared/i18n/index.js";
 import { scenario, ScenarioEngine, type FixtureOptions } from "./engine.js";
-import { channel, targetOrigin, validPacket, validPreviewConfig } from "./protocol.js";
+import {
+  channel,
+  targetOrigin,
+  validPacket,
+  validPreviewConfig,
+} from "./protocol.js";
 import { uniqueId, integer } from "./engine.js";
 import type { TikTokEvent } from "../sdk/types.js";
 if (new URL(location.href).searchParams.get("studio") === "design")
@@ -11,6 +28,28 @@ const frame = el<HTMLIFrameElement>("preview"),
   status = el("status"),
   json = el("json"),
   history = el("history");
+let statusKey = "Loading renderer…";
+function showStatus(key: string) {
+  statusKey = key;
+  status.textContent = t(key);
+}
+function updateUI() {
+  localizeDocument();
+  input("language").value = getLocale();
+  input("theme").value = getTheme();
+  showStatus(statusKey);
+  el("event-count").textContent = eventCount(history.children.length);
+}
+const unsubscribeLocale = subscribe(updateUI);
+updateUI();
+input("language").onchange = () => setLocale(input("language").value as Locale);
+input("theme").onchange = () => setTheme(input("theme").value as Theme);
+function eventControls() {
+  const gift = input("type").value === "gift";
+  for (const id of ["gift-controls", "streak-controls", "gift-id-control"])
+    el(id).hidden = !gift;
+}
+input("type").onchange = eventControls;
 let state: "loading" | "initializing" | "ready" | "error" | "closed" =
   "loading";
 let session = "",
@@ -26,18 +65,42 @@ const send = (data: Record<string, unknown>) => {
     origin,
   );
 };
-let studioDraft: Record<string,unknown> | undefined;
+let studioDraft: Record<string, unknown> | undefined;
 const studioSession = new URL(location.href).searchParams.get("studioSession");
-window.addEventListener("message", e => {
- if (e.source !== parent || parent === window || e.origin !== location.origin || !studioSession || e.data?.channel !== "tiktok-studio-draft" || e.data?.session !== studioSession || e.data?.version !== 1 || !validPreviewConfig(e.data.config)) return;
- studioDraft=e.data.config; if (state === "ready") settings();
+window.addEventListener("message", (e) => {
+  if (
+    e.source !== parent ||
+    parent === window ||
+    e.origin !== location.origin ||
+    !studioSession ||
+    e.data?.channel !== "tiktok-studio-draft" ||
+    e.data?.session !== studioSession ||
+    e.data?.version !== 1 ||
+    !validPreviewConfig(e.data.config)
+  )
+    return;
+  if (["en", "es"].includes(e.data.locale) && e.data.locale !== getLocale())
+    setLocale(e.data.locale);
+  if (
+    ["light", "dark", "system"].includes(e.data.theme) &&
+    e.data.theme !== getTheme()
+  )
+    setTheme(e.data.theme);
+  studioDraft = e.data.config;
+  if (state === "ready") settings();
 });
 const settings = () =>
   send({
     action: "settings",
-    ...(studioDraft ? {config:studioDraft} : {}),
-    animation: typeof studioDraft?.animation === "boolean" ? studioDraft.animation : input("animation").checked,
-    sound: typeof studioDraft?.sound === "boolean" ? studioDraft.sound : input("sound").checked,
+    ...(studioDraft ? { config: studioDraft } : {}),
+    animation:
+      typeof studioDraft?.animation === "boolean"
+        ? studioDraft.animation
+        : input("animation").checked,
+    sound:
+      typeof studioDraft?.sound === "boolean"
+        ? studioDraft.sound
+        : input("sound").checked,
   });
 const engine = new ScenarioEngine((event) => {
   if (state !== "ready") return;
@@ -53,10 +116,13 @@ const engine = new ScenarioEngine((event) => {
   };
   li.append(b);
   history.append(li);
+  el("event-count").textContent = eventCount(history.children.length);
   while (history.children.length > 200) history.firstChild?.remove();
   status.textContent =
     supported && !supported.includes(event.type)
-      ? `This template or its filters do not display ${event.type} events.`
+      ? t("This template or its filters do not display {type} events.", {
+          type: event.type,
+        })
       : "Local simulation delivered";
 });
 function options(): FixtureOptions {
@@ -98,7 +164,7 @@ function play() {
       repetitions,
     );
   } catch (e) {
-    status.textContent = (e as Error).message;
+    showStatus((e as Error).message);
   }
 }
 function loadPreview() {
@@ -107,13 +173,13 @@ function loadPreview() {
   session = uniqueId();
   state = "loading";
   el<HTMLButtonElement>("replay").disabled = true;
-  status.textContent = "Loading preview…";
+  showStatus("Loading preview…");
   frame.src = `preview.html?session=${encodeURIComponent(session)}`;
   timeout = setTimeout(() => {
     state = "error";
     engine.stop();
     timeout = undefined;
-    status.textContent = "Preview initialization timed out. Reset to retry.";
+    showStatus("Preview initialization timed out. Reset to retry.");
   }, 10000);
 }
 window.addEventListener("message", (e) => {
@@ -142,7 +208,7 @@ window.addEventListener("message", (e) => {
     initialReplay = false;
     loadPreview();
   } else if (e.data.action === "error" && state === "ready")
-    status.textContent = e.data.message;
+    showStatus(e.data.message);
 });
 frame.onload = () => {
   if (state === "ready") {
@@ -155,7 +221,7 @@ frame.onerror = () => {
   el<HTMLButtonElement>("replay").disabled = true;
   engine.stop();
   clearTimeout(timeout);
-  status.textContent = "Preview failed to load. Reset to retry.";
+  showStatus("Preview failed to load. Reset to retry.");
 };
 const initialOptions = new URL(location.href).searchParams;
 for (const [key, id] of [
@@ -165,18 +231,20 @@ for (const [key, id] of [
   ["count", "count"],
 ])
   if (initialOptions.has(key)) input(id).value = initialOptions.get(key)!;
+eventControls();
 loadPreview();
 el("replay").onclick = play;
 el("stop").onclick = () => {
   initialReplay = false;
   engine.stop();
-  status.textContent = "Stopped";
+  showStatus("Stopped");
 };
 el("reset").onclick = () => {
   initialReplay = false;
   last = undefined;
   json.textContent = "";
   history.replaceChildren();
+  el("event-count").textContent = eventCount(0);
   loadPreview();
 };
 input("range").oninput = () => {
@@ -201,7 +269,7 @@ el("copy").onclick = async () => {
   const text = JSON.stringify(last, null, 2);
   try {
     await navigator.clipboard.writeText(text);
-    status.textContent = "JSON copied";
+    showStatus("JSON copied");
   } catch {
     const area = document.createElement("textarea");
     area.value = text;
@@ -212,12 +280,15 @@ el("copy").onclick = async () => {
       copied = document.execCommand("copy");
     } catch {}
     area.remove();
-    status.textContent = copied
-      ? "JSON copied"
-      : "Copy unavailable: select the JSON and copy manually";
+    showStatus(
+      copied
+        ? "JSON copied"
+        : "Copy unavailable: select the JSON and copy manually",
+    );
   }
 };
 window.addEventListener("pagehide", () => {
+  unsubscribeLocale();
   state = "closed";
   session = "";
   clearTimeout(timeout);

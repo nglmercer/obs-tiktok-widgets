@@ -71,11 +71,24 @@ export function scenario(
   streak = false,
 ): TikTokEvent[] {
   const group = uniqueId();
-  if (!streak || (options.type && options.type !== "gift")) return [fixture(options, group)];
+  if (!streak || (options.type && options.type !== "gift"))
+    return [fixture(options, group)];
   const total = BigInt(integer(options.count || "23"));
   if (total < 1n) throw new Error("Streak total must be positive");
-  const checkpoints = [1n, 5n, total].filter((n, i, all) => n <= total && all.indexOf(n) === i).sort((a, b) => a < b ? -1 : 1);
-  return checkpoints.map((count, i) => fixture({ ...options, count: String(count), completed: i === checkpoints.length - 1 ? options.completed ?? true : false }, group));
+  const checkpoints = [1n, 5n, total]
+    .filter((n, i, all) => n <= total && all.indexOf(n) === i)
+    .sort((a, b) => (a < b ? -1 : 1));
+  return checkpoints.map((count, i) =>
+    fixture(
+      {
+        ...options,
+        count: String(count),
+        completed:
+          i === checkpoints.length - 1 ? (options.completed ?? true) : false,
+      },
+      group,
+    ),
+  );
 }
 export function dispatchLocal(target: EventTarget, event: TikTokEvent): void {
   target.dispatchEvent(new CustomEvent("tiktok:event", { detail: event }));

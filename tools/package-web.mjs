@@ -9,6 +9,16 @@ for (const name of ["widget.css"]) {
   copyFileSync(`web/widgets/${name}`, `data/web/playground/${name}`);
 }
 
-for (const item of readdirSync("web/widgets", {withFileTypes:true})) if(item.isDirectory()) cpSync(`web/widgets/${item.name}`, `data/web/widgets/${item.name}`, {recursive:true});
-cpSync("web/examples", "data/web/examples", {recursive:true});
-for (const name of readdirSync("web/sdk")) if(name.endsWith(".ts")) copyFileSync(`web/sdk/${name}`, `data/web/sdk/${name}`);
+for (const item of readdirSync("web/widgets", { withFileTypes: true }))
+  if (item.isDirectory())
+    cpSync(`web/widgets/${item.name}`, `data/web/widgets/${item.name}`, {
+      recursive: true,
+    });
+cpSync("web/examples", "data/web/examples", { recursive: true });
+for (const name of readdirSync("web/sdk"))
+  if (name.endsWith(".ts"))
+    copyFileSync(`web/sdk/${name}`, `data/web/sdk/${name}`);
+
+copyFileSync("web/shared/tokens.css", "data/web/playground/tokens.css");
+
+cpSync("src/ui/i18n", "data/web/i18n", { recursive: true });

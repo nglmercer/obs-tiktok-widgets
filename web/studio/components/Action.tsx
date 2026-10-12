@@ -1,3 +1,4 @@
+import { t } from "../../shared/i18n";
 import { useState } from "react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import {
@@ -71,9 +72,9 @@ export function Action({
     size: number;
   }>;
   const title = [
-    action.label,
+    t(action.label),
     action.shortcut,
-    disabledReason || action.description,
+    t(disabledReason || action.description),
   ]
     .filter(Boolean)
     .join(" · ");
@@ -96,14 +97,14 @@ export function Action({
         >
           <button
             type="button"
-            aria-label={action.label}
+            aria-label={t(action.label)}
             aria-description={title}
             disabled={!!disabledReason}
             onClick={onClick}
             className={action.isDestructive ? "danger" : ""}
           >
             <Icon size={18} />
-            {primary && <span>{action.label}</span>}
+            {primary && <span>{t(action.label)}</span>}
           </button>
         </span>
       </Tooltip.Trigger>

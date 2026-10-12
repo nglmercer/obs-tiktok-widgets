@@ -1,3 +1,4 @@
+import { t } from "../../shared/i18n";
 // Native modal provides focus trapping, Escape and keyboard submission without blocking polling.
 export function ask(message: string, initial?: string): Promise<string | null> {
   return new Promise((resolve) => {
@@ -8,23 +9,24 @@ export function ask(message: string, initial?: string): Promise<string | null> {
     form.method = "dialog";
     const title = document.createElement("h2");
     title.id = "studio-dialog-title";
-    title.textContent =
-      initial === undefined ? "Confirm action" : "Enter value";
+    title.textContent = t(
+      initial === undefined ? "Confirm action" : "Enter value",
+    );
     dialog.setAttribute("aria-labelledby", title.id);
     const description = document.createElement("p");
-    description.textContent = message;
+    description.textContent = t(message);
     const input = document.createElement("input");
     input.value = initial || "";
-    input.setAttribute("aria-label", message);
+    input.setAttribute("aria-label", t(message));
     input.autofocus = true;
     const cancel = document.createElement("button");
     cancel.type = "submit";
     cancel.value = "cancel";
-    cancel.textContent = "Cancel";
+    cancel.textContent = t("Cancel");
     const accept = document.createElement("button");
     accept.type = "submit";
     accept.value = "accept";
-    accept.textContent = initial === undefined ? "Confirm" : "Continue";
+    accept.textContent = t(initial === undefined ? "Confirm" : "Continue");
     form.append(title, description);
     if (initial !== undefined) form.append(input);
     form.append(cancel, accept);

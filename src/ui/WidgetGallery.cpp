@@ -1,3 +1,4 @@
+#include "UiLocale.hpp"
 #include "WidgetActions.hpp"
 #include "WidgetGallery.hpp"
 #include "projects/WidgetProjectService.hpp"
@@ -19,14 +20,14 @@ QString WidgetGallery::choose(QWidget *p, WidgetProjectService *service)
 		return {};
 	QString importedId;
 	QDialog d(p);
-	d.setWindowTitle("Template gallery");
+	d.setWindowTitle(uiTr("Template gallery"));
 	d.resize(650, 500);
 	auto *l = new QVBoxLayout(&d);
 	auto *search = new QLineEdit;
-	search->setPlaceholderText("Search templates");
+	search->setPlaceholderText(uiTr("Search templates"));
 	l->addWidget(search);
 	auto *categories = new QComboBox;
-	categories->addItem("All categories", "");
+	categories->addItem(uiTr("All categories"), "");
 	l->addWidget(categories);
 	auto *list = new QListWidget;
 	l->addWidget(list, 1);
@@ -38,15 +39,13 @@ QString WidgetGallery::choose(QWidget *p, WidgetProjectService *service)
 		const auto filter = search->text();
 		for (const auto &v : service->templates.list()) {
 			const auto m = v.toObject();
+			if (m["build"].toObject()["mode"].toString("static") != "static")
+				continue;
 			if (!categories->currentData().toString().isEmpty() &&
 			    m["category"] != categories->currentData())
 				continue;
-			const auto text = m["name"].toString() + " · " + m["id"].toString() + " @ " +
-					  m["version"].toString() + " [" +
-					  (m["build"].toObject()["framework"] == "react" ? QString("React")
-					   : m["build"].toObject()["mode"] == "vite"     ? QString("TS")
-											 : QString("Vanilla")) +
-					  "]";
+			const auto text = uiTr(m["name"].toString()) + " · " + m["id"].toString() + " @ " +
+					  m["version"].toString() + " [HTML/CSS/JS]";
 			if (!text.contains(filter, Qt::CaseInsensitive))
 				continue;
 			auto *item = new QListWidgetItem(text, list);
@@ -57,13 +56,13 @@ QString WidgetGallery::choose(QWidget *p, WidgetProjectService *service)
 				item->setIcon(QIcon(safePath(definition.root, m["thumbnail"].toString())));
 				list->setIconSize(QSize(96, 64));
 			}
-			item->setToolTip(m["description"].toString());
+			item->setToolTip(uiTr(m["description"].toString()));
 		}
 	};
 	for (const auto &v : service->templates.list()) {
 		const auto cat = v.toObject()["category"].toString();
 		if (categories->findData(cat) < 0)
-			categories->addItem(cat, cat);
+			categories->addItem(uiTr(cat), cat);
 	}
 	populate();
 	QObject::connect(search, &QLineEdit::textChanged, &d, [&] { populate(); });
@@ -74,53 +73,53 @@ QString WidgetGallery::choose(QWidget *p, WidgetProjectService *service)
 				list->currentItem()->data(Qt::UserRole).toJsonObject()["description"].toString() +
 				"\nTrusted author code; creates an independent editable project.");
 	});
-	auto *install = new QPushButton("Install .tiktokwidget package…");
+	auto *install = new QPushButton(uiTr("Install .tiktokwidget package…"));
 	l->addWidget(install);
 	QObject::connect(install, &QPushButton::clicked, &d, [&] {
-		const auto path =
-			QFileDialog::getOpenFileName(&d, "Install template", {}, "TikTok widget (*.tiktokwidget)");
+		const auto path = QFileDialog::getOpenFileName(&d, uiTr("Install template"), {},
+							       "TikTok widget (*.tiktokwidget)");
 		if (path.isEmpty())
 			return;
 		try {
 			TemplatePackageManager packages(service->directory(), service->templates);
 			auto report = packages.install(path, true);
-			if (QMessageBox::question(&d, "Trusted template",
-						  "Install trusted code: " + report["name"].toString() + "?") ==
+			if (uiQuestion(&d, "Trusted template",
+				       uiTr("Install trusted code: %1?").arg(report["name"].toString())) ==
 			    QMessageBox::Yes) {
 				packages.install(path);
 				populate();
 			}
 		} catch (const std::exception &e) {
-			details->setText(QString::fromUtf8(e.what()));
+			details->setText(uiTr(QString::fromUtf8(e.what())));
 		}
 	});
-	auto *importProject = new QPushButton("Import project package…");
+	auto *importProject = new QPushButton(uiTr("Import project package…"));
 	l->addWidget(importProject);
 	QObject::connect(importProject, &QPushButton::clicked, &d, [&] {
 		const auto file =
-			QFileDialog::getOpenFileName(&d, "Import project", {}, "TikTok widget (*.tiktokwidget)");
+			QFileDialog::getOpenFileName(&d, uiTr("Import project"), {}, "TikTok widget (*.tiktokwidget)");
 		if (file.isEmpty())
 			return;
 		try {
 			const auto report = service->importProject(file, true);
-			details->setText("Project: " + report["settings"].toObject()["name"].toString() +
+			details->setText(uiTr("Project: ") + report["settings"].toObject()["name"].toString() +
 					 " (ID conflicts fork automatically)");
-			if (QMessageBox::question(&d, "Import trusted project",
-						  "Import this source/config/assets package?") == QMessageBox::Yes) {
+			if (uiQuestion(&d, "Import trusted project", "Import this source/config/assets package?") ==
+			    QMessageBox::Yes) {
 				importedId = service->importProject(file)["id"].toString();
 				d.accept();
 			}
 		} catch (const std::exception &e) {
-			details->setText(QString::fromUtf8(e.what()));
+			details->setText(uiTr(QString::fromUtf8(e.what())));
 		}
 	});
-	auto *exportTemplate = new QPushButton("Export selected template…");
+	auto *exportTemplate = new QPushButton(uiTr("Export selected template…"));
 	l->addWidget(exportTemplate);
 	QObject::connect(exportTemplate, &QPushButton::clicked, &d, [&] {
 		if (!list->currentItem())
 			return;
 		const auto out =
-			QFileDialog::getSaveFileName(&d, "Export template", {}, "TikTok widget (*.tiktokwidget)");
+			QFileDialog::getSaveFileName(&d, uiTr("Export template"), {}, "TikTok widget (*.tiktokwidget)");
 		if (out.isEmpty())
 			return;
 		try {
@@ -128,21 +127,21 @@ QString WidgetGallery::choose(QWidget *p, WidgetProjectService *service)
 			TemplatePackageManager packages(service->directory(), service->templates);
 			packages.exportPackage(service->templates.resolve(m["id"].toString(), m["version"].toString()),
 					       out);
-			details->setText("Exported template package");
+			details->setText(uiTr("Exported template package"));
 		} catch (const std::exception &e) {
-			details->setText(QString::fromUtf8(e.what()));
+			details->setText(uiTr(QString::fromUtf8(e.what())));
 		}
 	});
-	auto *create = new QPushButton("Create editable project from selected template");
+	auto *create = new QPushButton(uiTr("Create editable project from selected template"));
 	l->addWidget(create);
 	QObject::connect(create, &QPushButton::clicked, &d, [&] {
 		if (list->currentItem())
 			d.accept();
 	});
-	for (auto *button : d.findChildren<QPushButton *>())
-		decorateWidgetButton(button, service->assetDirectory(),
-				     button->text().contains("Install") || button->text().contains("Import") ? "import"
-													     : "new");
+	decorateWidgetButton(install, service->assetDirectory(), "import");
+	decorateWidgetButton(importProject, service->assetDirectory(), "import");
+	decorateWidgetButton(exportTemplate, service->assetDirectory(), "export");
+	decorateWidgetButton(create, service->assetDirectory(), "new");
 	if (d.exec() != QDialog::Accepted)
 		return {};
 	if (!importedId.isEmpty())
