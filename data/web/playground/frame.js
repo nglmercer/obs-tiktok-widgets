@@ -24,6 +24,7 @@
       return false;
     }
     if (p.channel !== channel || p.session !== session2 || p.version !== 1) return false;
+    if (p.action === "updated") return Object.keys(p).length === 4;
     if (p.action === "loaded") return Object.keys(p).length === 4;
     if (p.action === "ready") return Object.keys(p).length === 4 || Object.keys(p).length === 5 && (p.supported === null || Array.isArray(p.supported) && p.supported.length <= 5 && p.supported.every((t) => ["gift", "chat", "like", "follow", "roomUser"].includes(t)));
     if (p.action === "settings") return typeof p.animation === "boolean" && typeof p.sound === "boolean";
@@ -61,7 +62,7 @@
           state = "ready";
           const types = { gifts: ["gift"], chat: ["chat"], likes: ["like"], viewers: ["roomUser"], alerts: ["follow"], events: ["gift", "chat", "like", "follow", "roomUser"] };
           const config = previewWindow.TikTokWidgetConfig || {};
-          const available = types[String(config.template || document.body?.dataset.template)];
+          const available = Array.isArray(config.events) ? config.events : types[String(config.template || document.body?.dataset.template)];
           const filters = config.filters;
           send("ready", { supported: available ? available.filter((t) => !Array.isArray(filters) || !filters.length || filters.includes(t)) : null });
         }
@@ -72,8 +73,27 @@
       state = "loaded";
       send("loaded");
     }, { once: true });
+    let poll;
+    const pointer = previewWindow.TikTokWidgetBuildPointer;
+    if (pointer) {
+      previewWindow.TikTokWidgetBuildChanged = (build) => {
+        if (state === "ready" && build !== previewWindow.TikTokWidgetBuildId) {
+          state = "closed";
+          send("updated");
+          if (poll) clearInterval(poll);
+        }
+      };
+      poll = setInterval(() => {
+        if (state !== "ready") return;
+        const script = document.createElement("script");
+        script.src = `${pointer}?t=${Date.now()}`;
+        script.onload = script.onerror = () => script.remove();
+        document.head.append(script);
+      }, 1e3);
+    }
     window.addEventListener("pagehide", () => {
       state = "closed";
+      if (poll) clearInterval(poll);
     }, { once: true });
   })();
 })();

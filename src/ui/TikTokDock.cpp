@@ -131,13 +131,13 @@ TikTokDock::TikTokDock(PluginConfig &c, TikTokConnectionManager &n, EventDispatc
 			connect(b, &QPushButton::clicked, this, [this, fn] { guarded(fn); });
 		};
 	button(tr("Create widget"), [this] {
-		auto type = WidgetGallery::choose(this);
+		auto type = WidgetGallery::choose(this,&widgets.projects);
 		if (type.isEmpty())
 			return;
-		auto widget = WidgetConfig::create(type);
-		if (!WidgetEditor::edit(widget, this))
-			return;
-		widgets.widgets.push_back(widget);
+if(type.startsWith("project:")){widgets.load();refreshList();return;}
+		auto widget = widgets.create(type);
+		if (!WidgetEditor::edit(widget, this,&widgets.projects)) {widgets.erase(widget.id());return;}
+		widgets.widgets.last()=widget;
 		try {
 			widgets.save();
 		} catch (...) {
@@ -152,11 +152,11 @@ TikTokDock::TikTokDock(PluginConfig &c, TikTokConnectionManager &n, EventDispatc
 		if (i < 0)
 			return;
 		auto copy = widgets.widgets[i];
-		if (WidgetEditor::edit(copy, this)) {
-			widgets.materialize(copy);
+		if (WidgetEditor::edit(copy, this,&widgets.projects)) {
+
 			widgets.widgets[i] = copy;
 			widgets.save();
-			BrowserSourceManager::refresh(copy, widgets.materialize(copy));
+
 			refreshList();
 		}
 	});
@@ -229,30 +229,13 @@ TikTokDock::TikTokDock(PluginConfig &c, TikTokConnectionManager &n, EventDispatc
 		widgets.save();
 		BrowserSourceManager::refresh(old, widgets.materialize(old));
 	});
-	button(tr("Open editable HTML folder"), [this] {
-		auto i = list->currentRow();
-		if (i < 0)
-			return;
-		auto &widget = widgets.widgets[i];
-		const auto page = widgets.materialize(widget);
-		const auto folder = QFileInfo(page).absolutePath() + "/editable";
-		QDir().mkpath(folder);
-		for (const auto &name : {"index.html", "widget.js", "widget.css"}) {
-			const auto destination = folder + "/" + name;
-			if (!QFile::exists(destination) &&
-			    !QFile::copy(QFileInfo(page).absolutePath() + "/" + name, destination))
-				throw std::runtime_error("Cannot create editable HTML copy");
-		}
-		widget.value["editableHtml"] = folder + "/index.html";
-		widgets.save();
-		BrowserSourceManager::refresh(widget, widgets.materialize(widget));
-		QDesktopServices::openUrl(QUrl::fromLocalFile(folder));
+	button(tr("Open widget project"), [this] {
+		const auto i=list->currentRow();if(i>=0)QDesktopServices::openUrl(QUrl::fromLocalFile(widgets.projects.projectPath(widgets.widgets[i].id())+"/src"));
 	});
-	button(tr("Reload edited HTML"), [this] {
-		const auto i = list->currentRow();
-		if (i >= 0)
-			BrowserSourceManager::refresh(widgets.widgets[i], widgets.materialize(widgets.widgets[i]));
-	});
+	button(tr("Validate widget project"), [this] {const auto i=list->currentRow();if(i>=0){widgets.projects.validate(widgets.widgets[i].id());projectDiagnostics->setText("Project valid");}});
+	button(tr("Publish widget project"), [this] {const auto i=list->currentRow();if(i>=0){widgets.publish(widgets.widgets[i].id());BrowserSourceManager::refresh(widgets.widgets[i],widgets.materialize(widgets.widgets[i]));projectDiagnostics->setText("Published");}});
+	auto *ipcEnabled=new QCheckBox(tr("Enable authenticated local widgetctl control"));ipcEnabled->setChecked(config.settings["widgetctlEnabled"].toBool());widgetsLayout->addWidget(ipcEnabled);connect(ipcEnabled,&QCheckBox::toggled,this,[this](bool enabled){config.settings["widgetctlEnabled"]=enabled;guarded([this]{config.save();});});
+	projectDiagnostics=new QLabel;projectDiagnostics->setObjectName("projectDiagnostics");projectDiagnostics->setWordWrap(true);widgetsLayout->addWidget(projectDiagnostics);
 	button = [this, eventsLayout](const QString &text, std::function<void()> fn) {
 		auto *b = new QPushButton(text);
 		eventsLayout->addWidget(b);
@@ -305,7 +288,7 @@ void TikTokDock::guarded(std::function<void()> fn)
 	try {
 		fn();
 	} catch (const std::exception &e) {
-		QMessageBox::warning(this, tr("TikTok LIVE Widgets"), QString::fromUtf8(e.what()));
+		projectDiagnostics->setText(QString::fromUtf8(e.what()));
 	}
 }
 void TikTokDock::refreshList()
@@ -406,3 +389,5 @@ void TikTokDock::updateStatus(const QString &bridgeError)
 			.arg(stats.failed));
 }
 } // namespace tt
+
+void tt::TikTokDock::projectState(const QString&id,const QString&state,const QString&diagnostic){projectDiagnostics->setText(id.left(8)+" · "+state+(diagnostic.isEmpty()?QString{}:"\n"+diagnostic));if(state=="published")refreshList();}

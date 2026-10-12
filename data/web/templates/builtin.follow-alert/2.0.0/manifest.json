@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 2,
+  "id": "builtin.follow-alert",
+  "version": "2.0.0",
+  "name": "Alerts",
+  "category": "alerts",
+  "description": "Editable alerts widget",
+  "entry": "src/index.html",
+  "events": ["follow"],
+  "defaultSize": {
+    "width": 600,
+    "height": 400
+  },
+  "configSchema": "schema/settings.schema.json",
+  "presets": ["presets/default.json"],
+  "assets": ["src/main.js", "src/style.css", "assets/thumbnail.svg"],
+  "thumbnail": "assets/thumbnail.svg"
+}

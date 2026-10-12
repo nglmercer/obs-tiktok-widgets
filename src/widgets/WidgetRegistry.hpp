@@ -3,6 +3,6 @@
 namespace tt {
 class WidgetRegistry {
 public:
-	static QStringList templates();
+	static QStringList templates(const QString &configDirectory = {}, const QString &assetDirectory = {});
 };
 } // namespace tt

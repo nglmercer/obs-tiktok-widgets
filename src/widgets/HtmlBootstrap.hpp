@@ -1,74 +1,200 @@
 #pragma once
+#include <QByteArray>
+#include <QMap>
+#include <QList>
+#include <QSet>
 #include <QString>
-#include <QRegularExpression>
+#include <stdexcept>
 namespace tt {
-inline QRegularExpression htmlTokens()
+struct HtmlElement {
+	QString name;
+	QMap<QString, QString> attributes;
+	int start = 0, end = 0;
+	bool closing = false;
+};
+// Lexical HTML scanner: preserves bytes/text instead of serializing an XML DOM.
+// Comments/declarations and raw text are handled before scanning tags/attributes.
+inline QList<HtmlElement> htmlElements(const QString &page)
 {
-	return QRegularExpression(
-		QStringLiteral(
-			R"html(<!--[\s\S]*?-->|<(script|style)\b(?:"[^"]*"|'[^']*'|[^'">])*>[\s\S]*?</\1\s*>|<![^>]*>|<(?:"[^"]*"|'[^']*'|[^'">])+>)html"),
-		QRegularExpression::CaseInsensitiveOption);
+	QList<HtmlElement> out;
+	int i = 0;
+	while (i < page.size()) {
+		if (page[i] != '<') {
+			++i;
+			continue;
+		}
+		if (page.mid(i, 4) == "<!--") {
+			const auto e = page.indexOf("-->", i + 4);
+			out.append(HtmlElement{"#comment", {}, i, int(e < 0 ? page.size() : e + 3), false});
+			i = e < 0 ? page.size() : e + 3;
+			continue;
+		}
+		int start = i++;
+		if (i >= page.size())
+			break;
+		if (page[i] == '!' || page[i] == '?') {
+			QChar quote;
+			while (i < page.size()) {
+				auto c = page[i++];
+				if (!quote.isNull()) {
+					if (c == quote)
+						quote = {};
+				} else if (c == '\'' || c == '"')
+					quote = c;
+				else if (c == '>')
+					break;
+			}
+			continue;
+		}
+		HtmlElement tag;
+		tag.start = start;
+		if (page[i] == '/') {
+			tag.closing = true;
+			++i;
+		}
+		while (i < page.size() && page[i].isSpace())
+			++i;
+		const auto n = i;
+		while (i < page.size() && (page[i].isLetterOrNumber() || page[i] == '-' || page[i] == ':'))
+			++i;
+		tag.name = page.mid(n, i - n).toLower();
+		if (tag.name.isEmpty())
+			continue;
+		while (i < page.size() && page[i] != '>') {
+			if (page[i].isSpace() || page[i] == '/') {
+				++i;
+				continue;
+			}
+			const auto a = i;
+			while (i < page.size() && !page[i].isSpace() && page[i] != '=' && page[i] != '>')
+				++i;
+			const auto key = page.mid(a, i - a).toLower();
+			while (i < page.size() && page[i].isSpace())
+				++i;
+			QString value;
+			if (i < page.size() && page[i] == '=') {
+				++i;
+				while (i < page.size() && page[i].isSpace())
+					++i;
+				if (i < page.size() && (page[i] == '\'' || page[i] == '"')) {
+					const auto quote = page[i++];
+					const auto v = i;
+					while (i < page.size() && page[i] != quote)
+						++i;
+					value = page.mid(v, i - v);
+					if (i < page.size())
+						++i;
+				} else {
+					const auto v = i;
+					while (i < page.size() && !page[i].isSpace() && page[i] != '>')
+						++i;
+					value = page.mid(v, i - v);
+				}
+			}
+			if (!key.isEmpty() && !tag.attributes.contains(key))
+				tag.attributes[key] = value;
+		}
+		if (i < page.size())
+			++i;
+		tag.end = i;
+		out.append(tag);
+		if (!tag.closing &&
+		    (tag.name == "script" || tag.name == "style" || tag.name == "textarea" || tag.name == "title")) {
+			const auto end = page.indexOf("</" + tag.name, i, Qt::CaseInsensitive);
+			if (end < 0)
+				break;
+			i = end;
+		}
+	}
+	return out;
 }
 inline QString htmlBaseHref(const QString &page)
 {
-	auto matches = htmlTokens().globalMatch(page);
-	const QRegularExpression base(R"html(^<base\b[^>]*\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))html",
-				      QRegularExpression::CaseInsensitiveOption);
-	while (matches.hasNext()) {
-		const auto match = base.match(matches.next().captured());
-		if (match.hasMatch())
-			return !match.captured(1).isNull()   ? match.captured(1)
-			       : !match.captured(2).isNull() ? match.captured(2)
-							     : match.captured(3);
-	}
+	for (const auto &e : htmlElements(page))
+		if (e.name == "base" && !e.closing && e.attributes.contains("href"))
+			return e.attributes["href"];
 	return {};
 }
-// Tokenize comments and raw-text elements as units so apparent tags in scripts
-// cannot be mistaken for document structure. Only generated copies are changed.
-inline QByteArray injectHtmlBootstrap(const QByteArray &bytes, const QString &bootstrap)
+inline QByteArray injectHtmlBootstrap(const QByteArray &bytes, const QString &bootstrap,
+				      bool replaceLegacyConfig = true, const QSet<QString> &approvedScripts = {})
 {
 	QString page = QString::fromUtf8(bytes);
-	const auto tokens = htmlTokens();
-	// Generated blocks have explicit boundaries for idempotent reinjection.
-	page.remove(QRegularExpression("<!-- tiktok-bootstrap -->[\\s\\S]*?<!-- /tiktok-bootstrap -->"));
-	auto scripts = tokens.globalMatch(page);
-	QList<QPair<int, int>> remove;
-	const QRegularExpression configScript(
-		"^<script\\b[^>]*\\bsrc\\s*=\\s*(?:[\"'](?:[^\"']*/)?config\\.js(?:[?#][^\"']*)?[\"']|config\\.js(?=[\\s>]))[^>]*>\\s*</script\\s*>$",
-		QRegularExpression::CaseInsensitiveOption);
-	while (scripts.hasNext()) {
-		const auto token = scripts.next();
-		if (configScript.match(token.captured()).hasMatch())
-			remove.prepend({token.capturedStart(), token.capturedLength()});
-	}
-	for (const auto &span : remove)
-		page.remove(span.first, span.second);
-	const auto block = "<!-- tiktok-bootstrap -->" + bootstrap + "<!-- /tiktok-bootstrap -->";
-	auto matches = tokens.globalMatch(page);
-	int htmlEnd = -1, prefixEnd = 0, previousEnd = 0;
-	bool prefixOnly = true;
-	while (matches.hasNext()) {
-		const auto token = matches.next();
-		const auto tag = token.captured();
-		if (!page.mid(previousEnd, token.capturedStart() - previousEnd).trimmed().isEmpty())
-			prefixOnly = false;
-		previousEnd = token.capturedEnd();
-		if (tag.startsWith("<!--") || tag.startsWith("<!")) {
-			if (prefixOnly)
-				prefixEnd = token.capturedEnd();
+	if (page.toUtf8() != bytes)
+		throw std::invalid_argument("HTML must be UTF-8; author source is unchanged");
+	const QString begin = "<!-- tiktok-bootstrap -->", end = "<!-- /tiktok-bootstrap -->";
+	const auto existing = htmlElements(page);
+	QList<QPair<int, int>> blocks;
+	int marker = -1;
+	for (const auto &tag : existing) {
+		if (tag.name != "#comment")
 			continue;
+		const auto comment = page.mid(tag.start, tag.end - tag.start);
+		if (comment == begin)
+			marker = tag.start;
+		else if (comment == end && marker >= 0) {
+			blocks.append({marker, tag.end - marker});
+			marker = -1;
 		}
-		prefixOnly = false;
-		if (QRegularExpression("^<html\\b", QRegularExpression::CaseInsensitiveOption).match(tag).hasMatch())
-			htmlEnd = token.capturedEnd();
-		if (QRegularExpression("^<head\\b", QRegularExpression::CaseInsensitiveOption).match(tag).hasMatch()) {
-			page.insert(token.capturedEnd(), block);
-			return page.toUtf8();
+	}
+	for (auto it = blocks.crbegin(); it != blocks.crend(); ++it)
+		page.remove(it->first, it->second);
+	if (replaceLegacyConfig) {
+		const auto tags = htmlElements(page);
+		for (int i = tags.size() - 1; i >= 0; --i) {
+			const auto &t = tags[i];
+			const auto src = t.attributes.value("src").section('?', 0, 0).section('#', 0, 0);
+			if (t.name == "script" && !t.closing && (src == "config.js" || src.endsWith("/config.js")) &&
+			    (approvedScripts.isEmpty() || approvedScripts.contains(src)) && i + 1 < tags.size() &&
+			    tags[i + 1].name == "script" && tags[i + 1].closing)
+				page.remove(t.start, tags[i + 1].end - t.start);
 		}
-		if (QRegularExpression("^<body\\b", QRegularExpression::CaseInsensitiveOption).match(tag).hasMatch())
+	}
+	const auto tags = htmlElements(page);
+	int htmlEnd = -1, headEnd = -1;
+	for (const auto &t : tags) {
+		if (!t.closing && t.name == "html")
+			htmlEnd = t.end;
+		if (!t.closing && t.name == "head") {
+			headEnd = t.end;
+			break;
+		}
+		if (!t.closing && t.name == "body")
 			break;
 	}
-	page.insert(htmlEnd >= 0 ? htmlEnd : prefixEnd, "<head>" + block + "</head>");
+	bool charset = false;
+	for (const auto &tag : tags)
+		if (tag.name == "meta" &&
+		    (tag.attributes.contains("charset") ||
+		     tag.attributes.value("http-equiv").compare("content-type", Qt::CaseInsensitive) == 0))
+			charset = true;
+	const auto block = begin + (charset ? QString{} : QString("<meta charset=\"utf-8\">")) + bootstrap + end;
+	if (headEnd >= 0)
+		page.insert(headEnd, block);
+	else {
+		int prolog = 0;
+		while (prolog < page.size()) {
+			if (page[prolog].isSpace()) {
+				++prolog;
+				continue;
+			}
+			if (page.mid(prolog, 4) == "<!--") {
+				const auto e = page.indexOf("-->", prolog + 4);
+				if (e < 0)
+					break;
+				prolog = e + 3;
+				continue;
+			}
+			if (page.mid(prolog, 2) == "<!") {
+				const auto e = page.indexOf('>', prolog + 2);
+				if (e < 0)
+					break;
+				prolog = e + 1;
+				continue;
+			}
+			break;
+		}
+		page.insert(htmlEnd >= 0 ? htmlEnd : prolog, "<head>" + block + "</head>");
+	}
 	return page.toUtf8();
 }
 } // namespace tt

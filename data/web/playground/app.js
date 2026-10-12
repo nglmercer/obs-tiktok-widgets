@@ -103,6 +103,7 @@
       return false;
     }
     if (p.channel !== channel || p.session !== session3 || p.version !== 1) return false;
+    if (p.action === "updated") return Object.keys(p).length === 4;
     if (p.action === "loaded") return Object.keys(p).length === 4;
     if (p.action === "ready") return Object.keys(p).length === 4 || Object.keys(p).length === 5 && (p.supported === null || Array.isArray(p.supported) && p.supported.length <= 5 && p.supported.every((t) => ["gift", "chat", "like", "follow", "roomUser"].includes(t)));
     if (p.action === "settings") return typeof p.animation === "boolean" && typeof p.sound === "boolean";
@@ -223,6 +224,9 @@
         initialReplay = false;
         play();
       }
+    } else if (e.data.action === "updated" && state === "ready") {
+      initialReplay = false;
+      loadPreview();
     } else if (e.data.action === "error" && state === "ready") status.textContent = e.data.message;
   });
   frame.onload = () => {
@@ -238,6 +242,8 @@
     clearTimeout(timeout);
     status.textContent = "Preview failed to load. Reset to retry.";
   };
+  var initialOptions = new URL(location.href).searchParams;
+  for (const [key, id] of [["event", "type"], ["user", "username"], ["gift", "giftName"], ["count", "count"]]) if (initialOptions.has(key)) input(id).value = initialOptions.get(key);
   loadPreview();
   el("replay").onclick = play;
   el("stop").onclick = () => {

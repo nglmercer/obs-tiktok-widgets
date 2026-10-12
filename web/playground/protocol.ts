@@ -9,6 +9,7 @@ export function validPacket(value: unknown, session: string): value is Record<st
   const p = value as Record<string, unknown>;
   try { if (JSON.stringify(p).length > 65536) return false; } catch { return false; }
   if (p.channel !== channel || p.session !== session || p.version !== 1) return false;
+  if (p.action === "updated") return Object.keys(p).length === 4;
   if (p.action === "loaded") return Object.keys(p).length === 4;
   if (p.action === "ready") return Object.keys(p).length === 4 || (Object.keys(p).length === 5 && (p.supported === null || (Array.isArray(p.supported) && p.supported.length <= 5 && p.supported.every(t => ["gift", "chat", "like", "follow", "roomUser"].includes(t)))));
   if (p.action === "settings") return typeof p.animation === "boolean" && typeof p.sound === "boolean";

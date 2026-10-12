@@ -140,10 +140,8 @@ test("packaged assets match sources and iframe is sandboxed with no transport", 
       fs.readFileSync(path, "utf8"),
       /BrowserEventBridge|EventDispatcher|WebSocket|fetch\(|innerHTML/,
     );
-  assert.equal(
-    fs.readFileSync("data/web/widgets/widget.js", "utf8"),
-    fs.readFileSync("web/widgets/widget.js", "utf8"),
-  );
+  assert.doesNotMatch(fs.readFileSync("web/widgets/widget.js", "utf8"), /switch\s*\(/);
+  for (const type of ["chat", "gifts", "alerts", "likes", "viewers", "events"]) assert.ok(fs.existsSync(`web/templates/${type}.js`));
 });
 
 test("unfinished streaks and small totals retain monotonic cumulative semantics", () => {

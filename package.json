@@ -4,12 +4,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc && tsc -p tsconfig.playground.json && esbuild web/sdk/index.ts --bundle --format=iife --global-name=TikTokOBSSDK --outfile=data/web/sdk/tiktok-obs.js && esbuild web/sdk/index.ts --bundle --format=esm --outfile=data/web/sdk/tiktok-obs.mjs && esbuild web/playground/app.ts --bundle --format=iife --outfile=data/web/playground/app.js && esbuild web/playground/engine.ts --format=esm --outfile=data/web/playground/engine.mjs && esbuild web/playground/frame.ts --bundle --format=iife --outfile=data/web/playground/frame.js && node tools/package-web.mjs",
-    "test": "node --test tests/widgets/*.test.mjs"
+    "build": "tsc && tsc -p tsconfig.playground.json && esbuild web/sdk/index.ts --bundle --format=iife --global-name=TikTokOBSSDK --outfile=data/web/sdk/tiktok-obs.js && esbuild web/sdk/index.ts --bundle --format=esm --outfile=data/web/sdk/tiktok-obs.mjs && esbuild web/playground/app.ts --bundle --format=iife --outfile=data/web/playground/app.js && esbuild web/playground/engine.ts --format=esm --outfile=data/web/playground/engine.mjs && esbuild web/playground/frame.ts --bundle --format=iife --outfile=data/web/playground/frame.js && node tools/package-web.mjs && node tools/package-templates.mjs",
+    "test": "node --test tests/widgets/*.test.mjs",
+    "format:check": "prettier --check web/runtime web/templates tools/package-templates.mjs tools/check-generated.mjs tests/widgets/widgetctl.test.mjs"
   },
   "devDependencies": {
     "esbuild": "0.25.11",
     "playwright": "1.58.2",
+    "prettier": "3.6.2",
     "typescript": "5.9.3"
   }
 }

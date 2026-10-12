@@ -33,3 +33,9 @@ Linux native compile/link and package staging passed. Seven project C++ suites, 
 GPL-2.0-or-later. The native dependency includes modified AGPL protobuf schemas; read [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and the shipped exact license before distribution.
 
 The Events monitor offers an event-type selector. Its default LIVE view hides state snapshots; State and All events remain available. Identical consecutive state snapshots are suppressed only in the monitor, while Browser Sources continue receiving synchronization events. Widget actions are grouped around Create, Edit, Add to current scene and Preview; More actions includes external HTML editing and reload.
+
+### Editable widget projects (Template Engine v2)
+
+Create from discovered versioned templates, then use **Open widget project** to edit `projects/<uuid>/src`. Save and publish are separate; optional auto-publish watches external editor saves and refreshes matching OBS sources and open Playground previews. User source survives restart/reinstallation; failed builds keep the last served release. Existing Browser Source UUIDs and file paths remain stable through backed-up migration.
+
+The installed C++ `widgetctl` provides template/project CRUD, source/settings edits with revision checks, validation, build/publish, isolated preview, history/rollback, packages and opt-in authenticated local OBS placement. No Node or network server is required for basic runtime authoring. Start with [Template Engine v2](docs/TEMPLATE_ENGINE_V2.md), [CLI](docs/WIDGETCTL.md), or [agent workflows](docs/AGENT_WORKFLOWS.md). The agent skill is in `skills/obs-tiktok-widget-author/SKILL.md`.

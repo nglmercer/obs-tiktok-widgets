@@ -134,7 +134,10 @@ test("native generated documents retain standards mode and custom local assets; 
   try {
     execFileSync(binary, {env:{...process.env,PLAYGROUND_FIXTURE_DIR:root}});
     const wav=Buffer.alloc(44+1600); wav.write('RIFF');wav.writeUInt32LE(wav.length-8,4);wav.write('WAVEfmt ',8);wav.writeUInt32LE(16,16);wav.writeUInt16LE(1,20);wav.writeUInt16LE(1,22);wav.writeUInt32LE(8000,24);wav.writeUInt32LE(16000,28);wav.writeUInt16LE(2,32);wav.writeUInt16LE(16,34);wav.write('data',36);wav.writeUInt32LE(1600,40);
-    fs.writeFileSync(`${root}/author/tone.wav`,wav);
+    const customId=fs.readFileSync(`${root}/custom-id.txt`,'utf8');
+    const author=`${root}/projects/${customId}/src`;
+    fs.writeFileSync(`${author}/tone.wav`,wav);
+    execFileSync(process.env.WIDGETCTL||'build/widgetctl',['--config',root,'--assets',new URL('../../data/web',import.meta.url).pathname,'widgets','publish',customId,'--json']);
     const page = await browser.newPage();
     await page.goto(pathToFileURL(fs.readFileSync(`${root}/preview-path.txt`,"utf8")).href);
     await page.waitForFunction(() => !document.querySelector('#replay').disabled);
@@ -149,7 +152,20 @@ test("native generated documents retain standards mode and custom local assets; 
       return [await probe('tone.wav'),await probe('missing.wav')];
     });
     assert.deepEqual(audio,['loaded','missing']);
-    assert.equal(fs.readFileSync(`${root}/author/index.html`,"utf8").includes("tiktok-bootstrap"),false);
+    assert.equal(fs.readFileSync(`${author}/page.html`,"utf8").includes("tiktok-bootstrap"),false);
+    const oldSession=new URL(frame.url()).searchParams.get('session');
+    fs.writeFileSync(`${author}/nested/code.js`,"window.customAssetLoaded=true;document.getElementById('asset').textContent='Published edit Ω';");
+    fs.writeFileSync(`${author}/nested/style.css`,"#asset {color:rgb(99,88,77)}");
+    execFileSync(process.env.WIDGETCTL||'build/widgetctl',['--config',root,'--assets',new URL('../../data/web',import.meta.url).pathname,'widgets','publish',customId,'--json']);
+    await page.waitForFunction(old=>new URL(document.getElementById('preview').src).searchParams.get('session')!==old,oldSession);
+    await page.waitForFunction(()=>!document.getElementById('replay').disabled);
+    const updated=page.frames()[1];
+    assert.equal(await updated.locator('#asset').innerText(),'Published edit Ω');
+    assert.equal(await updated.locator('#asset').evaluate(el=>getComputedStyle(el).color),'rgb(99, 88, 77)');
+    const production=await browser.newPage();
+    await production.goto(pathToFileURL(`${root}/widgets/${customId}/index.html`).href);
+    assert.equal(await production.locator('#asset').innerText(),'Published edit Ω');
+    await production.close();
     await page.goto(pathToFileURL(fs.readFileSync(`${root}/builtin-path.txt`,"utf8")).href);
     await page.waitForFunction(() => !document.querySelector('#replay').disabled);
     const built = page.frames()[1];
@@ -164,16 +180,16 @@ test("native generated documents retain standards mode and custom local assets; 
     await page.locator("#sound").check();
     // Configure before renderer startup for each audio case.
     for (const soundUrl of ['nested/audio.wav','file:///tmp/explicit-audio.wav','https://example.org/audio.wav','javascript:alert(1)']) {
-      await built.evaluate(soundUrl => {
+      await built.evaluate(({soundUrl,scriptUrl}) => {
         window.TikTokWidgetConfig={template:'gifts',sound:true,soundUrl};
-        const script=document.createElement('script');script.src='widget.js';document.body.append(script);
-      },soundUrl);
+        const script=document.createElement('script');script.src=scriptUrl;document.body.append(script);
+      },{soundUrl,scriptUrl:new URL("../../data/web/widgets/widget.js",import.meta.url).href});
       await built.waitForTimeout(50);
       await page.locator('#replay').click();
       await built.waitForTimeout(50);
     }
     const urls=await built.evaluate(()=>window.audioUrls);
-    assert.ok(urls.some(u=>u.endsWith('/nested/audio.wav') && u.includes('/widgets/')));
+    assert.ok(urls.some(u=>u.endsWith('/nested/audio.wav') && u.includes('/releases/')));
     assert.ok(urls.includes('file:///tmp/explicit-audio.wav'));
     assert.ok(urls.includes('https://example.org/audio.wav'));
     assert.ok(urls.every(u=>!u.startsWith('javascript:')));

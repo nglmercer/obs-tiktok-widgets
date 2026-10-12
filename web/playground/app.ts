@@ -104,10 +104,13 @@ window.addEventListener("message", (e) => {
     el<HTMLButtonElement>("replay").disabled = false;
     status.textContent = "Preview ready. Templates display their supported event types and filters.";
     if (initialReplay) { initialReplay = false; play(); }
+  } else if (e.data.action === "updated" && state === "ready") { initialReplay = false; loadPreview();
   } else if (e.data.action === "error" && state === "ready") status.textContent = e.data.message;
 });
 frame.onload = () => { if (state === "ready") { initialReplay = false; loadPreview(); } };
 frame.onerror = () => { state = "error"; el<HTMLButtonElement>("replay").disabled = true; engine.stop(); clearTimeout(timeout); status.textContent = "Preview failed to load. Reset to retry."; };
+const initialOptions = new URL(location.href).searchParams;
+for (const [key, id] of [["event", "type"], ["user", "username"], ["gift", "giftName"], ["count", "count"]]) if (initialOptions.has(key)) input(id).value = initialOptions.get(key)!;
 loadPreview();
 el("replay").onclick = play;
 el("stop").onclick = () => { initialReplay = false; engine.stop(); status.textContent = "Stopped"; };

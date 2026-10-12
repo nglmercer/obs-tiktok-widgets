@@ -24,6 +24,7 @@ class TikTokDock : public QWidget {
 	SigningBundleManager *bundleManager;
 	QString preparationError;
 	QListWidget *list;
+	QLabel *projectDiagnostics;
 	QElapsedTimer throughputClock;
 	uint64_t previousAccepted = 0;
 	double eventsPerSecond = 0;
@@ -37,5 +38,6 @@ public:
 	void updateStatus(const QString &bridgeError);
 	void startAutoConnect();
 	void cancelPendingConnection();
+	void projectState(const QString &id,const QString &state,const QString &diagnostic);
 };
 } // namespace tt
