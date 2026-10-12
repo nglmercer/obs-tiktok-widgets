@@ -4,12 +4,19 @@
 #include "widgets/WidgetManager.hpp"
 #include "ui/TikTokDock.hpp"
 #include "ui/EventMonitor.hpp"
+#include "projects/WidgetProjectWatcher.hpp"
+#include "projects/WidgetLocalIPC.hpp"
+#include "obs/BrowserSourceManager.hpp"
+#include "obs/OBSFrontendManager.hpp"
 #include <obs-module.h>
+#include <obs-websocket-api.h>
+#include <QJsonDocument>
 #include <obs-frontend-api.h>
 #include <QTimer>
 #include <QElapsedTimer>
 #include <QScrollArea>
 #include <QNetworkAccessManager>
+#include <QFileInfo>
 namespace tt {
 PluginLifecycle::PluginLifecycle() = default;
 PluginLifecycle::~PluginLifecycle()
@@ -33,8 +40,101 @@ void PluginLifecycle::start()
 	bfree(assets);
 	config = std::make_unique<PluginConfig>(directory);
 	connection = std::make_unique<TikTokConnectionManager>(dispatcher);
+	const auto snapshotPath = safePath(directory, "cache/migration-v1/obs-sources.json");
+	if (!QFileInfo::exists(snapshotPath))
+		writeObject(snapshotPath, {{"sources", BrowserSourceManager::sources()}});
 	widgets = std::make_unique<WidgetManager>(directory, web);
 	dock = new TikTokDock(*config, *connection, dispatcher, *widgets);
+	projectWatcher = std::make_unique<WidgetProjectWatcher>(widgets->projects);
+	connect(projectWatcher.get(), &WidgetProjectWatcher::publishedWidget, this, [this](const QString &id) {
+		widgets->load();
+		const auto m = widgets->projects.get(id);
+		BrowserSourceManager::refresh(WidgetConfig{m["settings"].toObject()}, widgets->projects.outputPath(id));
+	});
+	connect(projectWatcher.get(), &WidgetProjectWatcher::stateChanged, dock,
+		[this](const QString &id, const QString &state, const QString &diagnostic) {
+			dock->projectState(id, state, diagnostic);
+		});
+	commands = std::make_unique<WidgetCommands>(widgets->projects);
+	commands->obs = [this](const QString &method, const QJsonObject &a) -> QJsonValue {
+		if (method == "obs.shutdown") {
+			if (!a["confirm"].toBool())
+				throw DomainError("CONFIRM_REQUIRED", "OBS shutdown requires --confirm");
+			QTimer::singleShot(100, this, [] {
+				if (auto *window = static_cast<QWidget *>(obs_frontend_get_main_window()))
+					window->close();
+			});
+			return QJsonObject{{"shutdownRequested", true}};
+		}
+		if (method == "obs.status")
+			return QJsonObject{{"running", true}, {"ipc", true}};
+		if (method == "obs.scenes.list")
+			return QJsonArray::fromStringList(OBSFrontendManager::scenes());
+		if (method == "obs.sources.list")
+			return BrowserSourceManager::sources();
+		if (method == "obs.scenes.select") {
+			auto *scene = obs_get_source_by_name(a["scene"].toString().toUtf8().constData());
+			if (!scene || !obs_scene_from_source(scene)) {
+				if (scene)
+					obs_source_release(scene);
+				throw DomainError("OBS_SCENE_NOT_FOUND", "Scene is unavailable");
+			}
+			obs_frontend_set_current_scene(scene);
+			obs_source_release(scene);
+			return QJsonObject{{"selected", a["scene"]}};
+		}
+		if (method == "obs.sources.capture") {
+			const auto id = a["id"].toString();
+			QString name = a["name"].toString();
+			bool matched = false;
+			for (const auto &value : BrowserSourceManager::sources()) {
+				const auto source = value.toObject();
+				if (source["id"] == id && (name.isEmpty() || name == source["name"].toString())) {
+					name = source["name"].toString();
+					matched = true;
+					break;
+				}
+			}
+			if (!matched)
+				throw DomainError("OBS_SOURCE_NOT_FOUND", "Widget Browser Source is unavailable");
+			auto *request = obs_data_create();
+			obs_data_set_string(request, "sourceName", name.toUtf8().constData());
+			obs_data_set_string(request, "imageFormat", "png");
+			obs_data_set_int(request, "imageWidth", 600);
+			obs_data_set_int(request, "imageHeight", 400);
+			auto *response = obs_websocket_call_request("GetSourceScreenshot", request);
+			obs_data_release(request);
+			if (!response)
+				throw DomainError("OBS_CAPTURE_UNAVAILABLE",
+						  "In-process screenshot API is unavailable");
+			const auto status = response->status_code;
+			const auto result =
+				QJsonDocument::fromJson(
+					QByteArray(response->response_data ? response->response_data : "{}"))
+					.object();
+			obs_websocket_request_response_free(response);
+			if (status != 100)
+				throw DomainError("OBS_CAPTURE_FAILED", "Browser screenshot failed",
+						  {{"status", static_cast<int>(status)}});
+			return result;
+		}
+		const auto id = a["id"].toString();
+		const auto m = widgets->projects.get(id);
+		WidgetConfig w{m["settings"].toObject()};
+		if (method == "obs.sources.add") {
+			if (!BrowserSourceManager::add(w, widgets->materialize(w), a["scene"].toString()))
+				throw DomainError("OBS_SOURCE_FAILED", "Cannot add Browser Source to selected scene");
+		} else if (method == "obs.sources.refresh")
+			BrowserSourceManager::refresh(w, widgets->materialize(w));
+		else if (method == "obs.sources.remove") {
+			if (!a["confirm"].toBool())
+				throw DomainError("CONFIRM_REQUIRED", "Removing placement requires --confirm");
+			BrowserSourceManager::remove(id, a["scene"].toString());
+		}
+		return QJsonObject{{"widgetId", id}, {"committed", true}};
+	};
+	ipc = std::make_unique<WidgetLocalIPC>(*commands, directory);
+	ipc->start(config->settings["widgetctlEnabled"].toBool(false));
 	auto *scroll = new QScrollArea;
 	scroll->setWidget(dock);
 	scroll->setWidgetResizable(true);
@@ -46,6 +146,16 @@ void PluginLifecycle::start()
 	bridge.verify();
 	auto *timer = new QTimer(this);
 	connect(timer, &QTimer::timeout, this, [this] {
+		if (ipc && ipc->enabled() != config->settings["widgetctlEnabled"].toBool()) {
+			try {
+				if (config->settings["widgetctlEnabled"].toBool())
+					ipc->start(true);
+				else
+					ipc->stop();
+			} catch (const std::exception &e) {
+				dock->projectState({}, "IPC error", QString::fromUtf8(e.what()));
+			}
+		}
 		QElapsedTimer budget;
 		budget.start();
 		for (int i = 0; i < 128 && budget.elapsed() < 5; ++i) {
@@ -84,6 +194,9 @@ void PluginLifecycle::stop()
 		obs_frontend_remove_dock("tiktok-live-widgets");
 		dock = nullptr;
 	}
+	ipc.reset();
+	commands.reset();
+	projectWatcher.reset();
 	widgets.reset();
 	connection.reset();
 	config.reset();

@@ -1,0 +1,33 @@
+name: Widget engine regression
+on: [push, pull_request]
+jobs:
+  web:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run format:check
+      - run: node tools/check-locales.mjs
+      - run: npm run build
+      - run: node tools/check-generated.mjs
+      - run: git diff --exit-code -- data/web web/templates web/studio/api/validators.ts
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - name: Browser and native integration
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qt6-base-dev qt6-tools-dev-tools libobs-dev zlib1g-dev ninja-build
+          cmake --preset linux-system
+          cmake --build build_system -j4
+          ctest --test-dir build_system --output-on-failure
+          export WIDGETCTL="$PWD/build_system/widgetctl"
+          export WIDGETSTUDIO="$PWD/build_system/widgetstudio"
+          export PLAYGROUND_NATIVE_TEST="$PWD/build_system/widget-test"
+          export PLAYGROUND_BROWSER_EXECUTABLE="$(node --input-type=module -e 'import {chromium} from "playwright"; console.log(chromium.executablePath())')"
+          npm test
+          cmake --install build_system --prefix /tmp/widget-stage
+          cpack --config build_system/CPackConfig.cmake

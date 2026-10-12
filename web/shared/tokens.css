@@ -1,0 +1,132 @@
+:root {
+  color-scheme: dark;
+  --ui-bg: #0b1120;
+  --ui-panel: #131f34;
+  --ui-raised: #1b2941;
+  --ui-text: #e6edf8;
+  --ui-muted: #a8bad4;
+  --ui-border: #354763;
+  --ui-accent: #86c6ff;
+  --ui-selected: #284872;
+  --ui-warning: #453517;
+  --ui-danger: #ffb9b9;
+  --ui-radius: 10px;
+  --ui-space: 8px;
+  --ui-shadow: 0 8px 28px #0003;
+  font-family: system-ui, sans-serif;
+  font-size: 14px;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --ui-bg: #f3f6fb;
+  --ui-panel: #fff;
+  --ui-raised: #e9eff7;
+  --ui-text: #19263c;
+  --ui-muted: #4b6079;
+  --ui-border: #bccbdb;
+  --ui-accent: #1268b4;
+  --ui-selected: #d6e8fb;
+  --ui-warning: #fff0ca;
+  --ui-danger: #a71e37;
+}
+@media (prefers-color-scheme: light) {
+  :root[data-theme="system"] {
+    color-scheme: light;
+    --ui-bg: #f3f6fb;
+    --ui-panel: #fff;
+    --ui-raised: #e9eff7;
+    --ui-text: #19263c;
+    --ui-muted: #4b6079;
+    --ui-border: #bccbdb;
+    --ui-accent: #1268b4;
+    --ui-selected: #d6e8fb;
+    --ui-warning: #fff0ca;
+    --ui-danger: #a71e37;
+  }
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--ui-bg);
+  color: var(--ui-text);
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+  min-width: 0;
+}
+button {
+  cursor: pointer;
+  min-height: 36px;
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+a,
+button,
+input,
+textarea,
+select,
+summary {
+  outline-offset: 3px;
+}
+:focus-visible {
+  outline: 3px solid var(--ui-accent);
+}
+button,
+input,
+select,
+textarea {
+  border: 1px solid var(--ui-border);
+  border-radius: 6px;
+  background: var(--ui-raised);
+  padding: 8px;
+}
+button:hover:not(:disabled) {
+  background: var(--ui-selected);
+}
+small {
+  color: var(--ui-muted);
+}
+pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+dialog {
+  background: var(--ui-panel);
+  color: var(--ui-text);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  max-width: calc(100vw - 32px);
+}
+dialog::backdrop {
+  background: #0008;
+}
+summary {
+  cursor: pointer;
+  padding: 8px;
+}
+svg {
+  flex-shrink: 0;
+}
+h1,
+h2,
+h3,
+p {
+  overflow-wrap: anywhere;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

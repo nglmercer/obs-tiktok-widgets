@@ -8,6 +8,9 @@ class PluginConfig;
 class TikTokConnectionManager;
 class WidgetManager;
 class TikTokDock;
+class WidgetProjectWatcher;
+class WidgetCommands;
+class WidgetLocalIPC;
 class PluginLifecycle : public QObject {
 	EventDispatcher dispatcher;
 	BrowserEventBridge bridge;
@@ -16,6 +19,9 @@ class PluginLifecycle : public QObject {
 	std::unique_ptr<WidgetManager> widgets;
 	TikTokDock *dock = nullptr;
 	bool started = false;
+	std::unique_ptr<WidgetProjectWatcher> projectWatcher;
+	std::unique_ptr<WidgetCommands> commands;
+	std::unique_ptr<WidgetLocalIPC> ipc;
 
 public:
 	PluginLifecycle();

@@ -1,0 +1,81 @@
+{
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "default": "Rose alert",
+      "title": "Heading",
+      "x-ui": {
+        "group": "Text"
+      }
+    },
+    "color": {
+      "type": "string",
+      "default": "#ff77cc",
+      "title": "Accent color",
+      "x-ui": {
+        "control": "color",
+        "group": "Style"
+      }
+    },
+    "fontSize": {
+      "type": "integer",
+      "default": 32,
+      "minimum": 12,
+      "maximum": 96,
+      "x-ui": {
+        "control": "slider",
+        "group": "Text"
+      }
+    },
+    "x": {
+      "type": "integer",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 1000,
+      "description": "Horizontal position"
+    },
+    "y": {
+      "type": "integer",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 1000,
+      "description": "Vertical position"
+    },
+    "width": {
+      "type": "integer",
+      "default": 600,
+      "minimum": 1,
+      "maximum": 8192
+    },
+    "height": {
+      "type": "integer",
+      "default": 400,
+      "minimum": 1,
+      "maximum": 8192
+    }
+  },
+  "x-visual": {
+    "components": [
+      {
+        "id": "alert",
+        "label": "Gift alert",
+        "properties": [
+          "title",
+          "color",
+          "fontSize",
+          "x",
+          "y",
+          "width",
+          "height"
+        ],
+        "bindings": {
+          "x": "x",
+          "y": "y",
+          "width": "width",
+          "height": "height"
+        }
+      }
+    ]
+  }
+}

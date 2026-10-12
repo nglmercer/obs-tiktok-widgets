@@ -57,8 +57,20 @@ var TikTokOBSClient = class {
   }
 };
 var TikTokOBS = new TikTokOBSClient();
+
+// web/sdk/events.ts
+function onTikTokEvent(type, callback, target = window) {
+  const channel = type === "*" ? "tiktok:event" : `tiktok:${type}`;
+  const listener = (event) => {
+    const payload = event.detail;
+    if (payload?.version === 1 && (type === "*" || payload.type === type)) callback(payload);
+  };
+  target.addEventListener(channel, listener);
+  return () => target.removeEventListener(channel, listener);
+}
 export {
   CONTRACT_VERSION,
   TikTokOBS,
-  TikTokOBSClient
+  TikTokOBSClient,
+  onTikTokEvent
 };

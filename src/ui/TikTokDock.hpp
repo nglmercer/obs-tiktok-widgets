@@ -9,7 +9,10 @@ class QLabel;
 class QListWidget;
 class QCheckBox;
 class QPushButton;
+class QComboBox;
 namespace tt {
+class StudioLauncher;
+class UiLocale;
 class EventMonitor;
 class SigningBundleManager;
 class TikTokDock : public QWidget {
@@ -23,7 +26,11 @@ class TikTokDock : public QWidget {
 	QPushButton *connectButton, *reconnectButton;
 	SigningBundleManager *bundleManager;
 	QString preparationError;
+	StudioLauncher *studioLauncher = nullptr;
+	UiLocale *uiLocale = nullptr;
+	QComboBox *uiLanguage = nullptr;
 	QListWidget *list;
+	QLabel *projectDiagnostics;
 	QElapsedTimer throughputClock;
 	uint64_t previousAccepted = 0;
 	double eventsPerSecond = 0;
@@ -37,5 +44,6 @@ public:
 	void updateStatus(const QString &bridgeError);
 	void startAutoConnect();
 	void cancelPendingConnection();
+	void projectState(const QString &id, const QString &state, const QString &diagnostic);
 };
 } // namespace tt

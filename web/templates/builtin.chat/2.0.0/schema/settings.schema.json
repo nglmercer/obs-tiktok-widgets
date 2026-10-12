@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "default": "Widget"
+    },
+    "width": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 8192,
+      "default": 600
+    },
+    "height": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 8192,
+      "default": 400
+    },
+    "theme": {
+      "type": "string",
+      "enum": ["dark", "light"],
+      "default": "dark"
+    },
+    "color": {
+      "type": "string",
+      "default": "#ff416c",
+      "x-ui": {
+        "widget": "color"
+      }
+    },
+    "customCss": {
+      "type": "string",
+      "default": "",
+      "x-ui": {
+        "widget": "textarea"
+      }
+    },
+    "animation": {
+      "type": "boolean",
+      "default": true
+    },
+    "sound": {
+      "type": "boolean",
+      "default": false
+    },
+    "soundUrl": {
+      "type": "string",
+      "default": ""
+    },
+    "messageLimit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000,
+      "default": 30
+    },
+    "likeAggregationMs": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60000,
+      "default": 250
+    },
+    "viewerCoalescingMs": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60000,
+      "default": 250
+    },
+    "filters": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "autoPublish": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "additionalProperties": true
+}

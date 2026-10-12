@@ -1,6 +1,7 @@
 #include "BrowserSourceManager.hpp"
 #include <obs.h>
 #include <obs-frontend-api.h>
+#include <QUuid>
 namespace tt {
 static void settings(obs_data_t *d, const WidgetConfig &w, const QString &html)
 {
@@ -51,6 +52,15 @@ static bool visit(void *opaque, obs_source_t *source)
 			obs_source_remove(source);
 		else {
 			settings(d, *v.widget, v.html);
+			// ReloadIgnoreCache reloads the *redirected release*, not the configured
+			// stable entry. A harmless CSS nonce triggers obs-browser's supported
+			// recreation path and navigates back to local_file. Keep author CSS intact.
+			auto css = QString::fromUtf8(obs_data_get_string(d, "css"));
+			const auto marker = css.lastIndexOf("\n/* obs-tiktok-reload:");
+			if (marker >= 0 && css.endsWith(" */"))
+				css.truncate(marker);
+			css += "\n/* obs-tiktok-reload:" + QUuid::createUuid().toString(QUuid::WithoutBraces) + " */";
+			obs_data_set_string(d, "css", css.toUtf8().constData());
 			obs_source_update(source, d);
 			auto *properties = obs_source_properties(source);
 			auto *refresh = obs_properties_get(properties, "refreshnocache");
@@ -67,9 +77,50 @@ void BrowserSourceManager::refresh(const WidgetConfig &w, const QString &html)
 	Visit v{w.id(), &w, html, false};
 	obs_enum_sources(visit, &v);
 }
-void BrowserSourceManager::remove(const QString &id)
+static bool removeItem(obs_scene_t *, obs_sceneitem_t *item, void *opaque)
 {
+	auto *source = obs_sceneitem_get_source(item);
+	auto *data = obs_source_get_settings(source);
+	const bool same = *static_cast<const QString *>(opaque) ==
+			  QString::fromUtf8(obs_data_get_string(data, "tiktok_widget_id"));
+	obs_data_release(data);
+	if (same)
+		obs_sceneitem_remove(item);
+	return true;
+}
+void BrowserSourceManager::remove(const QString &id, const QString &scene)
+{
+	if (!scene.isEmpty()) {
+		auto *source = obs_get_source_by_name(scene.toUtf8().constData());
+		if (!source)
+			return;
+		auto *s = obs_scene_from_source(source);
+		if (s)
+			obs_scene_enum_items(s, removeItem, const_cast<QString *>(&id));
+		obs_source_release(source);
+		return;
+	}
 	Visit v{id, nullptr, {}, true};
 	obs_enum_sources(visit, &v);
+}
+QJsonArray BrowserSourceManager::sources()
+{
+	QJsonArray array;
+	obs_enum_sources(
+		[](void *opaque, obs_source_t *source) {
+			auto *data = obs_source_get_settings(source);
+			auto id = QString::fromUtf8(obs_data_get_string(data, "tiktok_widget_id"));
+			if (!id.isEmpty())
+				static_cast<QJsonArray *>(opaque)->append(QJsonObject{
+					{"id", id},
+					{"name", QString::fromUtf8(obs_source_get_name(source))},
+					{"localFile", QString::fromUtf8(obs_data_get_string(data, "local_file"))},
+					{"width", static_cast<int>(obs_data_get_int(data, "width"))},
+					{"height", static_cast<int>(obs_data_get_int(data, "height"))}});
+			obs_data_release(data);
+			return true;
+		},
+		&array);
+	return array;
 }
 } // namespace tt

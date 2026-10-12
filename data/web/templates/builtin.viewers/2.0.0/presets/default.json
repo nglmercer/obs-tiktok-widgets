@@ -1,0 +1,16 @@
+{
+  "name": "Widget",
+  "width": 600,
+  "height": 400,
+  "theme": "dark",
+  "color": "#ff416c",
+  "customCss": "",
+  "animation": true,
+  "sound": false,
+  "soundUrl": "",
+  "messageLimit": 30,
+  "likeAggregationMs": 250,
+  "viewerCoalescingMs": 250,
+  "filters": [],
+  "autoPublish": true
+}
