@@ -16,6 +16,8 @@ jobs:
       - run: node tools/check-generated.mjs
       - run: git diff --exit-code -- data/web web/templates web/studio/api/validators.ts
       - run: npm test
+      - run: npm run test:universal
+      - run: npm run contracts:check
       - run: npx playwright install --with-deps chromium
       - name: Browser and native integration
         run: |
@@ -29,5 +31,7 @@ jobs:
           export PLAYGROUND_NATIVE_TEST="$PWD/build_system/widget-test"
           export PLAYGROUND_BROWSER_EXECUTABLE="$(node --input-type=module -e 'import {chromium} from "playwright"; console.log(chromium.executablePath())')"
           npm test
+          export UNIVERSAL_RECEIVER_RUNNER="$PWD/build_system/universal-receiver-runner"
+          node --test tests/universal/*.test.mjs
           cmake --install build_system --prefix /tmp/widget-stage
           cpack --config build_system/CPackConfig.cmake

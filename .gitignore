@@ -1,6 +1,9 @@
 /build*/
 /vendor/tiktok-signer/
 /node_modules/
+/.deps/
+/.npm-cache/
+/.tools/
 /dist/
 *.user
 /stage/

@@ -86,7 +86,7 @@ export function Gallery({
               <p>
                 {"description" in item
                   ? t(item.description)
-                  : project.template.id}
+                  : project.template?.id || ""}
               </p>
               <span className="badge">HTML / CSS / JS</span>
               <span className="badge">{t(template.category || "Widgets")}</span>

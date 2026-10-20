@@ -140,7 +140,12 @@ void WidgetProjectWatcher::scan()
 							emit guard->stateChanged(id, "error", error);
 							return;
 						}
-						guard->observed[id] = result["revision"].toString();
+						const auto revision = result["revision"].toString();
+						// A directory notification can observe our own committed revision
+						// before this callback. It must not schedule the same build again.
+						if (guard->observed.value(id) == revision)
+							guard->dirty.remove(id);
+						guard->observed[id] = revision;
 						const auto buildId = result["buildId"].toString();
 						if (guard->published.value(id) != buildId) {
 							guard->published[id] = buildId;

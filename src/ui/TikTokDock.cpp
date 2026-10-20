@@ -31,6 +31,13 @@
 #include <QPushButton>
 #include <QListWidget>
 #include <QCheckBox>
+#include <QSpinBox>
+#include <QRandomGenerator>
+#include <QClipboard>
+#include <QDialog>
+#include <QDialogButtonBox>
+#include <QDateTime>
+#include <QRegularExpression>
 #include <QMessageBox>
 #include <QInputDialog>
 #include <QDesktopServices>
@@ -337,6 +344,121 @@ TikTokDock::TikTokDock(PluginConfig &c, TikTokConnectionManager &n, EventDispatc
 		guarded([this] { config.save(); });
 	});
 	projectDiagnostics = new QLabel;
+	auto *externalEnabled = new QCheckBox(uiTr("External events (local)"));
+	externalEnabled->setObjectName("externalEventsEnabled");
+	externalEnabled->setToolTip(uiTr("Receive events from explicitly paired local applications"));
+	externalEnabled->setChecked(config.settings["externalEvents"].toObject()["enabled"].toBool());
+	widgetsLayout->addWidget(externalEnabled);
+	connect(externalEnabled, &QCheckBox::toggled, this, [this](bool enabled) {
+		auto options = config.settings["externalEvents"].toObject();
+		options["enabled"] = enabled;
+		config.settings["externalEvents"] = options;
+		guarded([this] { config.save(); });
+	});
+	auto *receiverPort = new QSpinBox;
+	receiverPort->setRange(1024, 65535);
+	receiverPort->setValue(config.settings["externalEvents"].toObject()["port"].toInt(17453));
+	receiverPort->setAccessibleName(uiTr("External event port"));
+	widgetsLayout->addWidget(receiverPort);
+	connect(receiverPort, &QSpinBox::valueChanged, this, [this](int port) {
+		auto options = config.settings["externalEvents"].toObject();
+		options["port"] = port;
+		config.settings["externalEvents"] = options;
+		guarded([this] { config.save(); });
+	});
+	auto *pairApp = new QPushButton(uiTr("Pair local app"));
+	pairApp->setObjectName("externalEventsPair");
+	widgetsLayout->addWidget(pairApp);
+	connect(pairApp, &QPushButton::clicked, this, [this] {
+		const auto name = QInputDialog::getText(this, uiTr("Pair local app"), uiTr("Producer name"));
+		if (name.isEmpty())
+			return;
+		guarded([this, name] {
+			if (!QRegularExpression("^[a-z][a-z0-9_-]{0,60}$").match(name).hasMatch())
+				throw DomainError("INVALID_ID", "Use a lowercase producer name");
+			const bool trusted =
+				uiQuestion(this, "Pair local app",
+					   "Allow this app to publish TikTok gift, chat, follow and like events?",
+					   QMessageBox::Yes | QMessageBox::No, QMessageBox::No) == QMessageBox::Yes;
+			QByteArray random;
+			for (int i = 0; i < 8; i++) {
+				const auto word = QRandomGenerator::system()->generate();
+				for (int j = 0; j < 4; j++)
+					random.append(char(word >> (j * 8)));
+			}
+			const auto token = random.toHex();
+			auto options = config.settings["externalEvents"].toObject();
+			QJsonArray producers;
+			for (const auto &item : options["producers"].toArray())
+				if (item.toObject()["source"] != "external." + name)
+					producers.append(item);
+			if (producers.size() >= 128)
+				throw DomainError("RESOURCE_LIMIT", "Too many paired producers");
+			QJsonArray types{"custom.alert"};
+			if (trusted)
+				for (const auto &type :
+				     QStringList{"tiktok.gift", "tiktok.chat", "tiktok.follow", "tiktok.like"})
+					types.append(type);
+			producers.append(QJsonObject{
+				{"source", "external." + name},
+				{"tokenHash",
+				 QString::fromLatin1(
+					 QCryptographicHash::hash(token, QCryptographicHash::Sha256).toHex())},
+				{"scopes", QJsonArray{"read", "publish"}},
+				{"types", types},
+				{"trustedTikTok", trusted},
+				{"rateLimit", 60},
+				{"expiresAt",
+				 QDateTime::currentDateTimeUtc().addDays(90).toString(Qt::ISODateWithMs)}});
+			options["producers"] = producers;
+			config.settings["externalEvents"] = options;
+			config.save();
+			QDialog dialog(this);
+			dialog.setWindowTitle(uiTr("Pair local app"));
+			auto *layout = new QVBoxLayout(&dialog);
+			auto *value = new QLineEdit(QString::fromLatin1(token));
+			value->setReadOnly(true);
+			value->setEchoMode(QLineEdit::Password);
+			value->setAccessibleName(uiTr("Producer token"));
+			layout->addWidget(value);
+			auto *copy = new QPushButton(uiTr("Copy token"));
+			layout->addWidget(copy);
+			connect(copy, &QPushButton::clicked, &dialog,
+				[token] { QApplication::clipboard()->setText(QString::fromLatin1(token)); });
+			auto *close = new QDialogButtonBox(QDialogButtonBox::Close);
+			layout->addWidget(close);
+			connect(close, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+			dialog.exec();
+		});
+	});
+	auto *revokeApp = new QPushButton(uiTr("Revoke local app"));
+	revokeApp->setObjectName("externalEventsRevoke");
+	widgetsLayout->addWidget(revokeApp);
+	connect(revokeApp, &QPushButton::clicked, this, [this] {
+		auto options = config.settings["externalEvents"].toObject();
+		QStringList sources;
+		for (const auto &item : options["producers"].toArray())
+			sources.append(item.toObject()["source"].toString());
+		sources.removeDuplicates();
+		if (sources.isEmpty())
+			return;
+		const auto source =
+			QInputDialog::getItem(this, uiTr("Revoke local app"), uiTr("Producer name"), sources, 0, false);
+		if (source.isEmpty())
+			return;
+		guarded([this, options, source]() mutable {
+			QJsonArray producers;
+			for (auto item : options["producers"].toArray()) {
+				auto record = item.toObject();
+				if (record["source"] == source)
+					record["revoked"] = true;
+				producers.append(record);
+			}
+			options["producers"] = producers;
+			config.settings["externalEvents"] = options;
+			config.save();
+		});
+	});
 	projectDiagnostics->setObjectName("projectDiagnostics");
 	projectDiagnostics->setWordWrap(true);
 	widgetsLayout->addWidget(projectDiagnostics);

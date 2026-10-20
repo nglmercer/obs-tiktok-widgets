@@ -34,7 +34,7 @@ test(
     );
     const browser = await chromium.launch({ executablePath, headless: true });
     try {
-      const page = await browser.newPage();
+      const page = await browser.newPage({ locale: "en-US" });
       const errors = [];
       page.on("pageerror", (e) => errors.push(String(e)));
       await page.goto(pathToFileURL(path.join(root, "index.html")).href);

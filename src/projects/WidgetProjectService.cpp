@@ -2,6 +2,7 @@
 #include "WidgetBuilder.hpp"
 #include "widgets/WidgetConfig.hpp"
 #include "widgets/HtmlBootstrap.hpp"
+#include "universal/SchemaValidator.hpp"
 #include <QDir>
 #include <QFileInfo>
 #include <QJsonDocument>
@@ -331,7 +332,9 @@ QJsonObject WidgetProjectService::create(QString tid, QString name, QString vers
 	ProjectLock lock(root);
 	const auto t = templates.resolve(tid, version);
 	if (t.value["build"].toObject()["mode"].toString("static") != "static")
-		throw DomainError("DEVELOPMENT_ONLY", "New user widgets support plain HTML/CSS/JavaScript only. Import a precompiled static template instead.");
+		throw DomainError(
+			"DEVELOPMENT_ONLY",
+			"New user widgets support plain HTML/CSS/JavaScript only. Import a precompiled static template instead.");
 	if (id.isEmpty())
 		id = QUuid::createUuid().toString(QUuid::WithoutBraces);
 	const auto path = projectPath(id);
@@ -364,6 +367,10 @@ QJsonObject WidgetProjectService::create(QString tid, QString name, QString vers
 		      {"settings", config},
 		      {"autoPublish", t.value["build"].toObject().isEmpty()},
 		      {"build", t.value["build"].toObject()}};
+	if (t.value["contract"] == "universal-widget") {
+		m["universalManifest"] = t.value;
+		writeObject(staging.path() + "/schema/settings.schema.json", t.schema);
+	}
 	m["lastSourceHash"] = contentHash(staging.path(), sourceFiles(staging.path()));
 	writeObject(staging.path() + "/project.json", m);
 	QDir().mkpath(QFileInfo(path).absolutePath());
@@ -452,7 +459,8 @@ QJsonObject WidgetProjectService::configure(const QString &id, QJsonObject patch
 	if (!m["events"].isArray() || !m["autoPublish"].isBool())
 		throw DomainError("INVALID_PROJECT", "Events must be an array; autoPublish must be boolean");
 	for (const auto &event : m["events"].toArray())
-		if (!QStringList{"gift", "chat", "like", "follow", "roomUser", "state", "unknown", "social"}.contains(
+		if (!m.contains("universalManifest") &&
+		    !QStringList{"gift", "chat", "like", "follow", "roomUser", "state", "unknown", "social"}.contains(
 			    event.toString()))
 			throw DomainError("INVALID_PROJECT", "Unknown declared event type");
 	snapshot(id, get(id));
@@ -475,10 +483,105 @@ QJsonObject WidgetProjectService::settings(const QString &id, QJsonObject patch,
 	const auto schemaPath = projectPath(id) + "/schema/settings.schema.json";
 	if (QFileInfo::exists(schemaPath))
 		validateSettings(config, readObject(schemaPath));
+	if (m.contains("universalManifest")) {
+		const auto schema = readObject(schemaPath);
+		const auto properties = schema["properties"].toObject();
+		QJsonObject author;
+		for (const auto &key : properties.keys())
+			if (config.contains(key))
+				author[key] = config[key];
+		for (auto it = patch.begin(); it != patch.end(); ++it)
+			if (!properties.contains(it.key()) &&
+			    !QStringList{"width", "height", "name"}.contains(it.key()))
+				throw DomainError("SETTINGS_INVALID", "Unknown universal setting");
+		if (!uw::validate(schema, author, schema))
+			throw DomainError("SETTINGS_INVALID", "Settings do not match the universal schema");
+		if (m.contains("portableProject")) {
+			auto value = m["portableProject"].toObject();
+			value["settings"] = author;
+			m["portableProject"] = value;
+		}
+	}
 	if (config == m["settings"].toObject())
 		return get(id);
 	snapshot(id, m);
 	m["settings"] = config;
+	commitProject(id, m);
+	return get(id);
+}
+QJsonObject WidgetProjectService::portable(const QString &id) const
+{
+	const auto m = get(id);
+	if (!m.contains("universalManifest"))
+		throw DomainError("UNSUPPORTED_CAPABILITY", "Select a universal widget project");
+	if (m.contains("portableProject"))
+		return m["portableProject"].toObject();
+	const auto manifest = m["universalManifest"].toObject();
+	QJsonObject settings;
+	const auto schema = readObject(projectPath(id) + "/schema/settings.schema.json");
+	for (const auto &key : schema["properties"].toObject().keys())
+		if (m["settings"].toObject().contains(key))
+			settings[key] = m["settings"].toObject()[key];
+	return {{"contract", "universal-widget-project"},
+		{"schemaVersion", 1},
+		{"widget", m["template"]},
+		{"settings", settings},
+		{"layout", QJsonObject{{"width", manifest["defaultSize"].toObject()["width"]},
+				       {"height", manifest["defaultSize"].toObject()["height"]},
+				       {"layers", QJsonArray{}}}}};
+}
+QJsonObject WidgetProjectService::setPortable(const QString &id, const QJsonObject &value, const QString &expected)
+{
+	ProjectLock lock(root);
+	checkRevision(id, expected);
+	auto m = get(id);
+	if (!m.contains("universalManifest"))
+		throw DomainError("UNSUPPORTED_CAPABILITY", "Select a universal widget project");
+	if (!uw::conforms(uw::projectSchema, value) || value["widget"] != m["template"])
+		throw DomainError("INVALID_PROJECT", "Portable widget identity, version or layout is invalid");
+	QSet<QString> layerIds;
+	std::function<void(const QJsonArray &, int)> checkLayers = [&](const QJsonArray &layers, int depth) {
+		if (depth > 32)
+			throw DomainError("INVALID_PROJECT", "Layout depth exceeds 32");
+		for (const auto &item : layers) {
+			const auto layer = item.toObject();
+			const auto key = layer["id"].toString();
+			if (layerIds.contains(key))
+				throw DomainError("INVALID_PROJECT", "Duplicate layer identity");
+			layerIds.insert(key);
+			if (layerIds.size() > 1024)
+				throw DomainError("INVALID_PROJECT", "Layout exceeds 1024 layers");
+			if (layer["kind"] == "image" && !layer.contains("asset"))
+				throw DomainError("MISSING_ASSET", "Image layer requires an asset");
+			if (layer.contains("asset") &&
+			    !QFileInfo::exists(safePath(projectPath(id), layer["asset"].toString())))
+				throw DomainError("MISSING_ASSET", "Layer asset is unavailable");
+			checkLayers(layer["children"].toArray(), depth + 1);
+		}
+	};
+	checkLayers(value["layout"].toObject()["layers"].toArray(), 0);
+	const auto schema = readObject(projectPath(id) + "/schema/settings.schema.json");
+	if (!uw::validate(schema, value["settings"], schema))
+		throw DomainError("SETTINGS_INVALID", "Portable settings do not match the widget schema");
+	const auto editorPath = m["universalManifest"].toObject()["schemas"].toObject()["editor"].toString();
+	if (!editorPath.isEmpty()) {
+		const auto editorSchema = readObject(safePath(projectPath(id), editorPath));
+		if (!uw::validate(editorSchema, value.value("editor").toObject(), editorSchema))
+			throw DomainError("INVALID_PROJECT", "Editor settings do not match the widget schema");
+	}
+	auto settings = m["settings"].toObject();
+	const auto incoming = value["settings"].toObject();
+	for (auto it = incoming.begin(); it != incoming.end(); ++it) {
+		if (QStringList{"id", "template", "customHtml", "editableHtml"}.contains(it.key()))
+			throw DomainError("IMMUTABLE_FIELD",
+					  "Portable settings cannot overwrite host identity or source");
+		settings[it.key()] = it.value();
+	}
+	settings["width"] = value["layout"].toObject()["width"];
+	settings["height"] = value["layout"].toObject()["height"];
+	snapshot(id, m);
+	m["settings"] = settings;
+	m["portableProject"] = value;
 	commitProject(id, m);
 	return get(id);
 }
@@ -759,7 +862,12 @@ QJsonObject WidgetProjectService::buildUnlocked(const QString &id, bool publish)
 	const auto config = publicConfig(publicSettings);
 
 	const auto bootstrap =
-		"<script>window.TikTokWidgetConfig=" + QString::fromUtf8(config) +
+		"<script>window.TikTokWidgetConfig=" + QString::fromUtf8(config) + ";window.UniversalWidgetProject=" +
+		(m.contains("portableProject")
+			 ? QString::fromUtf8(
+				   QJsonDocument(m["portableProject"].toObject()).toJson(QJsonDocument::Compact))
+				   .replace("<", "\\u003c")
+			 : QString("null")) +
 		";Object.defineProperty(window,\"TikTokWidgetAssetBase\",{configurable:true,get:()=>new URL(\".\",document.baseURI).href});</script>";
 	const auto original = readFile(staging.path() + "/dist/" + entry);
 	QSet<QString> approvedScripts;
@@ -780,8 +888,24 @@ QJsonObject WidgetProjectService::buildUnlocked(const QString &id, bool publish)
 	const bool replaceLegacyConfig = !approvedScripts.isEmpty();
 	atomicWrite(staging.path() + "/dist/" + entry,
 		    injectHtmlBootstrap(original, bootstrap, replaceLegacyConfig, approvedScripts));
+	QJsonArray previewEvents;
+	for (const auto &value : m["events"].toArray()) {
+		auto type = value.toString();
+		if (type.startsWith("tiktok."))
+			type = type.mid(7);
+		if (type == "room_stats")
+			type = "roomUser";
+		if (QStringList{"gift", "chat", "like", "follow", "roomUser"}.contains(type))
+			previewEvents.append(type);
+	}
+	const auto portablePreview =
+		m.contains("universalManifest")
+			? "<script>window.TikTokWidgetPreviewEvents=" +
+				  QString::fromUtf8(QJsonDocument(previewEvents).toJson(QJsonDocument::Compact)) +
+				  ";</script>"
+			: QString{};
 	const auto previewBootstrap =
-		bootstrap + "<script>window.TikTokWidgetBuildPointer=" + "new URL(" +
+		bootstrap + portablePreview + "<script>window.TikTokWidgetBuildPointer=" + "new URL(" +
 		jsonString(relativeUrl(release + "/dist/" + entry, runtime + "/build-pointer.js")) +
 		",location.href).href" + ";window.TikTokWidgetBuildId=" + jsonString(buildId) +
 		";</script><script src=\"" +

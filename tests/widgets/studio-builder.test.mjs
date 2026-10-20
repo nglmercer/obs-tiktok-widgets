@@ -136,6 +136,7 @@ test(
       );
       assert.equal((await api("studio.preferences.get")).data.locale, "en");
       const page = await browser.newPage({
+        locale: "en-US",
         viewport: { width: 1440, height: 1000 },
       });
       await page.goto(url);

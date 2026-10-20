@@ -1,5 +1,6 @@
 #include "BrowserEventBridge.hpp"
 #include "EventNormalizer.hpp"
+#include "universal/EventProtocol.hpp"
 #include <obs-module.h>
 #include <obs-websocket-api.h>
 #include <QJsonDocument>
@@ -36,11 +37,18 @@ bool BrowserEventBridge::verify()
 }
 bool BrowserEventBridge::broadcast(const QJsonObject &e)
 {
-	bool ok = emitEvent("tiktok:event", e);
-	const auto type = e["type"].toString("unknown");
-	ok = emitEvent("tiktok:" + type, e) && ok;
-	if (type != "follow" && EventNormalizer::isFollow(e))
-		ok = emitEvent("tiktok:follow", e) && ok;
+	// Canonical events never enter legacy TikTok channels or privileged APIs.
+	if (e.contains("source") && e.contains("id"))
+		return emitEvent("universal:event", e);
+	if (!e["_universalDuplicate"].toBool())
+		emitEvent("universal:event", uw::fromNative(e));
+	auto legacy = e;
+	legacy.remove("_universalDuplicate");
+	bool ok = emitEvent("tiktok:event", legacy);
+	const auto type = legacy["type"].toString("unknown");
+	ok = emitEvent("tiktok:" + type, legacy) && ok;
+	if (type != "follow" && EventNormalizer::isFollow(legacy))
+		ok = emitEvent("tiktok:follow", legacy) && ok;
 	return ok;
 }
 } // namespace tt

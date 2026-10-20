@@ -100,11 +100,13 @@
             events: ["gift", "chat", "like", "follow", "roomUser"]
           };
           const config = previewWindow.TikTokWidgetConfig || {};
-          const available = Array.isArray(config.events) ? config.events : types[String(config.template || document.body?.dataset.template)];
+          const available = Array.isArray(previewWindow.TikTokWidgetPreviewEvents) ? previewWindow.TikTokWidgetPreviewEvents : Array.isArray(config.events) ? config.events : types[String(config.template || document.body?.dataset.template)];
           const filters = config.filters;
           send("ready", {
             supported: available ? available.filter(
-              (t) => !Array.isArray(filters) || !filters.length || filters.includes(t)
+              (t) => !Array.isArray(filters) || !filters.length || filters.includes(t) || Array.isArray(previewWindow.TikTokWidgetPreviewEvents) && filters.includes(
+                "tiktok." + (t === "roomUser" ? "room_stats" : t)
+              )
             ) : null
           });
         }

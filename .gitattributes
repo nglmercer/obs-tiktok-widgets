@@ -1,3 +1,6 @@
 # Preserve upstream license notices byte-for-byte, including their whitespace.
 data/licenses/** -whitespace
 data/PROTOBUF-LICENSE.txt -whitespace
+
+# Shared SDK hashes must be identical on Windows and Linux checkouts.
+web/universal/** text eol=lf

@@ -6,7 +6,7 @@ import {
   rmSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, relative } from "node:path";
+import { join, relative, dirname } from "node:path";
 import { spawnSync } from "node:child_process";
 const staging = mkdtempSync(join(tmpdir(), "widget-generated-"));
 function files(root, base = root) {
@@ -31,11 +31,24 @@ try {
     cpSync(file, join(staging, file), { recursive: true });
   // Reuse the locked developer tool installation without fetching or changing sources.
   cpSync("node_modules", join(staging, "node_modules"), { recursive: true });
-  const result = spawnSync("npm", ["run", "build"], {
-    cwd: staging,
-    encoding: "utf8",
-  });
-  if (result.status !== 0) throw new Error(result.stderr + result.stdout);
+  const windows = process.platform === "win32";
+  const result = spawnSync(
+    windows ? process.execPath : "npm",
+    windows
+      ? [
+          process.env.npm_execpath ||
+            join(dirname(process.execPath), "node_modules/npm/bin/npm-cli.js"),
+          "run",
+          "build",
+        ]
+      : ["run", "build"],
+    {
+      cwd: staging,
+      encoding: "utf8",
+    },
+  );
+  if (result.status !== 0)
+    throw new Error(result.error?.message || result.stderr + result.stdout);
   const actual = files("data/web"),
     expected = files(join(staging, "data/web"));
   if (JSON.stringify(actual) !== JSON.stringify(expected))

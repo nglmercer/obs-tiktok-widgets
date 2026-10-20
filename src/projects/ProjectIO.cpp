@@ -8,7 +8,12 @@
 #include <QCryptographicHash>
 #include <QRegularExpression>
 #include <QUuid>
+#include <mutex>
 namespace tt {
+namespace {
+// Do not enumerate an in-process QSaveFile's transient sibling as author source.
+std::recursive_mutex atomicSourceMutex;
+} // namespace
 DomainError::DomainError(QString c, QString m, QJsonObject d)
 	: std::runtime_error(m.toStdString()),
 	  code(std::move(c)),
@@ -26,6 +31,7 @@ QByteArray readFile(const QString &path, qint64 limit)
 }
 void atomicWrite(const QString &path, const QByteArray &bytes)
 {
+	const std::lock_guard guard(atomicSourceMutex);
 	if (QFileInfo(path).isSymLink())
 		throw DomainError("UNSAFE_PATH", "Symlink destination: " + path);
 	if (!QDir().mkpath(QFileInfo(path).absolutePath()))
@@ -74,11 +80,14 @@ QString safePath(const QString &root, const QString &relative)
 		current += '/' + part;
 		if (QFileInfo(current).isSymLink())
 			throw DomainError("UNSAFE_PATH", "Symlink path: " + relative);
+		if (current != base + '/' + relative && QFileInfo::exists(current) && !QFileInfo(current).isDir())
+			throw DomainError("UNSAFE_PATH", "File used as an ancestor: " + relative);
 	}
 	return current;
 }
 QStringList treeFiles(const QString &root)
 {
+	const std::lock_guard guard(atomicSourceMutex);
 	QStringList files;
 	qint64 total = 0;
 	QDirIterator it(root, QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot | QDir::Hidden,

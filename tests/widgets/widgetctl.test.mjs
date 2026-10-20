@@ -29,7 +29,12 @@ test(
     try {
       const doctor = run(["doctor"]).data;
       assert.equal(doctor.runtimeNodeRequired, false);
-      assert.equal(run(["templates", "list"]).data.length, 7);
+      const templates = run(["templates", "list"]).data;
+      assert.equal(
+        templates.filter((t) => t.id.startsWith("builtin.")).length,
+        7,
+      );
+      assert.ok(templates.some((t) => t.id === "universal.gift-alert"));
       assert.ok(
         run(["templates", "list"]).data.every(
           (t) => !t.build || t.build.mode === "static",
@@ -188,7 +193,7 @@ test(
         URL,
         location,
       });
-      assert.match(navigated, /^http:\/\/absolute\/\/.*runtime\/.*releases\//);
+      assert.match(navigated, /^http:\/\/absolute\/.*runtime\/.*releases\//);
       assert.ok(!loader.includes("file://"));
 
       run([

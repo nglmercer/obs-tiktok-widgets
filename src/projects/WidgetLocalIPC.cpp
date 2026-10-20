@@ -50,7 +50,9 @@ bool WidgetLocalIPC::start(bool enabled)
 			t->start(3000);
 			connect(t, &QTimer::timeout, s, &QLocalSocket::abort);
 			connect(s, &QLocalSocket::disconnected, s, &QObject::deleteLater);
-			connect(s, &QLocalSocket::readyRead, this, [this, s, buffer, t] {
+			const auto receive = [this, s, buffer, t] {
+				if (s->property("handled").toBool())
+					return;
 				*buffer += s->readAll();
 				if (buffer->size() > 65536) {
 					s->abort();
@@ -58,6 +60,7 @@ bool WidgetLocalIPC::start(bool enabled)
 				}
 				if (!buffer->contains('\n'))
 					return;
+				s->setProperty("handled", true);
 				t->stop();
 				QJsonObject response;
 				QString method;
@@ -109,7 +112,10 @@ bool WidgetLocalIPC::start(bool enabled)
 				}
 				s->write(QJsonDocument(response).toJson(QJsonDocument::Compact) + '\n');
 				s->disconnectFromServer();
-			});
+			};
+			connect(s, &QLocalSocket::readyRead, this, receive);
+			if (s->bytesAvailable() > 0)
+				QTimer::singleShot(0, s, receive);
 		}
 	});
 	return true;

@@ -13,6 +13,7 @@ import { Preferences } from "./Preferences";
 import { Status } from "./UI";
 import type { StudioController } from "../features/useStudioProject";
 import { ProjectWorkspace } from "../features/workspace/ProjectWorkspace";
+import { UniversalPanel } from "../features/UniversalPanel";
 export function StudioShell({ controller }: { controller: StudioController }) {
   const {
     mobilePanel,
@@ -166,6 +167,8 @@ export function StudioShell({ controller }: { controller: StudioController }) {
               <Preferences />
               <p>{tr("UI preferences are separate from widget settings.")}</p>
             </section>
+          ) : nav === "Portable widgets" ? (
+            <UniversalPanel controller={controller} />
           ) : ((nav === "Templates" || nav === "My Widgets") && !project) ||
             nav === "Templates" ? (
             <Gallery
