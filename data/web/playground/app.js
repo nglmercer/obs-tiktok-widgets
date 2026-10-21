@@ -454,7 +454,15 @@
     Name: "Name",
     "Simulate composition": "Simulate composition",
     "Simulation stays in this canvas": "Simulation stays in this canvas",
-    "Instance settings": "Instance settings"
+    "Instance settings": "Instance settings",
+    "Save design, then Publish to update OBS.": "Save design, then Publish to update OBS.",
+    "Choose a template and select Add widget to start.": "Choose a template and select Add widget to start.",
+    Hidden: "Hidden",
+    Canvas: "Canvas",
+    "Canvas width": "Canvas width",
+    "Canvas height": "Canvas height",
+    "No OBS scenes available.": "No OBS scenes available.",
+    "Preview {name}": "Preview {name}"
   };
 
   // web/shared/i18n/es.json
@@ -911,7 +919,15 @@
     Name: "Nombre",
     "Simulate composition": "Simular composici\xF3n",
     "Simulation stays in this canvas": "La simulaci\xF3n permanece en este lienzo",
-    "Instance settings": "Ajustes de instancia"
+    "Instance settings": "Ajustes de instancia",
+    "Save design, then Publish to update OBS.": "Guarda el dise\xF1o y despu\xE9s publica para actualizar OBS.",
+    "Choose a template and select Add widget to start.": "Elige una plantilla y selecciona A\xF1adir widget para comenzar.",
+    Hidden: "Oculto",
+    Canvas: "Lienzo",
+    "Canvas width": "Ancho del lienzo",
+    "Canvas height": "Alto del lienzo",
+    "No OBS scenes available.": "No hay escenas de OBS disponibles.",
+    "Preview {name}": "Vista previa de {name}"
   };
 
   // web/shared/i18n/index.ts

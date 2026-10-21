@@ -1,5 +1,5 @@
 import { t } from "../../shared/i18n";
-import { useState } from "react";
+import { useState, type ComponentType } from "react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import {
   Plus,
@@ -66,7 +66,6 @@ export function Action({
   disabledReason?: string;
   primary?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
   const action = actions.find((a) => a.id === id)!;
   const Icon = Icons[action.icon as keyof typeof Icons] as React.ComponentType<{
     size: number;
@@ -78,6 +77,37 @@ export function Action({
   ]
     .filter(Boolean)
     .join(" · ");
+  return (
+    <IconButton
+      label={t(action.label)}
+      title={title}
+      icon={Icon}
+      onClick={onClick}
+      disabled={!!disabledReason}
+      showLabel={primary}
+      danger={action.isDestructive}
+    />
+  );
+}
+
+export function IconButton({
+  label,
+  title = label,
+  icon: Icon,
+  onClick,
+  disabled = false,
+  showLabel = false,
+  danger = false,
+}: {
+  label: string;
+  title?: string;
+  icon: ComponentType<{ size: number; "aria-hidden"?: boolean }>;
+  onClick: () => void;
+  disabled?: boolean;
+  showLabel?: boolean;
+  danger?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
   return (
     <Tooltip.Root
       open={open}
@@ -92,19 +122,19 @@ export function Action({
           onPointerLeave={() => setOpen(false)}
           onFocus={() => setOpen(true)}
           onBlur={() => setOpen(false)}
-          tabIndex={disabledReason ? 0 : undefined}
-          aria-label={disabledReason ? title : undefined}
+          tabIndex={disabled ? 0 : undefined}
+          aria-label={disabled ? title : undefined}
         >
           <button
             type="button"
-            aria-label={t(action.label)}
+            aria-label={label}
             aria-description={title}
-            disabled={!!disabledReason}
+            disabled={disabled}
             onClick={onClick}
-            className={action.isDestructive ? "danger" : ""}
+            className={danger ? "danger" : ""}
           >
-            <Icon size={18} />
-            {primary && <span>{t(action.label)}</span>}
+            <Icon size={18} aria-hidden={true} />
+            {showLabel && <span>{label}</span>}
           </button>
         </span>
       </Tooltip.Trigger>

@@ -177,6 +177,18 @@ Descartados %4 · Excesivos %5 · Duplicados %6 · Fallos de entrega %7</transla
       <translation>No se pueden guardar las preferencias de interfaz</translation>
     </message>
     <message>
+      <source>Canvas</source>
+      <translation>Lienzo</translation>
+    </message>
+    <message>
+      <source>Canvas height</source>
+      <translation>Alto del lienzo</translation>
+    </message>
+    <message>
+      <source>Canvas width</source>
+      <translation>Ancho del lienzo</translation>
+    </message>
+    <message>
       <source>Chat</source>
       <translation>Chat</translation>
     </message>
@@ -191,6 +203,10 @@ Descartados %4 · Excesivos %5 · Duplicados %6 · Fallos de entrega %7</transla
     <message>
       <source>Choose a source file</source>
       <translation>Elige un archivo de código</translation>
+    </message>
+    <message>
+      <source>Choose a template and select Add widget to start.</source>
+      <translation>Elige una plantilla y selecciona Añadir widget para comenzar.</translation>
     </message>
     <message>
       <source>Clear</source>
@@ -577,6 +593,10 @@ Descartados %4 · Excesivos %5 · Duplicados %6 · Fallos de entrega %7</transla
       <translation>Ayuda</translation>
     </message>
     <message>
+      <source>Hidden</source>
+      <translation>Oculto</translation>
+    </message>
+    <message>
       <source>History</source>
       <translation>Historial</translation>
     </message>
@@ -837,6 +857,10 @@ Descartados %4 · Excesivos %5 · Duplicados %6 · Fallos de entrega %7</transla
       <translation>No</translation>
     </message>
     <message>
+      <source>No OBS scenes available.</source>
+      <translation>No hay escenas de OBS disponibles.</translation>
+    </message>
+    <message>
       <source>No build dependencies</source>
       <translation>Sin dependencias de compilación</translation>
     </message>
@@ -991,6 +1015,10 @@ Descartados %4 · Excesivos %5 · Duplicados %6 · Fallos de entrega %7</transla
     <message>
       <source>Preview widget</source>
       <translation>Ver widget</translation>
+    </message>
+    <message>
+      <source>Preview {name}</source>
+      <translation>Vista previa de {name}</translation>
     </message>
     <message>
       <source>Private session file</source>
@@ -1243,6 +1271,10 @@ Descartados %4 · Excesivos %5 · Duplicados %6 · Fallos de entrega %7</transla
     <message>
       <source>Save design</source>
       <translation>Guardar diseño</translation>
+    </message>
+    <message>
+      <source>Save design, then Publish to update OBS.</source>
+      <translation>Guarda el diseño y después publica para actualizar OBS.</translation>
     </message>
     <message>
       <source>Save event declarations</source>

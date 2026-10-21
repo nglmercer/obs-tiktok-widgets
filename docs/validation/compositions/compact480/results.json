@@ -1,0 +1,28 @@
+{
+  "passed": true,
+  "window": {
+    "width": 480,
+    "height": 480
+  },
+  "canvasArea": {
+    "x": 8,
+    "y": 186,
+    "width": 464,
+    "height": 286
+  },
+  "composition": {
+    "height": 480,
+    "width": 480
+  },
+  "widget": {
+    "height": 160,
+    "opacity": 1,
+    "rotation": 0,
+    "width": 220,
+    "x": 70,
+    "y": 45
+  },
+  "duplicateUndoControls": false,
+  "pageOverflow": false,
+  "pageErrors": []
+}

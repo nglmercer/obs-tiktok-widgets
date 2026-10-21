@@ -26,15 +26,19 @@ The same fixture engine supplies Viewer123 sending **23 Rose**, cumulative 1 →
 
 ## Screenshots
 
-These are actual Chromium renders, not mockups. The earlier Studio screenshot is preserved for comparison.
+Current Studio and Playground frames were refreshed on 2026-10-21 using Playwright and the native authoring adapter. These are actual Chromium renders, not mockups. The earlier Studio screenshot is preserved for comparison. See the [complete screenshot inventory](SCREENSHOTS.md).
 
-| Before | After |
+| | Current UI |
 | --- | --- |
 | [Studio v3](studio/v4/before-studio.png) | [Studio v4 desktop](studio/v4/studio-v4-en-1440.png) |
 | | [Studio v4 mobile 320px](studio/v4/studio-v4-en-320.png) |
 | | [Spanish Studio](studio/v4/studio-v4-es-1440.png) |
 | | [Spanish Playground mobile](studio/v4/playground-v4-es-320.png) |
 | | [Spanish Playground desktop](studio/v4/playground-v4-es-1440.png) |
+
+The current composition editor is also captured in a real [480×480 window](validation/compositions/compact480/canvas-480.png), including its [Inspector](validation/compositions/compact480/inspector-480.png).
+
+Template artwork opens in a larger preview on hover, keyboard focus or tap. Escape, scrolling or leaving the preview dismisses it. Hovering does not execute templates or create projects. See [480px](studio/v4/template-hover-480.png) and [desktop](studio/v4/template-hover-1440.png) captures.
 
 ## Development and limitations
 

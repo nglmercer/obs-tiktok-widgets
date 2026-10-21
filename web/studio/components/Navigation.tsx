@@ -28,7 +28,7 @@ export function Navigation({
   usePreferences();
   const [expanded, setExpanded] = useState(false);
   return (
-    <aside className="navigation">
+    <aside className="navigation" data-expanded={expanded}>
       <div className="nav-brand">
         <PanelsTopLeft aria-hidden="true" size={22} />
         <h1>{t("Widget Studio")}</h1>

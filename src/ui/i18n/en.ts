@@ -177,6 +177,18 @@ Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</translation
       <translation>Cannot save UI preferences</translation>
     </message>
     <message>
+      <source>Canvas</source>
+      <translation>Canvas</translation>
+    </message>
+    <message>
+      <source>Canvas height</source>
+      <translation>Canvas height</translation>
+    </message>
+    <message>
+      <source>Canvas width</source>
+      <translation>Canvas width</translation>
+    </message>
+    <message>
       <source>Chat</source>
       <translation>Chat</translation>
     </message>
@@ -191,6 +203,10 @@ Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</translation
     <message>
       <source>Choose a source file</source>
       <translation>Choose a source file</translation>
+    </message>
+    <message>
+      <source>Choose a template and select Add widget to start.</source>
+      <translation>Choose a template and select Add widget to start.</translation>
     </message>
     <message>
       <source>Clear</source>
@@ -577,6 +593,10 @@ Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</translation
       <translation>Help</translation>
     </message>
     <message>
+      <source>Hidden</source>
+      <translation>Hidden</translation>
+    </message>
+    <message>
       <source>History</source>
       <translation>History</translation>
     </message>
@@ -837,6 +857,10 @@ Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</translation
       <translation>No</translation>
     </message>
     <message>
+      <source>No OBS scenes available.</source>
+      <translation>No OBS scenes available.</translation>
+    </message>
+    <message>
       <source>No build dependencies</source>
       <translation>No build dependencies</translation>
     </message>
@@ -991,6 +1015,10 @@ Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</translation
     <message>
       <source>Preview widget</source>
       <translation>Preview widget</translation>
+    </message>
+    <message>
+      <source>Preview {name}</source>
+      <translation>Preview {name}</translation>
     </message>
     <message>
       <source>Private session file</source>
@@ -1243,6 +1271,10 @@ Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</translation
     <message>
       <source>Save design</source>
       <translation>Save design</translation>
+    </message>
+    <message>
+      <source>Save design, then Publish to update OBS.</source>
+      <translation>Save design, then Publish to update OBS.</translation>
     </message>
     <message>
       <source>Save event declarations</source>

@@ -247,20 +247,19 @@ export function useStudioProject() {
   }, [project?.id]);
   async function addScene() {
     if (!project) return;
-    const scenes = await call<any[]>("obs.scenes.list");
-    const scene = await ask(
-      tr("Scene name: {scenes}", {
-        scenes: scenes
-          .map((s) => (typeof s === "string" ? s : s.name))
-          .join(", "),
-      }),
-      "",
-    );
+    const scenes =
+      await call<Array<string | { name: string }>>("obs.scenes.list");
+    const names = [
+      ...new Set(scenes.map((s) => (typeof s === "string" ? s : s.name))),
+    ].filter((name) => typeof name === "string" && name.length > 0);
+    if (!names.length) throw new Error(tr("No OBS scenes available."));
+    const projectId = project.id;
+    const scene = await ask("Select scene", names[0], names);
     if (
       scene &&
       (await confirmAction(tr("Add this widget to {scene}?", { scene })))
     )
-      await call("obs.sources.add", { id: project.id, scene, confirm: true });
+      await call("obs.sources.add", { id: projectId, scene, confirm: true });
   }
 
   async function task(label: string, fn: () => Promise<void>) {

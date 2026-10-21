@@ -45,3 +45,5 @@ Widget Studio opens in your system browser through an explicitly enabled authent
 Experimental [Widget Health diagnostics](docs/WIDGET_HEALTH.md) distinguish OBS vendor acceptance from browser processing. Telemetry is opt-in and has not passed real CEF acceptance on the test system; automatic recovery and cross-reload replay are not enabled. Existing playback remains independent of diagnostics and Studio.
 
 Composition work is available as an [initial multi-widget canvas implementation](docs/COMPOSITIONS.md). See the [repository audit](docs/architecture/WEB_FIRST_AUDIT.md) for migration gates and retained legacy workflows.
+
+[Illustrated composition walkthrough and recording](docs/COMPOSITION_GUIDE.md) · [Guía en español](docs/COMPOSITION_GUIDE.es.md)

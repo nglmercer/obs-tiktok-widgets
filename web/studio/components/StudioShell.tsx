@@ -49,9 +49,17 @@ export function StudioShell({ controller }: { controller: StudioController }) {
     operation,
     disabled,
   } = controller;
+  const compositionDesign =
+    project?.template.id === "builtin.composition" &&
+    tab === "Design" &&
+    !["Templates", "Settings", "Portable widgets"].includes(nav);
   return (
     <Tooltip.Provider delayDuration={200}>
-      <div className="studio" data-mobile-panel={mobilePanel}>
+      <div
+        className="studio"
+        data-mobile-panel={mobilePanel}
+        data-composition-design={compositionDesign || undefined}
+      >
         <Navigation
           selected={nav}
           onSelect={(item) => {
@@ -66,64 +74,98 @@ export function StudioShell({ controller }: { controller: StudioController }) {
                 {(project?.settings.name as string) ||
                   tr("Create your next widget")}
               </strong>
-              <small>
-                {project
-                  ? project.template.id + " / " + project.id.slice(0, 8)
-                  : tr("Templates / Gallery")}
-              </small>
+              {!compositionDesign && (
+                <small>
+                  {project
+                    ? project.template.id + " / " + project.id.slice(0, 8)
+                    : tr("Templates / Gallery")}
+                </small>
+              )}
             </div>
             <div className="toolbar">
-              <Action
-                id="undo"
-                disabledReason={
-                  tab !== "Code" && !fileUndo.length
-                    ? "Open Code editor or perform a file operation"
-                    : ""
-                }
-                onClick={() =>
-                  fileUndo.length && !file
-                    ? task("Undo file operation", () => reverseFile(false))
-                    : setEditorCommand({ id: "undo", serial: Date.now() })
-                }
-              />
-              <Action
-                id="redo"
-                disabledReason={
-                  tab !== "Code" && !fileUndo.length
-                    ? "Open Code editor or perform a file operation"
-                    : ""
-                }
-                onClick={() =>
-                  fileUndo.length && !file
-                    ? task("Redo file operation", () => reverseFile(true))
-                    : setEditorCommand({ id: "redo", serial: Date.now() })
-                }
-              />
-              {["validate", "build", "publish", "preview", "history"].map(
-                (id) => (
+              {!compositionDesign && (
+                <>
                   <Action
-                    key={id}
-                    id={id}
-                    primary={["build", "publish"].includes(id)}
+                    id="undo"
                     disabledReason={
-                      disabled ||
-                      (["build", "publish", "validate"].includes(id) &&
-                      (dirty || visualDraft)
-                        ? "Save author drafts first; Preview is isolated"
-                        : "")
+                      tab !== "Code" && !fileUndo.length
+                        ? "Open Code editor or perform a file operation"
+                        : ""
                     }
-                    onClick={() => task(id, () => operation(id))}
+                    onClick={() =>
+                      fileUndo.length && !file
+                        ? task("Undo file operation", () => reverseFile(false))
+                        : setEditorCommand({ id: "undo", serial: Date.now() })
+                    }
                   />
-                ),
+                  <Action
+                    id="redo"
+                    disabledReason={
+                      tab !== "Code" && !fileUndo.length
+                        ? "Open Code editor or perform a file operation"
+                        : ""
+                    }
+                    onClick={() =>
+                      fileUndo.length && !file
+                        ? task("Redo file operation", () => reverseFile(true))
+                        : setEditorCommand({ id: "redo", serial: Date.now() })
+                    }
+                  />
+                </>
               )}
-              <Action
-                id="scene"
-                disabledReason={
-                  !obsReady ? "OBS IPC is offline or disabled" : disabled
-                }
-                onClick={() => task("Add to scene", addScene)}
-              />
+              {(compositionDesign
+                ? ["publish"]
+                : ["validate", "build", "publish", "preview", "history"]
+              ).map((id) => (
+                <Action
+                  key={id}
+                  id={id}
+                  primary={["build", "publish"].includes(id)}
+                  disabledReason={
+                    disabled ||
+                    (["build", "publish", "validate"].includes(id) &&
+                    (dirty || visualDraft)
+                      ? "Save author drafts first; Preview is isolated"
+                      : "")
+                  }
+                  onClick={() => task(id, () => operation(id))}
+                />
+              ))}
+              {!compositionDesign && (
+                <Action
+                  id="scene"
+                  disabledReason={
+                    !obsReady ? "OBS IPC is offline or disabled" : disabled
+                  }
+                  onClick={() => task("Add to scene", addScene)}
+                />
+              )}
               <Menu>
+                {compositionDesign && (
+                  <>
+                    {["validate", "build", "preview"].map((id) => (
+                      <Action
+                        key={id}
+                        id={id}
+                        disabledReason={
+                          disabled ||
+                          (["validate", "build"].includes(id) &&
+                          (dirty || visualDraft)
+                            ? "Save author drafts first; Preview is isolated"
+                            : "")
+                        }
+                        onClick={() => task(id, () => operation(id))}
+                      />
+                    ))}
+                    <Action
+                      id="scene"
+                      disabledReason={
+                        !obsReady ? "OBS IPC is offline or disabled" : disabled
+                      }
+                      onClick={() => task("Add to scene", addScene)}
+                    />
+                  </>
+                )}
                 <Action
                   id="export"
                   disabledReason={disabled}
@@ -145,20 +187,40 @@ export function StudioShell({ controller }: { controller: StudioController }) {
             </div>
           </header>
           <Status busy={!!busy}>
-            {busy ? tr(busy) + "…" : translateMessage(notice || "Ready")}
-            {project && (
-              <span>
-                {dirty
-                  ? " · " + tr("Unsaved draft")
-                  : " · " + tr("Source saved")}{" "}
-                ·{" "}
-                {project.autoPublish
-                  ? tr("Auto-publish enabled")
-                  : tr("Explicit publish")}
-                {project.build?.mode === "vite"
-                  ? " · Requires opt-in Node toolchain"
-                  : ""}
-              </span>
+            {compositionDesign ? (
+              busy ? (
+                tr(busy) + "…"
+              ) : notice && !notice.endsWith(" completed") ? (
+                translateMessage(notice)
+              ) : dirty || visualDraft ? (
+                tr("Unsaved draft")
+              ) : notice === "publish completed" ? (
+                tr("Published")
+              ) : (
+                tr("Source saved")
+              )
+            ) : (
+              <>
+                {busy ? tr(busy) + "…" : translateMessage(notice || "Ready")}
+                {project && (
+                  <span>
+                    {dirty || visualDraft
+                      ? " · " + tr("Unsaved draft")
+                      : " · " + tr("Source saved")}{" "}
+                    {!compositionDesign && (
+                      <>
+                        ·{" "}
+                        {project.autoPublish
+                          ? tr("Auto-publish enabled")
+                          : tr("Explicit publish")}
+                        {project.build?.mode === "vite"
+                          ? " · Requires opt-in Node toolchain"
+                          : ""}
+                      </>
+                    )}
+                  </span>
+                )}
+              </>
             )}
           </Status>
           {nav === "Settings" ? (
@@ -232,15 +294,17 @@ export function StudioShell({ controller }: { controller: StudioController }) {
                     {tr(t)}
                   </button>
                 ))}
-                <select
-                  aria-label={tr("Preview viewport")}
-                  value={viewport}
-                  onChange={(e) => setViewport(e.target.value)}
-                >
-                  {["600×400", "1280×720", "400×700"].map((v) => (
-                    <option key={v}>{v}</option>
-                  ))}
-                </select>
+                {!compositionDesign && (
+                  <select
+                    aria-label={tr("Preview viewport")}
+                    value={viewport}
+                    onChange={(e) => setViewport(e.target.value)}
+                  >
+                    {["600×400", "1280×720", "400×700"].map((v) => (
+                      <option key={v}>{v}</option>
+                    ))}
+                  </select>
+                )}
                 <button
                   onClick={() => {
                     setProject(undefined);
@@ -250,21 +314,23 @@ export function StudioShell({ controller }: { controller: StudioController }) {
                   {tr("All widgets")}
                 </button>
               </nav>
-              <div
-                className="panel-switch"
-                role="group"
-                aria-label={tr("Workspace panels")}
-              >
-                {["Files", "Preview", "Inspector"].map((name) => (
-                  <button
-                    key={name}
-                    aria-pressed={mobilePanel === name}
-                    onClick={() => setMobilePanel(name)}
-                  >
-                    {tr(name)}
-                  </button>
-                ))}
-              </div>
+              {!compositionDesign && (
+                <div
+                  className="panel-switch"
+                  role="group"
+                  aria-label={tr("Workspace panels")}
+                >
+                  {["Files", "Preview", "Inspector"].map((name) => (
+                    <button
+                      key={name}
+                      aria-pressed={mobilePanel === name}
+                      onClick={() => setMobilePanel(name)}
+                    >
+                      {tr(name)}
+                    </button>
+                  ))}
+                </div>
+              )}
               <ProjectWorkspace controller={controller} />
             </>
           )}

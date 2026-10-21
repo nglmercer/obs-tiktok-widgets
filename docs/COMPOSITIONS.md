@@ -129,3 +129,5 @@ legacy-source migration planning/backups; restart/reconnect state snapshots;
 renderer/native readiness acknowledgements; complete Vite consolidation; and actual
 OBS/CEF composition acceptance on available platforms. Existing standalone
 Playground and legacy renderers are retained deliberately.
+
+For an illustrated, recorded walkthrough, see the [English guide](COMPOSITION_GUIDE.md) or [guía en español](COMPOSITION_GUIDE.es.md).

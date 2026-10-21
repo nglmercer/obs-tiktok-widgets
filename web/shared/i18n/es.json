@@ -451,5 +451,13 @@
   "Name": "Nombre",
   "Simulate composition": "Simular composición",
   "Simulation stays in this canvas": "La simulación permanece en este lienzo",
-  "Instance settings": "Ajustes de instancia"
+  "Instance settings": "Ajustes de instancia",
+  "Save design, then Publish to update OBS.": "Guarda el diseño y después publica para actualizar OBS.",
+  "Choose a template and select Add widget to start.": "Elige una plantilla y selecciona Añadir widget para comenzar.",
+  "Hidden": "Oculto",
+  "Canvas": "Lienzo",
+  "Canvas width": "Ancho del lienzo",
+  "Canvas height": "Alto del lienzo",
+  "No OBS scenes available.": "No hay escenas de OBS disponibles.",
+  "Preview {name}": "Vista previa de {name}"
 }

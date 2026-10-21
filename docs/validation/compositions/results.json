@@ -1,0 +1,105 @@
+{
+  "automated": true,
+  "humanParticipants": 0,
+  "platform": "linux",
+  "steps": [
+    {
+      "name": "find-composition-template",
+      "screenshot": "01-find-composition-template.png",
+      "milliseconds": 574
+    },
+    {
+      "name": "create-empty-composition",
+      "screenshot": "02-create-empty-composition.png",
+      "milliseconds": 443
+    },
+    {
+      "name": "add-chat-and-gifts",
+      "screenshot": "03-add-chat-and-gifts.png",
+      "milliseconds": 1660
+    },
+    {
+      "name": "simulate-without-tiktok",
+      "screenshot": "04-simulate-without-tiktok.png",
+      "milliseconds": 445
+    },
+    {
+      "name": "select-drag-and-undo",
+      "screenshot": "05-select-drag-and-undo.png",
+      "milliseconds": 1215
+    },
+    {
+      "name": "visibility-and-lock",
+      "screenshot": "06-visibility-and-lock.png",
+      "milliseconds": 796
+    },
+    {
+      "name": "save-draft",
+      "screenshot": "07-save-draft.png",
+      "milliseconds": 489
+    },
+    {
+      "name": "publish",
+      "screenshot": "08-publish.png",
+      "milliseconds": 446
+    },
+    {
+      "name": "reopen-saved-composition",
+      "screenshot": "09-reopen-saved-composition.png",
+      "milliseconds": 1071
+    },
+    {
+      "name": "mobile-320",
+      "screenshot": "10-mobile-320.png",
+      "milliseconds": 273
+    },
+    {
+      "name": "mobile-inspector",
+      "screenshot": "11-mobile-inspector.png",
+      "milliseconds": 784
+    },
+    {
+      "name": "spanish-mobile",
+      "screenshot": "12-spanish-mobile.png",
+      "milliseconds": 628
+    },
+    {
+      "name": "spanish-desktop",
+      "screenshot": "13-spanish-desktop.png",
+      "milliseconds": 445
+    },
+    {
+      "name": "published-renderer-studio-closed",
+      "screenshot": "14-published-renderer-studio-closed.png",
+      "milliseconds": 507
+    }
+  ],
+  "errors": [],
+  "passed": true,
+  "iconTooltips": {
+    "hover": true,
+    "keyboardFocus": true,
+    "decorativeSvg": true
+  },
+  "renderer": {
+    "state": "ready",
+    "mountErrors": 0,
+    "handlingErrors": 0,
+    "queueOverflow": 0,
+    "events": {
+      "accepted": 2,
+      "duplicate": 0,
+      "rejected": 0,
+      "delivered": 2,
+      "failed": 0
+    },
+    "widgets": [
+      {
+        "state": "ready"
+      },
+      {
+        "state": "ready"
+      }
+    ]
+  }
+}

@@ -1,6 +1,10 @@
 import { t } from "../../shared/i18n";
 // Native modal provides focus trapping, Escape and keyboard submission without blocking polling.
-export function ask(message: string, initial?: string): Promise<string | null> {
+export function ask(
+  message: string,
+  initial?: string,
+  choices?: readonly string[],
+): Promise<string | null> {
   return new Promise((resolve) => {
     const previous = document.activeElement as HTMLElement | null;
     const dialog = document.createElement("dialog");
@@ -10,15 +14,30 @@ export function ask(message: string, initial?: string): Promise<string | null> {
     const title = document.createElement("h2");
     title.id = "studio-dialog-title";
     title.textContent = t(
-      initial === undefined ? "Confirm action" : "Enter value",
+      choices
+        ? "Select scene"
+        : initial === undefined
+          ? "Confirm action"
+          : "Enter value",
     );
     dialog.setAttribute("aria-labelledby", title.id);
     const description = document.createElement("p");
     description.textContent = t(message);
-    const input = document.createElement("input");
+    const input = choices
+      ? document.createElement("select")
+      : document.createElement("input");
+    if (choices) {
+      for (const choice of choices) {
+        const option = document.createElement("option");
+        option.value = choice;
+        option.textContent = choice;
+        input.append(option);
+      }
+    }
     input.value = initial || "";
     input.setAttribute("aria-label", t(message));
     input.autofocus = true;
+    input.required = !!choices;
     const cancel = document.createElement("button");
     cancel.type = "submit";
     cancel.value = "cancel";

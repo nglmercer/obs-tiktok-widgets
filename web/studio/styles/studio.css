@@ -664,31 +664,72 @@ h3 {
   flex-direction: column;
   min-height: 0;
   flex: 1;
-  gap: 8px;
+  gap: 6px;
+  overflow: hidden;
+}
+.composition-editor .canvas-tools {
+  margin: 0;
+  padding: 4px 8px;
+  align-items: center;
+}
+.composition-panel-bar {
+  display: none;
 }
 .composition-layout {
   display: grid;
-  grid-template-columns: minmax(120px, 16%) minmax(0, 1fr) minmax(140px, 20%);
+  grid-template-columns: minmax(120px, 16%) minmax(0, 1fr) minmax(160px, 22%);
   gap: 8px;
   min-height: 0;
   flex: 1;
+  padding: 0 8px 8px;
 }
 .composition-layout aside {
   overflow: auto;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-height: 0;
+}
+.composition-layout aside h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  margin: 4px 0 8px;
 }
 .composition-layout label {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  font-size: 12px;
+  min-width: 0;
+}
+.composition-geometry {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 .composition-scroll {
-  overflow: auto;
+  overflow: hidden;
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  background: var(--ui-bg);
+}
+.composition-artboard {
   background: repeating-conic-gradient(#20232a 0% 25%, #292d36 0% 50%) 50%/20px
     20px;
-  min-height: 300px;
+  outline: 1px solid var(--ui-border);
+}
+.composition-empty {
+  position: absolute;
+  z-index: 1;
+  color: #fff !important;
+  text-align: center;
+  max-width: 280px;
+  padding: 12px;
+  pointer-events: none;
 }
 .composition-hit {
   position: absolute;
@@ -708,15 +749,216 @@ h3 {
 .composition-layout input[type="checkbox"] {
   width: auto;
 }
-@media (max-width: 800px) {
+.composition-layout input[type="color"] {
+  min-height: 32px;
+  padding: 3px;
+}
+.composition-layout label.composition-toggle {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+.composition-layers > button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+}
+.composition-layers > button svg {
+  flex-shrink: 0;
+}
+.composition-inspector > .action-wrap {
+  display: flex;
+}
+.composition-inspector > .action-wrap button {
+  width: 100%;
+  justify-content: center;
+}
+@media (max-width: 900px) {
+  .studio[data-composition-design] {
+    position: relative;
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .studio[data-composition-design] main {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .studio[data-composition-design] .navigation {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 44px;
+    z-index: 110;
+    padding: 4px;
+    background: none;
+    border: 0;
+  }
+  .studio[data-composition-design] .navigation .nav-brand {
+    justify-content: flex-end;
+  }
+  .studio[data-composition-design] .navigation .nav-brand h1,
+  .studio[data-composition-design] .navigation .nav-brand > svg,
+  .studio[data-composition-design] .navigation .preferences {
+    display: none;
+  }
+  .studio[data-composition-design] .navigation[data-expanded="true"] {
+    width: min(320px, 100%);
+    max-height: 100%;
+    overflow: auto;
+    background: var(--ui-panel);
+    box-shadow: var(--ui-shadow);
+  }
+  .studio[data-composition-design]
+    .navigation[data-expanded="true"]
+    .nav-brand
+    h1,
+  .studio[data-composition-design]
+    .navigation[data-expanded="true"]
+    .preferences {
+    display: flex;
+  }
+  .studio[data-composition-design] header {
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding: 4px 48px 4px 8px;
+    min-height: 42px;
+  }
+  .studio[data-composition-design] header > div:first-child {
+    width: auto;
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .studio[data-composition-design] header strong {
+    font-size: 14px;
+  }
+  .studio[data-composition-design] .toolbar {
+    flex-wrap: nowrap;
+  }
+  .studio[data-composition-design] .toolbar button,
+  .studio[data-composition-design] .context-menu summary {
+    min-height: 30px;
+    padding: 5px 8px;
+  }
+  .studio[data-composition-design] .status {
+    min-height: 24px;
+    max-height: 44px;
+    padding: 3px 8px;
+    font-size: 11px;
+    overflow: auto;
+  }
+  .studio[data-composition-design] .tabs {
+    flex-wrap: nowrap;
+    gap: 4px;
+    min-height: 34px;
+    padding: 3px 8px;
+    overflow: auto;
+  }
+  .studio[data-composition-design] .tabs button {
+    padding: 4px 8px;
+    min-height: 28px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .studio[data-composition-design] .tabs > button:last-child {
+    margin-left: auto;
+  }
+  .composition-editor .canvas-tools {
+    flex-wrap: nowrap;
+    gap: 4px;
+  }
+  .composition-editor .canvas-tools > .action-wrap {
+    flex-shrink: 0;
+  }
+  .composition-editor .canvas-tools button {
+    width: 32px;
+    height: 32px;
+    justify-content: center;
+    padding: 6px;
+  }
+  .composition-editor .canvas-tools button span {
+    display: none;
+  }
+  .composition-editor .canvas-tools select {
+    min-width: 0;
+    flex: 1;
+    height: 32px;
+    padding: 4px 6px;
+  }
+  .composition-panel-bar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 0 8px 2px;
+  }
+  .composition-panel-tabs {
+    display: flex;
+    gap: 2px;
+    flex: 1;
+  }
+  .composition-panel-tabs button {
+    flex: 1;
+    font-size: 12px;
+    min-height: 28px;
+    padding: 4px 8px;
+  }
+
   .composition-layout {
-    grid-template-columns: 110px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
   }
-  .composition-layout aside:last-child {
-    grid-column: 1/-1;
-    max-height: 250px;
+  .studio[data-mobile-panel="Files"] .composition-scroll,
+  .studio[data-mobile-panel="Files"] .composition-inspector,
+  .studio[data-mobile-panel="Inspector"] .composition-scroll,
+  .studio[data-mobile-panel="Inspector"] .composition-layers,
+  .studio[data-mobile-panel="Preview"] .composition-layers,
+  .studio[data-mobile-panel="Preview"] .composition-inspector {
+    display: none;
   }
-  .composition-scroll {
-    min-height: 250px;
+  .composition-inspector {
+    padding: 0 4px 6px;
   }
+  .composition-layout aside h2 {
+    display: none;
+  }
+  .composition-layout input {
+    min-height: 30px;
+    padding: 4px 6px;
+  }
+  .composition-layout input[type="checkbox"] {
+    min-height: 0;
+  }
+}
+
+.template-preview-trigger {
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  cursor: zoom-in;
+}
+.template-hover-preview {
+  position: fixed;
+  z-index: 100;
+  height: min(260px, calc(100dvh - 24px));
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  padding: 12px;
+  gap: 8px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-panel);
+  box-shadow: 0 8px 24px #0004;
+}
+.template-hover-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  min-height: 0;
+}
+.template-hover-preview strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

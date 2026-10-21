@@ -451,5 +451,13 @@
   "Name": "Name",
   "Simulate composition": "Simulate composition",
   "Simulation stays in this canvas": "Simulation stays in this canvas",
-  "Instance settings": "Instance settings"
+  "Instance settings": "Instance settings",
+  "Save design, then Publish to update OBS.": "Save design, then Publish to update OBS.",
+  "Choose a template and select Add widget to start.": "Choose a template and select Add widget to start.",
+  "Hidden": "Hidden",
+  "Canvas": "Canvas",
+  "Canvas width": "Canvas width",
+  "Canvas height": "Canvas height",
+  "No OBS scenes available.": "No OBS scenes available.",
+  "Preview {name}": "Preview {name}"
 }

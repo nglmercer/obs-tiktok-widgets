@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { TemplatePreview } from "./TemplatePreview";
 import type { Template, Project } from "../api/client";
 import { Action } from "../components/Action";
 import { Search, EmptyState } from "../components/UI";
@@ -63,23 +64,37 @@ export function Gallery({
           const project = item as Project;
           return (
             <article key={item.id + ("version" in item ? item.version : "")}>
-              <div className="thumbnail">
-                {template.thumbnail ? (
-                  <img
-                    src={
-                      "/template/" +
-                      item.id +
-                      "/" +
-                      template.version +
-                      "/" +
-                      template.thumbnail
-                    }
-                    alt={t(template.name)}
-                  />
-                ) : (
-                  <span aria-hidden="true">✦</span>
-                )}
-              </div>
+              {templates && template.thumbnail ? (
+                <TemplatePreview
+                  src={
+                    "/template/" +
+                    item.id +
+                    "/" +
+                    template.version +
+                    "/" +
+                    template.thumbnail
+                  }
+                  name={t(template.name)}
+                />
+              ) : (
+                <div className="thumbnail">
+                  {template.thumbnail ? (
+                    <img
+                      src={
+                        "/template/" +
+                        item.id +
+                        "/" +
+                        template.version +
+                        "/" +
+                        template.thumbnail
+                      }
+                      alt={t(template.name)}
+                    />
+                  ) : (
+                    <span aria-hidden="true">✦</span>
+                  )}
+                </div>
+              )}
               <h3>
                 {"name" in item ? t(item.name) : String(project.settings.name)}
               </h3>
