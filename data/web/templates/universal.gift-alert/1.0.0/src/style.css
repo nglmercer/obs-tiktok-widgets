@@ -1,0 +1,28 @@
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  font-family: system-ui;
+  color: white;
+}
+#root {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.alert {
+  border-left: 6px solid var(--accent, #ff416c);
+  border-radius: 12px;
+  padding: 20px;
+  background: #16161deb;
+  overflow-wrap: anywhere;
+}
+.alert h2 {
+  margin: 0 0 8px;
+}
+.alert p {
+  margin: 0;
+}

@@ -23,6 +23,16 @@ import {
 } from "../api/client";
 
 import { usePreferences } from "../components/Preferences";
+function previewEvent(events: string[]) {
+  const types = events
+    .map((type) => (type.startsWith("tiktok.") ? type.slice(7) : type))
+    .map((type) => (type === "room_stats" ? "roomUser" : type));
+  return types.includes("gift")
+    ? "gift"
+    : types.find((type) =>
+        ["chat", "like", "follow", "roomUser"].includes(type),
+      );
+}
 
 export function useStudioProject() {
   usePreferences();
@@ -354,7 +364,7 @@ export function useStudioProject() {
     try {
       const result = await call<{ url: string }>("widgets.preview", {
         id: p.id,
-        event: p.events.includes("gift") ? "gift" : p.events[0],
+        event: previewEvent(p.events),
         user: "Viewer123",
         gift: "Rose",
         count: "23",
@@ -501,7 +511,7 @@ export function useStudioProject() {
     if (op === "preview") {
       const data = await call<{ url: string }>("widgets.preview", {
         id: project.id,
-        event: project.events.includes("gift") ? "gift" : project.events[0],
+        event: previewEvent(project.events),
         user: "Viewer123",
         gift: "Rose",
         count: "23",

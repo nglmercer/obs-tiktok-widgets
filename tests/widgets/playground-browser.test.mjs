@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
+import { fileURLToPath } from "node:url";
 const executablePath = process.env.PLAYGROUND_BROWSER_EXECUTABLE;
 test(
   "file-based real browser preview, streak, replay, stop, reset, safe text and isolation",
@@ -9,6 +10,7 @@ test(
     const browser = await chromium.launch({ executablePath, headless: true });
     try {
       const context = await browser.newContext({
+        locale: "en-US",
         permissions: ["clipboard-read", "clipboard-write"],
       });
       const page = await context.newPage(),
@@ -131,9 +133,9 @@ test(
       assert.equal(json.data.repeat_count, "23");
       assert.equal(json.synthetic, true);
       await page.locator("#copy").click();
-      assert.equal(
-        await page.evaluate(() => navigator.clipboard.readText()),
-        JSON.stringify(json, null, 2),
+      assert.deepEqual(
+        JSON.parse(await page.evaluate(() => navigator.clipboard.readText())),
+        json,
       );
       await page.setViewportSize({ width: 420, height: 800 });
       assert.equal(
@@ -188,13 +190,13 @@ test(
         "--config",
         root,
         "--assets",
-        new URL("../../data/web", import.meta.url).pathname,
+        fileURLToPath(new URL("../../data/web", import.meta.url)),
         "widgets",
         "publish",
         customId,
         "--json",
       ]);
-      const page = await browser.newPage();
+      const page = await browser.newPage({ locale: "en-US" });
       await page.goto(
         pathToFileURL(fs.readFileSync(`${root}/preview-path.txt`, "utf8")).href,
       );
@@ -247,7 +249,7 @@ test(
         "--config",
         root,
         "--assets",
-        new URL("../../data/web", import.meta.url).pathname,
+        fileURLToPath(new URL("../../data/web", import.meta.url)),
         "widgets",
         "publish",
         customId,

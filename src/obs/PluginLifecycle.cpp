@@ -1,5 +1,6 @@
 #include "PluginLifecycle.hpp"
 #include "core/PluginConfig.hpp"
+#include "universal/ExternalEventReceiver.hpp"
 #include "core/TikTokConnectionManager.hpp"
 #include "widgets/WidgetManager.hpp"
 #include "ui/TikTokDock.hpp"
@@ -39,6 +40,14 @@ void PluginLifecycle::start()
 	bfree(path);
 	bfree(assets);
 	config = std::make_unique<PluginConfig>(directory);
+	eventReceiver = std::make_unique<ExternalEventReceiver>(dispatcher);
+	eventReceiverOptions = config->settings["externalEvents"].toObject();
+	if (!eventReceiver->start(eventReceiverOptions, [](const QJsonObject &record) {
+		    blog(LOG_DEBUG, "[universal-widget] %s",
+			 QJsonDocument(record).toJson(QJsonDocument::Compact).constData());
+	    }))
+		blog(LOG_WARNING,
+		     "[universal-widget] External event receiver failed to bind; check loopback address and port");
 	connection = std::make_unique<TikTokConnectionManager>(dispatcher);
 	const auto snapshotPath = safePath(directory, "cache/migration-v1/obs-sources.json");
 	if (!QFileInfo::exists(snapshotPath))
@@ -146,6 +155,11 @@ void PluginLifecycle::start()
 	bridge.verify();
 	auto *timer = new QTimer(this);
 	connect(timer, &QTimer::timeout, this, [this] {
+		if (eventReceiver && eventReceiverOptions != config->settings["externalEvents"].toObject()) {
+			eventReceiverOptions = config->settings["externalEvents"].toObject();
+			if (!eventReceiver->start(eventReceiverOptions))
+				dock->projectState({}, "Receiver error", eventReceiver->errorString());
+		}
 		if (ipc && ipc->enabled() != config->settings["widgetctlEnabled"].toBool()) {
 			try {
 				if (config->settings["widgetctlEnabled"].toBool())
@@ -185,6 +199,7 @@ void PluginLifecycle::stop()
 		dock->cancelPendingConnection();
 	if (connection)
 		connection->shutdown();
+	eventReceiver.reset();
 	for (const auto &e : dispatcher.take(2048))
 		dispatcher.delivered(bridge.broadcast(e));
 	dispatcher.shutdown();

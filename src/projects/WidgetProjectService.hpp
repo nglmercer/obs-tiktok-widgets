@@ -23,6 +23,8 @@ public:
 	QJsonObject erase(const QString &id, const QString &expected = {}, bool dry = false);
 	QJsonObject configure(const QString &id, QJsonObject patch, const QString &expected);
 	QJsonObject settings(const QString &id, QJsonObject patch, const QString &expected);
+	QJsonObject portable(const QString &id) const;
+	QJsonObject setPortable(const QString &id, const QJsonObject &, const QString &expected);
 	QStringList files(const QString &id) const;
 	QByteArray read(const QString &id, const QString &file) const;
 	QJsonObject write(const QString &id, const QString &file, const QByteArray &, const QString &expected);

@@ -3,6 +3,12 @@ import { build } from "esbuild";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import * as Icons from "lucide-react";
+// Vite combines source and injected markup; normalize generated HTML across OSes.
+const studioHTML = "data/web/studio/index.html";
+writeFileSync(
+  studioHTML,
+  readFileSync(studioHTML, "utf8").replace(/\r\n?/g, "\n"),
+);
 mkdirSync("data/web/builder", { recursive: true });
 for (const f of ["package.json", "package-lock.json", "runner.mjs"])
   copyFileSync("web/builder/" + f, "data/web/builder/" + f);

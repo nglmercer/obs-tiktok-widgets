@@ -25,6 +25,9 @@ static void error(const QString &code, const std::function<void()> &fn)
 	try {
 		fn();
 	} catch (const DomainError &e) {
+		if (e.code != code)
+			std::cerr << "Expected " << code.toStdString() << ", received " << e.code.toStdString() << ": "
+				  << e.what() << '\n';
 		check(e.code == code, "wrong error code");
 		return;
 	}
@@ -49,7 +52,17 @@ static void until(const std::function<bool()> &condition)
 }
 int main(int argc, char **argv)
 {
+	std::set_terminate([] {
+		try {
+			if (auto e = std::current_exception())
+				std::rethrow_exception(e);
+		} catch (const std::exception &e) {
+			std::cerr << e.what() << std::endl;
+		}
+		std::_Exit(1);
+	});
 	QCoreApplication app(argc, argv);
+
 	QTemporaryDir temp;
 	WidgetManager manager(temp.path(), WIDGET_ASSETS);
 	auto w = manager.create("gifts");
@@ -202,7 +215,7 @@ int main(int argc, char **argv)
 			     .toJson(QJsonDocument::Compact) +
 		     '\n');
 	socket.flush();
-	spin(100);
+	until([&] { return socket.bytesAvailable() > 0; });
 	check(QJsonDocument::fromJson(socket.readAll()).object()["error"].toObject()["code"] == "UNAUTHORIZED",
 	      "IPC auth");
 
@@ -217,7 +230,7 @@ int main(int argc, char **argv)
 				     .toJson(QJsonDocument::Compact) +
 			     '\n');
 		client.flush();
-		spin(100);
+		until([&] { return client.bytesAvailable() > 0; });
 		return QJsonDocument::fromJson(client.readAll()).object();
 	};
 	for (const auto &method : QStringList{"obs.status", "obs.scenes.list", "obs.sources.list", "obs.sources.add",
@@ -296,6 +309,37 @@ int main(int argc, char **argv)
 	writeObject(badManifestRoot + "/manifest.json", invalidManifest);
 	error("INVALID_MANIFEST", [&] { TemplateRegistry::validate(badManifestRoot); });
 	const auto fixtureRoot = qEnvironmentVariable("PLAYGROUND_FIXTURE_DIR");
+	auto universal = service.create("universal.gift-alert");
+	const auto uid = universal["id"].toString();
+	auto portable = service.portable(uid);
+	auto author = portable["settings"].toObject();
+	author["title"] = "Portable <script>";
+	portable["settings"] = author;
+	universal = service.setPortable(uid, portable, universal["revision"].toString());
+	check(service.portable(uid) == portable, "portable settings round trip");
+	const auto universalBuild = service.build(uid, universal["revision"].toString(), true);
+	check(readFile(universalBuild["release"].toString() + "/dist/src/index.html")
+		      .contains("window.UniversalWidgetProject="),
+	      "published portable layout bootstrap");
+	error("REVISION_CONFLICT", [&] { service.setPortable(uid, portable, "stale-revision"); });
+	auto invalidPortable = portable;
+	auto badLayout = portable["layout"].toObject();
+	badLayout["width"] = 0;
+	invalidPortable["layout"] = badLayout;
+	error("INVALID_PROJECT", [&] { service.setPortable(uid, invalidPortable, {}); });
+	auto editorSchema = readObject(service.projectPath(uid) + "/schema/editor.json");
+	auto editorProperties = editorSchema["properties"].toObject();
+	auto gridRule = editorProperties["grid"].toObject();
+	gridRule["minimum"] = 8;
+	editorProperties["grid"] = gridRule;
+	editorSchema["properties"] = editorProperties;
+	writeObject(service.projectPath(uid) + "/schema/editor.json", editorSchema);
+	invalidPortable = portable;
+	invalidPortable["editor"] = QJsonObject{{"grid", 4}};
+	error("INVALID_PROJECT", [&] { service.setPortable(uid, invalidPortable, {}); });
+	service.settings(uid, {{"title", "Native inspector"}}, {});
+	check(service.portable(uid)["settings"].toObject()["title"] == "Native inspector",
+	      "inspector and portable settings synchronized");
 	if (!fixtureRoot.isEmpty()) {
 		WidgetManager fixtures(fixtureRoot, WIDGET_ASSETS);
 		auto customWidget = fixtures.create("custom");

@@ -1,5 +1,6 @@
 #include "TemplateRegistry.hpp"
 #include "projects/WidgetBuilder.hpp"
+#include "universal/SchemaValidator.hpp"
 #include <QDir>
 #include <QDirIterator>
 #include <QFileInfo>
@@ -24,6 +25,17 @@ QString TemplateRegistry::alias(const QString &id)
 TemplateManifest TemplateRegistry::validate(const QString &root)
 {
 	const auto m = readObject(safePath(root, "manifest.json"));
+	const bool universal = m["contract"] == "universal-widget";
+	if (universal) {
+		if (!uw::conforms(uw::manifestSchema, m))
+			throw DomainError("INVALID_MANIFEST", "Invalid universal widget manifest");
+		for (const auto &capability : m["capabilities"].toArray())
+			if (!QStringList{"events.subscribe", "assets.read", "settings.read", "preview.inject"}.contains(
+				    capability.toString()))
+				throw DomainError("UNSUPPORTED_CAPABILITY", capability.toString());
+		if (!m["dependencies"].toObject().isEmpty())
+			throw DomainError("UNSUPPORTED_DEPENDENCY", "Universal packages must bundle dependencies");
+	}
 	const auto id = m["id"].toString(), version = m["version"].toString();
 	if (!QList<int>{2, 3}.contains(m["schemaVersion"].toInt()) ||
 	    !QRegularExpression("^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)+$").match(id).hasMatch() ||
@@ -44,12 +56,24 @@ TemplateManifest TemplateRegistry::validate(const QString &root)
 	if (!entry.startsWith("src/") || !QFileInfo::exists(safePath(root, entry)))
 		throw DomainError("MISSING_ENTRY", "Template entry must exist under src/");
 	for (const auto &e : m["events"].toArray())
-		if (!QStringList{"gift", "chat", "like", "follow", "roomUser", "unknown", "social", "state"}.contains(
+		if (!universal &&
+		    !QStringList{"gift", "chat", "like", "follow", "roomUser", "unknown", "social", "state"}.contains(
 			    e.toString()))
 			throw DomainError("INVALID_MANIFEST", "Unsupported event name");
 	QJsonObject schema;
 	if (m.contains("configSchema"))
 		schema = readObject(safePath(root, m["configSchema"].toString()));
+	if (universal) {
+		const auto resources = m["schemas"].toObject();
+		for (auto it = resources.begin(); it != resources.end(); ++it)
+			if (!uw::supportedSchema(readObject(safePath(root, it.value().toString()))))
+				throw DomainError("UNSUPPORTED_SCHEMA", "Unsupported universal schema: " + it.key());
+		if (resources.contains("settings"))
+			schema = readObject(safePath(root, resources["settings"].toString()));
+		if (!uw::supportedSchema(schema))
+			throw DomainError("UNSUPPORTED_SCHEMA",
+					  "Unsupported universal settings schema keyword or reference");
+	}
 	if (m.contains("thumbnail") && !QFileInfo::exists(safePath(root, m["thumbnail"].toString())))
 		throw DomainError("MISSING_ASSET", "Template thumbnail missing");
 	for (const auto &key : {"assets", "presets"})

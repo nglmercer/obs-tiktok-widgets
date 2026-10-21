@@ -11,18 +11,23 @@
 namespace tt {
 QStringList WidgetCommands::methods()
 {
-	return {"studio.start",        "builders.status",      "builders.install",      "doctor",
-		"templates.list",      "templates.inspect",    "templates.install",     "templates.export",
-		"templates.create",    "widgets.list",         "widgets.create",        "widgets.show",
-		"widgets.project.get", "widgets.project.set",  "widgets.fork",          "widgets.duplicate",
-		"widgets.delete",      "widgets.settings.get", "widgets.settings.set",  "widgets.files.list",
-		"widgets.files.read",  "widgets.files.write",  "widgets.files.rename",  "widgets.files.remove",
-		"widgets.files.mkdir", "widgets.files.format", "widgets.assets.import", "widgets.validate",
-		"widgets.build",       "widgets.publish",      "widgets.preview",       "widgets.history",
-		"widgets.snapshot",    "widgets.rollback",     "widgets.export",        "widgets.import",
-		"migration.report",    "migration.apply",      "migration.rollback",    "obs.status",
-		"obs.scenes.list",     "obs.sources.list",     "obs.sources.add",       "obs.sources.refresh",
-		"obs.sources.remove",  "obs.sources.capture",  "obs.scenes.select",     "obs.shutdown"};
+	return {"widgets.portable.get", "widgets.portable.set",  "studio.start",
+		"builders.status",      "builders.install",      "doctor",
+		"templates.list",       "templates.inspect",     "templates.install",
+		"templates.export",     "templates.create",      "widgets.list",
+		"widgets.create",       "widgets.show",          "widgets.project.get",
+		"widgets.project.set",  "widgets.fork",          "widgets.duplicate",
+		"widgets.delete",       "widgets.settings.get",  "widgets.settings.set",
+		"widgets.files.list",   "widgets.files.read",    "widgets.files.write",
+		"widgets.files.rename", "widgets.files.remove",  "widgets.files.mkdir",
+		"widgets.files.format", "widgets.assets.import", "widgets.validate",
+		"widgets.build",        "widgets.publish",       "widgets.preview",
+		"widgets.history",      "widgets.snapshot",      "widgets.rollback",
+		"widgets.export",       "widgets.import",        "migration.report",
+		"migration.apply",      "migration.rollback",    "obs.status",
+		"obs.scenes.list",      "obs.sources.list",      "obs.sources.add",
+		"obs.sources.refresh",  "obs.sources.remove",    "obs.sources.capture",
+		"obs.scenes.select",    "obs.shutdown"};
 }
 QJsonValue WidgetCommands::execute(const QString &method, const QJsonObject &a)
 {
@@ -40,7 +45,9 @@ QJsonValue WidgetCommands::execute(const QString &method, const QJsonObject &a)
 	if (method == "builders.status")
 		return builderStatus(service.directory());
 	if (method == "builders.install")
-		throw DomainError("DEVELOPMENT_ONLY", "Framework toolchains are no longer installed for users. Use plain HTML/CSS/JavaScript projects; built-in widgets require no Node.js.");
+		throw DomainError(
+			"DEVELOPMENT_ONLY",
+			"Framework toolchains are no longer installed for users. Use plain HTML/CSS/JavaScript projects; built-in widgets require no Node.js.");
 	if (method == "doctor")
 		return QJsonObject{{"config", service.directory()},
 				   {"assets", service.assetDirectory()},
@@ -70,6 +77,19 @@ QJsonValue WidgetCommands::execute(const QString &method, const QJsonObject &a)
 	}
 	if (method == "widgets.project.get")
 		return service.get(id);
+	if (method == "widgets.portable.get") {
+		const auto value = service.portable(id);
+		if (!a["output"].toString().isEmpty() && !dry)
+			writeObject(a["output"].toString(), value);
+		return value;
+	}
+	if (method == "widgets.portable.set")
+		return dry ? QJsonValue(QJsonObject{{"dryRun", true}})
+			   : QJsonValue(service.setPortable(id,
+							    a.contains("project")
+								    ? a["project"].toObject()
+								    : readObject(a["fromFile"].toString()),
+							    revision));
 	if (method == "widgets.project.set") {
 		if (dry)
 			return QJsonObject{{"dryRun", true}, {"patch", a["settings"]}};
@@ -175,11 +195,21 @@ QJsonValue WidgetCommands::execute(const QString &method, const QJsonObject &a)
 		const auto original = service.read(id, file);
 		const auto expected = revision.isEmpty() ? service.get(id)["revision"].toString() : revision;
 		auto formatter = QStandardPaths::findExecutable("prettier");
+		QStringList formatterArgs{"--stdin-filepath", file};
+#ifdef Q_OS_WIN
+		// npm's Windows launcher is a batch file, not a QProcess executable.
+		// Invoke its installed JS entry directly without a shell or command interpolation.
+		const auto entry = QFileInfo(formatter).absolutePath() + "/../prettier/bin/prettier.cjs";
+		if (!formatter.isEmpty() && QFileInfo::exists(entry)) {
+			formatter = QStandardPaths::findExecutable("node");
+			formatterArgs.prepend(entry);
+		}
+#endif
 		if (formatter.isEmpty())
 			throw DomainError("FORMATTER_UNAVAILABLE",
 					  "Install Prettier for opt-in formatting; builds never format source");
 		QProcess process;
-		process.start(formatter, {"--stdin-filepath", file});
+		process.start(formatter, formatterArgs);
 		if (!process.waitForStarted())
 			throw DomainError("FORMATTER_UNAVAILABLE", "Cannot launch formatter");
 		process.write(original);

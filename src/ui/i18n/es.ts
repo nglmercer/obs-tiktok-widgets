@@ -73,6 +73,10 @@ Descartados %4 · Excesivos %5 · Duplicados %6 · Fallos de entrega %7</transla
       <translation>Todos los widgets</translation>
     </message>
     <message>
+      <source>Allow this app to publish TikTok gift, chat, follow and like events?</source>
+      <translation>¿Permitir que esta aplicación publique eventos de regalos, chat, seguidores y me gusta de TikTok?</translation>
+    </message>
+    <message>
       <source>Animation</source>
       <translation>Animación</translation>
     </message>
@@ -235,6 +239,10 @@ Descartados %4 · Excesivos %5 · Duplicados %6 · Fallos de entrega %7</transla
     <message>
       <source>Copy source and settings</source>
       <translation>Copiar código y configuración</translation>
+    </message>
+    <message>
+      <source>Copy token</source>
+      <translation>Copiar token</translation>
     </message>
     <message>
       <source>Copy unavailable: select the JSON and copy manually</source>
@@ -479,6 +487,14 @@ Descartados %4 · Excesivos %5 · Duplicados %6 · Fallos de entrega %7</transla
     <message>
       <source>External change detected. Draft retained.</source>
       <translation>Cambio externo detectado. Borrador conservado.</translation>
+    </message>
+    <message>
+      <source>External event port</source>
+      <translation>Puerto de eventos externos</translation>
+    </message>
+    <message>
+      <source>External events (local)</source>
+      <translation>Eventos externos (local)</translation>
     </message>
     <message>
       <source>External revision changed; use History to compare before restoring.</source>
@@ -861,6 +877,10 @@ Descartados %4 · Excesivos %5 · Duplicados %6 · Fallos de entrega %7</transla
       <translation>Los cambios superpuestos requieren una combinación manual; las tres versiones siguen disponibles.</translation>
     </message>
     <message>
+      <source>Pair local app</source>
+      <translation>Vincular aplicación local</translation>
+    </message>
+    <message>
       <source>Pause</source>
       <translation>Pausar</translation>
     </message>
@@ -871,6 +891,10 @@ Descartados %4 · Excesivos %5 · Duplicados %6 · Fallos de entrega %7</transla
     <message>
       <source>Playback</source>
       <translation>Reproducción</translation>
+    </message>
+    <message>
+      <source>Portable widgets</source>
+      <translation>Widgets portables</translation>
     </message>
     <message>
       <source>Preference</source>
@@ -919,6 +943,14 @@ Descartados %4 · Excesivos %5 · Duplicados %6 · Fallos de entrega %7</transla
     <message>
       <source>Private session file</source>
       <translation>Archivo de sesión privado</translation>
+    </message>
+    <message>
+      <source>Producer name</source>
+      <translation>Nombre del productor</translation>
+    </message>
+    <message>
+      <source>Producer token</source>
+      <translation>Token del productor</translation>
     </message>
     <message>
       <source>Project</source>
@@ -987,6 +1019,10 @@ Descartados %4 · Excesivos %5 · Duplicados %6 · Fallos de entrega %7</transla
     <message>
       <source>Real widget renderer</source>
       <translation>Renderizador real del widget</translation>
+    </message>
+    <message>
+      <source>Receive events from explicitly paired local applications</source>
+      <translation>Recibir eventos de aplicaciones locales vinculadas explícitamente</translation>
     </message>
     <message>
       <source>Reconnect</source>
@@ -1137,6 +1173,10 @@ Descartados %4 · Excesivos %5 · Duplicados %6 · Fallos de entrega %7</transla
       <translation>Historial de revisiones</translation>
     </message>
     <message>
+      <source>Revoke local app</source>
+      <translation>Revocar aplicación local</translation>
+    </message>
+    <message>
       <source>Rollback</source>
       <translation>Restaurar</translation>
     </message>
@@ -1159,6 +1199,10 @@ Descartados %4 · Excesivos %5 · Duplicados %6 · Fallos de entrega %7</transla
     <message>
       <source>Save or discard the editor draft before changing files</source>
       <translation>Guarda o descarta el borrador antes de cambiar archivos</translation>
+    </message>
+    <message>
+      <source>Save portable project to selected widget</source>
+      <translation>Guardar proyecto portable en el widget seleccionado</translation>
     </message>
     <message>
       <source>Save source</source>

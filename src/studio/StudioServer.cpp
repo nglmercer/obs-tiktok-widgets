@@ -20,18 +20,25 @@ StudioServer::StudioServer(WidgetProjectService &s, QString assets, QObject *par
 	  assetRoot(assets)
 {
 	token = QUuid::createUuid().toString(QUuid::WithoutBraces) + QUuid::createUuid().toString(QUuid::WithoutBraces);
-	allowed = {"studio.preferences.get", "studio.preferences.set", "studio.package.import",
-		   "studio.project.export",  "studio.asset.import",    "obs.status",
-		   "obs.scenes.list",        "obs.sources.list",       "obs.sources.add",
-		   "obs.sources.remove",     "obs.sources.refresh",    "doctor",
-		   "builders.status",        "templates.list",         "templates.inspect",
-		   "widgets.list",           "widgets.create",         "widgets.show",
-		   "widgets.duplicate",      "widgets.delete",         "widgets.project.get",
-		   "widgets.project.set",    "widgets.settings.get",   "widgets.settings.set",
-		   "widgets.files.list",     "widgets.files.read",     "widgets.files.write",
-		   "widgets.files.rename",   "widgets.files.remove",   "widgets.files.mkdir",
-		   "widgets.validate",       "widgets.build",          "widgets.publish",
-		   "widgets.preview",        "widgets.history",        "widgets.snapshot",
+	allowed = {"widgets.portable.get",   "widgets.portable.set",
+		   "studio.preferences.get", "studio.preferences.set",
+		   "studio.package.import",  "studio.project.export",
+		   "studio.asset.import",    "obs.status",
+		   "obs.scenes.list",        "obs.sources.list",
+		   "obs.sources.add",        "obs.sources.remove",
+		   "obs.sources.refresh",    "doctor",
+		   "builders.status",        "templates.list",
+		   "templates.inspect",      "widgets.list",
+		   "widgets.create",         "widgets.show",
+		   "widgets.duplicate",      "widgets.delete",
+		   "widgets.project.get",    "widgets.project.set",
+		   "widgets.settings.get",   "widgets.settings.set",
+		   "widgets.files.list",     "widgets.files.read",
+		   "widgets.files.write",    "widgets.files.rename",
+		   "widgets.files.remove",   "widgets.files.mkdir",
+		   "widgets.validate",       "widgets.build",
+		   "widgets.publish",        "widgets.preview",
+		   "widgets.history",        "widgets.snapshot",
 		   "widgets.rollback"};
 	commands.obs = [this](const QString &method, const QJsonObject &args) -> QJsonValue {
 		const auto path = safePath(service.directory(), "cache/ipc.json");

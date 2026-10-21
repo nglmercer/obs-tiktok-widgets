@@ -404,5 +404,16 @@
   "Editable custom widget": "Widget personalizado editable",
   "Project: ": "Proyecto: ",
   "Saved entry: ": "Entrada guardada: ",
-  "Published ": "Publicado "
+  "Published ": "Publicado ",
+  "Portable widgets": "Widgets portables",
+  "Save portable project to selected widget": "Guardar proyecto portable en el widget seleccionado",
+  "External events (local)": "Eventos externos (local)",
+  "Receive events from explicitly paired local applications": "Recibir eventos de aplicaciones locales vinculadas explícitamente",
+  "External event port": "Puerto de eventos externos",
+  "Pair local app": "Vincular aplicación local",
+  "Producer name": "Nombre del productor",
+  "Allow this app to publish TikTok gift, chat, follow and like events?": "¿Permitir que esta aplicación publique eventos de regalos, chat, seguidores y me gusta de TikTok?",
+  "Producer token": "Token del productor",
+  "Copy token": "Copiar token",
+  "Revoke local app": "Revocar aplicación local"
 }

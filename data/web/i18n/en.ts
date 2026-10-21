@@ -73,6 +73,10 @@ Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</translation
       <translation>All widgets</translation>
     </message>
     <message>
+      <source>Allow this app to publish TikTok gift, chat, follow and like events?</source>
+      <translation>Allow this app to publish TikTok gift, chat, follow and like events?</translation>
+    </message>
+    <message>
       <source>Animation</source>
       <translation>Animation</translation>
     </message>
@@ -235,6 +239,10 @@ Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</translation
     <message>
       <source>Copy source and settings</source>
       <translation>Copy source and settings</translation>
+    </message>
+    <message>
+      <source>Copy token</source>
+      <translation>Copy token</translation>
     </message>
     <message>
       <source>Copy unavailable: select the JSON and copy manually</source>
@@ -479,6 +487,14 @@ Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</translation
     <message>
       <source>External change detected. Draft retained.</source>
       <translation>External change detected. Draft retained.</translation>
+    </message>
+    <message>
+      <source>External event port</source>
+      <translation>External event port</translation>
+    </message>
+    <message>
+      <source>External events (local)</source>
+      <translation>External events (local)</translation>
     </message>
     <message>
       <source>External revision changed; use History to compare before restoring.</source>
@@ -861,6 +877,10 @@ Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</translation
       <translation>Overlapping changes require manual merge; all three versions remain available.</translation>
     </message>
     <message>
+      <source>Pair local app</source>
+      <translation>Pair local app</translation>
+    </message>
+    <message>
       <source>Pause</source>
       <translation>Pause</translation>
     </message>
@@ -871,6 +891,10 @@ Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</translation
     <message>
       <source>Playback</source>
       <translation>Playback</translation>
+    </message>
+    <message>
+      <source>Portable widgets</source>
+      <translation>Portable widgets</translation>
     </message>
     <message>
       <source>Preference</source>
@@ -919,6 +943,14 @@ Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</translation
     <message>
       <source>Private session file</source>
       <translation>Private session file</translation>
+    </message>
+    <message>
+      <source>Producer name</source>
+      <translation>Producer name</translation>
+    </message>
+    <message>
+      <source>Producer token</source>
+      <translation>Producer token</translation>
     </message>
     <message>
       <source>Project</source>
@@ -987,6 +1019,10 @@ Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</translation
     <message>
       <source>Real widget renderer</source>
       <translation>Real widget renderer</translation>
+    </message>
+    <message>
+      <source>Receive events from explicitly paired local applications</source>
+      <translation>Receive events from explicitly paired local applications</translation>
     </message>
     <message>
       <source>Reconnect</source>
@@ -1137,6 +1173,10 @@ Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</translation
       <translation>Revision history</translation>
     </message>
     <message>
+      <source>Revoke local app</source>
+      <translation>Revoke local app</translation>
+    </message>
+    <message>
       <source>Rollback</source>
       <translation>Rollback</translation>
     </message>
@@ -1159,6 +1199,10 @@ Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</translation
     <message>
       <source>Save or discard the editor draft before changing files</source>
       <translation>Save or discard the editor draft before changing files</translation>
+    </message>
+    <message>
+      <source>Save portable project to selected widget</source>
+      <translation>Save portable project to selected widget</translation>
     </message>
     <message>
       <source>Save source</source>

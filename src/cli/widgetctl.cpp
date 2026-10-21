@@ -127,8 +127,9 @@ int main(int argc, char **argv)
 			if (words.isEmpty())
 				throw DomainError("USAGE", "Subcommand required");
 			method += '.' + words.takeFirst();
-			if (method == "widgets.files" || method == "widgets.project" || method == "widgets.settings" ||
-			    method == "widgets.assets" || method == "obs.sources" || method == "obs.scenes") {
+			if (method == "widgets.portable" || method == "widgets.files" || method == "widgets.project" ||
+			    method == "widgets.settings" || method == "widgets.assets" || method == "obs.sources" ||
+			    method == "obs.scenes") {
 				if (words.isEmpty())
 					throw DomainError("USAGE", "Operation required");
 				method += '.' + words.takeFirst();

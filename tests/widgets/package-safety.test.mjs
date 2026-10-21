@@ -5,12 +5,13 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 const binary = process.env.WIDGETCTL || "build/widgetctl";
+const python =
+  process.env.PYTHON || (process.platform === "win32" ? "python" : "python3");
 test(
   "controlled ZIP rejects traversal, links, corrupt checksums and missing checksums without installation",
   {
     skip:
-      !fs.existsSync(binary) ||
-      spawnSync("python3", ["--version"]).status !== 0,
+      !fs.existsSync(binary) || spawnSync(python, ["--version"]).status !== 0,
   },
   () => {
     const root = fs.mkdtempSync(
@@ -18,7 +19,7 @@ test(
     );
     try {
       const script = `import json,hashlib,zipfile,sys,pathlib\nroot=pathlib.Path(sys.argv[1])\nfor kind in ['traversal','symlink','checksum','missing']:\n name='../escaped.txt' if kind=='traversal' else 'src/link' if kind=='symlink' else 'manifest.json'\n data=b'contents'\n checks={name:hashlib.sha256(name.encode()+b'\\0'+data).hexdigest()}\n if kind=='checksum':checks[name]='0'*64\n with zipfile.ZipFile(root/(kind+'.tiktokwidget'),'w') as z:\n  entry=zipfile.ZipInfo(name)\n  if kind=='symlink':entry.create_system=3;entry.external_attr=0o120777<<16\n  z.writestr(entry,data)\n  if kind!='missing':z.writestr('checksums.json',json.dumps(checks))\n`;
-      const generated = spawnSync("python3", ["-c", script, root], {
+      const generated = spawnSync(python, ["-c", script, root], {
         encoding: "utf8",
       });
       assert.equal(generated.status, 0, generated.stderr);

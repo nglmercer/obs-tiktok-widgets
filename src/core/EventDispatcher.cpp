@@ -1,37 +1,52 @@
 #include "EventDispatcher.hpp"
 #include <QJsonDocument>
+#include "universal/EventProtocol.hpp"
 namespace tt {
-bool EventDispatcher::push(QJsonObject event)
+DispatchResult EventDispatcher::pushDetailed(QJsonObject event)
 {
 	const auto size = QJsonDocument(event).toJson(QJsonDocument::Compact).size();
 	std::lock_guard lock(mutex);
 	if (stopped)
-		return false;
+		return DispatchResult::Stopped;
 	if (size > 1024 * 1024) {
 		++stats.oversize;
-		return false;
+		return DispatchResult::Oversize;
 	}
-	const auto id = event["messageId"].toString();
-	const auto key = event["room"].toString() + ":" + event["method"].toString() + ":" + id;
+	const bool canonical = event.contains("source") && event.contains("id");
+	const auto id = canonical ? event["id"].toString() : event["messageId"].toString();
+	const auto type = canonical ? event["type"].toString() : uw::canonicalType(event);
+	const auto identity = canonical ? id : event["room"].toString() + ":" + id;
+	const auto universalKey = "universal:" + type + ":" +
+				  (type.startsWith("tiktok.") ? QString{} : event["source"].toString() + ":") +
+				  identity;
+	const auto key = canonical ? universalKey
+				   : "legacy:" + event["room"].toString() + ":" + event["method"].toString() + ":" + id;
 	if (!id.isEmpty() && id != "0" && identities.contains(key)) {
 		++stats.duplicate;
-		return false;
+		return DispatchResult::Duplicate;
 	}
 	if (queue.size() >= limit) {
 		++stats.overflow;
-		return false;
+		return DispatchResult::Overflow;
 	}
 	if (!id.isEmpty() && id != "0") {
+		if (!canonical && identities.contains(universalKey))
+			event["_universalDuplicate"] = true;
+		if (!identities.contains(universalKey)) {
+			identities.insert(universalKey);
+			identityOrder.push_back(universalKey);
+		}
 		identities.insert(key);
-		identityOrder.push_back(key);
-		if (identityOrder.size() > 8192) {
+		if (key != universalKey)
+			identityOrder.push_back(key);
+		while (identityOrder.size() > 8192) {
 			identities.remove(identityOrder.front());
 			identityOrder.pop_front();
 		}
 	}
 	queue.push_back(std::move(event));
 	++stats.accepted;
-	return true;
+	return DispatchResult::Accepted;
 }
 QList<QJsonObject> EventDispatcher::take(size_t max)
 {

@@ -11,6 +11,7 @@ class TikTokDock;
 class WidgetProjectWatcher;
 class WidgetCommands;
 class WidgetLocalIPC;
+class ExternalEventReceiver;
 class PluginLifecycle : public QObject {
 	EventDispatcher dispatcher;
 	BrowserEventBridge bridge;
@@ -22,6 +23,8 @@ class PluginLifecycle : public QObject {
 	std::unique_ptr<WidgetProjectWatcher> projectWatcher;
 	std::unique_ptr<WidgetCommands> commands;
 	std::unique_ptr<WidgetLocalIPC> ipc;
+	std::unique_ptr<ExternalEventReceiver> eventReceiver;
+	QJsonObject eventReceiverOptions;
 
 public:
 	PluginLifecycle();

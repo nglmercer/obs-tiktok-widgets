@@ -10,6 +10,7 @@ import { channel, validPacket, targetOrigin } from "./protocol.js";
     TikTokWidgetBuildPointer?: string;
     TikTokWidgetBuildId?: string;
     TikTokWidgetBuildChanged?: (build: string) => void;
+    TikTokWidgetPreviewEvents?: string[];
   };
   if (previewWindow.TikTokPlaygroundSession) return;
   previewWindow.TikTokPlaygroundSession = session;
@@ -54,9 +55,11 @@ import { channel, validPacket, targetOrigin } from "./protocol.js";
           events: ["gift", "chat", "like", "follow", "roomUser"],
         };
         const config = previewWindow.TikTokWidgetConfig || {};
-        const available = Array.isArray(config.events)
-          ? (config.events as string[])
-          : types[String(config.template || document.body?.dataset.template)];
+        const available = Array.isArray(previewWindow.TikTokWidgetPreviewEvents)
+          ? previewWindow.TikTokWidgetPreviewEvents
+          : Array.isArray(config.events)
+            ? (config.events as string[])
+            : types[String(config.template || document.body?.dataset.template)];
         const filters = config.filters;
         send("ready", {
           supported: available
@@ -64,7 +67,11 @@ import { channel, validPacket, targetOrigin } from "./protocol.js";
                 (t) =>
                   !Array.isArray(filters) ||
                   !filters.length ||
-                  filters.includes(t),
+                  filters.includes(t) ||
+                  (Array.isArray(previewWindow.TikTokWidgetPreviewEvents) &&
+                    filters.includes(
+                      "tiktok." + (t === "roomUser" ? "room_stats" : t),
+                    )),
               )
             : null,
         });

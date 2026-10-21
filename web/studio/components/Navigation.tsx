@@ -13,6 +13,7 @@ import { t } from "../../shared/i18n";
 const items = [
   ["Templates", LayoutGrid],
   ["My Widgets", FolderOpen],
+  ["Portable widgets", PanelsTopLeft],
   ["Live Events", Play],
   ["Assets", Image],
   ["Settings", SlidersHorizontal],

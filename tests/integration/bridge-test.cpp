@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 	proc_handler_add(obs_get_proc_handler(), "void obs_websocket_api_get_ph(out ptr ph)", getHandler, nullptr);
 	if (!bridge.broadcast(
 		    {{"version", 1}, {"type", "gift"}, {"data", QJsonObject{{"gift_id", "9007199254740993"}}}}) ||
-	    calls != 2)
+	    calls != 3)
 		throw std::runtime_error("bridge failure");
 	proc_handler_destroy(vendor);
 	obs_shutdown();

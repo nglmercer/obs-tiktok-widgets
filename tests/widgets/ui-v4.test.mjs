@@ -6,6 +6,7 @@ import path from "node:path";
 import { spawn, spawnSync } from "node:child_process";
 import { build } from "esbuild";
 import { chromium } from "playwright";
+import { pathToFileURL } from "node:url";
 const cli = process.env.WIDGETCTL,
   helper = process.env.WIDGETSTUDIO,
   browserPath = process.env.PLAYGROUND_BROWSER_EXECUTABLE;
@@ -76,7 +77,9 @@ test("shared locale catalogs, placeholder validation, preference persistence and
       bundle: true,
       format: "esm",
     });
-    const locale = await import("file://" + path.join(root, "i18n.mjs"));
+    const locale = await import(
+      pathToFileURL(path.join(root, "i18n.mjs")).href
+    );
     locale.setLocale("es");
     assert.equal(locale.t("Publish"), "Publicar");
     assert.equal(
@@ -109,7 +112,15 @@ test(
         "V4 static fixture",
       ]);
       command(root, ["widgets", "publish", widget.id], {
-        env: { ...process.env, PATH: "/nonexistent" },
+        env: {
+          ...process.env,
+          PATH:
+            process.platform === "win32"
+              ? process.env.PATH.split(path.delimiter)
+                  .filter((dir) => !fs.existsSync(path.join(dir, "node.exe")))
+                  .join(path.delimiter)
+              : "/nonexistent",
+        },
       });
       server = await start(root);
       browser = await chromium.launch({
@@ -117,7 +128,7 @@ test(
         headless: true,
         args: ["--no-sandbox"],
       });
-      const context = await browser.newContext();
+      const context = await browser.newContext({ locale: "en-US" });
       const page = await context.newPage();
       const url = new URL(server.url);
       url.searchParams.set("widget", widget.id);
@@ -288,7 +299,7 @@ test(
         headless: true,
         args: ["--no-sandbox"],
       });
-      const page = await browser.newPage();
+      const page = await browser.newPage({ locale: "en-US" });
       await page.goto(preview.url);
       await page.waitForFunction(
         () => !document.querySelector("#replay").disabled,
@@ -374,8 +385,8 @@ test(
         headless: true,
         args: ["--no-sandbox"],
       });
-      const page = await browser.newPage();
-      await page.goto("file://" + path.join(root, "index.html"));
+      const page = await browser.newPage({ locale: "en-US" });
+      await page.goto(pathToFileURL(path.join(root, "index.html")).href);
       await page
         .getByRole("button", { name: "Select Alert layer", exact: true })
         .waitFor();

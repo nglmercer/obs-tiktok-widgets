@@ -407,7 +407,18 @@
     "Editable custom widget": "Editable custom widget",
     "Project: ": "Project: ",
     "Saved entry: ": "Saved entry: ",
-    "Published ": "Published "
+    "Published ": "Published ",
+    "Portable widgets": "Portable widgets",
+    "Save portable project to selected widget": "Save portable project to selected widget",
+    "External events (local)": "External events (local)",
+    "Receive events from explicitly paired local applications": "Receive events from explicitly paired local applications",
+    "External event port": "External event port",
+    "Pair local app": "Pair local app",
+    "Producer name": "Producer name",
+    "Allow this app to publish TikTok gift, chat, follow and like events?": "Allow this app to publish TikTok gift, chat, follow and like events?",
+    "Producer token": "Producer token",
+    "Copy token": "Copy token",
+    "Revoke local app": "Revoke local app"
   };
 
   // web/shared/i18n/es.json
@@ -817,7 +828,18 @@
     "Editable custom widget": "Widget personalizado editable",
     "Project: ": "Proyecto: ",
     "Saved entry: ": "Entrada guardada: ",
-    "Published ": "Publicado "
+    "Published ": "Publicado ",
+    "Portable widgets": "Widgets portables",
+    "Save portable project to selected widget": "Guardar proyecto portable en el widget seleccionado",
+    "External events (local)": "Eventos externos (local)",
+    "Receive events from explicitly paired local applications": "Recibir eventos de aplicaciones locales vinculadas expl\xEDcitamente",
+    "External event port": "Puerto de eventos externos",
+    "Pair local app": "Vincular aplicaci\xF3n local",
+    "Producer name": "Nombre del productor",
+    "Allow this app to publish TikTok gift, chat, follow and like events?": "\xBFPermitir que esta aplicaci\xF3n publique eventos de regalos, chat, seguidores y me gusta de TikTok?",
+    "Producer token": "Token del productor",
+    "Copy token": "Copiar token",
+    "Revoke local app": "Revocar aplicaci\xF3n local"
   };
 
   // web/shared/i18n/index.ts
