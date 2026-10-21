@@ -1,3 +1,4 @@
+import { CompositionEditor } from "../CompositionEditor";
 import { FileExplorer } from "../FileExplorer";
 import { getLocale, getTheme, t as tr } from "../../../shared/i18n";
 import { Layers } from "../Layers";
@@ -67,6 +68,12 @@ export function ProjectWorkspace({
     disabled,
   } = controller;
   if (!project) return null;
+  if (
+    tab === "Design" &&
+    project.template.id === "builtin.composition" &&
+    schema["x-visual"]?.kind === "composition"
+  )
+    return <CompositionEditor controller={controller} />;
   return (
     <PanelGroup direction="horizontal" className="workspace">
       <Panel className="files-pane" defaultSize={20} minSize={12}>

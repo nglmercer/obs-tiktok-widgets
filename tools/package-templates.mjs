@@ -35,6 +35,10 @@ for (const id of readdirSync("web/templates", { withFileTypes: true })
     });
   }
 }
+copyFileSync(
+  "data/web/renderer/renderer.js",
+  "data/web/templates/builtin.composition/1.0.0/src/renderer.js",
+);
 await build({
   entryPoints: ["web/widgets/widget.js"],
   bundle: true,

@@ -32,7 +32,7 @@ test(
       const templates = run(["templates", "list"]).data;
       assert.equal(
         templates.filter((t) => t.id.startsWith("builtin.")).length,
-        7,
+        8,
       );
       assert.ok(templates.some((t) => t.id === "universal.gift-alert"));
       assert.ok(

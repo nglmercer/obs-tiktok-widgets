@@ -465,7 +465,7 @@
       c.root.append(c.row(d.user, "followed the creator"));
       c.trim();
       c.sound();
-      setTimeout(() => c.root.firstChild?.remove(), 5e3);
+      (c.setTimeout || setTimeout)(() => c.root.firstChild?.remove(), 5e3);
     }
   }
   var start3 = () => runtime(alerts, { followAlias: true });
@@ -475,7 +475,7 @@
     if (e.type !== "like") return;
     c.total = d.total != null ? BigInt(d.total) : c.total + BigInt(d.count || "0");
     if (!c.timer)
-      c.timer = setTimeout(
+      c.timer = (c.setTimeout || setTimeout)(
         () => {
           c.counter("\u2665", c.total.toString());
           c.timer = null;
@@ -494,7 +494,7 @@
     if (e.type !== "roomUser") return;
     c.pending = d.total || "0";
     if (!c.timer)
-      c.timer = setTimeout(
+      c.timer = (c.setTimeout || setTimeout)(
         () => {
           c.counter("Viewers", c.pending);
           c.timer = null;

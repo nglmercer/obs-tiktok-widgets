@@ -429,7 +429,7 @@
     if (e.type !== "roomUser") return;
     c.pending = d.total || "0";
     if (!c.timer)
-      c.timer = setTimeout(
+      c.timer = (c.setTimeout || setTimeout)(
         () => {
           c.counter("Viewers", c.pending);
           c.timer = null;

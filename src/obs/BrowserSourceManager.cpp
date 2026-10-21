@@ -13,7 +13,7 @@ static void settings(obs_data_t *d, const WidgetConfig &w, const QString &html)
 	obs_data_set_bool(d, "restart_when_active", false);
 	obs_data_set_string(d, "tiktok_widget_id", w.id().toUtf8().constData());
 }
-bool BrowserSourceManager::add(const WidgetConfig &w, const QString &html, const QString &sceneName)
+bool BrowserSourceManager::add(const WidgetConfig &w, const QString &html, const QString &sceneName, bool reuse)
 {
 	auto *sceneSource = sceneName.isEmpty() ? obs_frontend_get_current_scene()
 						: obs_get_source_by_name(sceneName.toUtf8().constData());
@@ -23,6 +23,39 @@ bool BrowserSourceManager::add(const WidgetConfig &w, const QString &html, const
 	if (!scene) {
 		obs_source_release(sceneSource);
 		return false;
+	}
+	if (reuse) {
+		struct Placement {
+			QString id;
+			bool found = false;
+		} placement{w.id()};
+		obs_scene_enum_items(
+			scene,
+			[](obs_scene_t *, obs_sceneitem_t *item, void *opaque) {
+				auto &placement = *static_cast<Placement *>(opaque);
+				auto *data = obs_source_get_settings(obs_sceneitem_get_source(item));
+				placement.found |= placement.id ==
+						   QString::fromUtf8(obs_data_get_string(data, "tiktok_widget_id"));
+				obs_data_release(data);
+				return !placement.found;
+			},
+			&placement);
+		if (placement.found) {
+			obs_source_release(sceneSource);
+			return true;
+		}
+		for (const auto &value : sources()) {
+			const auto source = value.toObject();
+			if (source["id"] != w.id())
+				continue;
+			auto *existing = obs_get_source_by_name(source["name"].toString().toUtf8().constData());
+			if (!existing)
+				continue;
+			const auto added = obs_scene_add(scene, existing) != nullptr;
+			obs_source_release(existing);
+			obs_source_release(sceneSource);
+			return added;
+		}
 	}
 	auto *d = obs_data_create();
 	settings(d, w, html);

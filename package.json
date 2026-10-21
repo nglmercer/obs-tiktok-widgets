@@ -4,12 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node tools/studio-schemas.mjs && tsc && tsc -p tsconfig.playground.json && esbuild web/sdk/index.ts --bundle --format=iife --global-name=TikTokOBSSDK --outfile=data/web/sdk/tiktok-obs.js && esbuild web/sdk/index.ts --bundle --format=esm --outfile=data/web/sdk/tiktok-obs.mjs && esbuild web/playground/app.ts --bundle --format=iife --outfile=data/web/playground/app.js && esbuild web/playground/engine.ts --format=esm --outfile=data/web/playground/engine.mjs && esbuild web/playground/frame.ts --bundle --format=iife --outfile=data/web/playground/frame.js && node tools/package-web.mjs && node tools/package-templates.mjs && tsc -p tsconfig.studio.json && vite build --config web/studio/vite.config.ts && node tools/package-studio.mjs",
+    "build": "node tools/studio-schemas.mjs && tsc && tsc -p tsconfig.playground.json && esbuild web/sdk/index.ts --bundle --format=iife --global-name=TikTokOBSSDK --outfile=data/web/sdk/tiktok-obs.js && esbuild web/sdk/index.ts --bundle --format=esm --outfile=data/web/sdk/tiktok-obs.mjs && esbuild web/playground/app.ts --bundle --format=iife --outfile=data/web/playground/app.js && esbuild web/playground/engine.ts --format=esm --outfile=data/web/playground/engine.mjs && esbuild web/playground/frame.ts --bundle --format=iife --outfile=data/web/playground/frame.js && node tools/package-web.mjs && vite build --config web/renderer/vite.config.ts && node tools/package-templates.mjs && tsc -p tsconfig.studio.json && vite build --config web/studio/vite.config.ts && node tools/package-studio.mjs",
     "test": "node --test tests/widgets/*.test.mjs",
-    "format:check": "prettier --check --end-of-line auto web/runtime web/templates tools/package-templates.mjs tools/check-generated.mjs tests/widgets/widgetctl.test.mjs web/studio web/shared web/builder tools/package-studio.mjs tools/studio-schemas.mjs web/playground tools/package-web.mjs tools/check-locales.mjs tests/widgets/ui-v4.test.mjs tools/package-locales.mjs web/universal tests/universal/*.mjs",
+    "format:check": "prettier --check --end-of-line auto web/runtime web/templates tools/package-templates.mjs tools/check-generated.mjs tests/widgets/widgetctl.test.mjs web/studio web/shared web/builder tools/package-studio.mjs tools/studio-schemas.mjs web/playground tools/package-web.mjs tools/check-locales.mjs tests/widgets/ui-v4.test.mjs tools/package-locales.mjs web/universal tests/universal/*.mjs web/renderer tests/widgets/composition*.test.mjs",
     "locales:check": "node tools/check-locales.mjs",
     "test:universal": "node --test web/universal/tests/*.test.mjs",
-    "contracts:check": "node web/universal/tools/generate.mjs --check"
+    "contracts:check": "node web/universal/tools/generate.mjs --check",
+    "build:renderer": "vite build --config web/renderer/vite.config.ts",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.playground.json --noEmit && tsc -p tsconfig.studio.json",
+    "test:compositions": "node --test tests/widgets/composition*.test.mjs"
   },
   "devDependencies": {
     "@codemirror/commands": "6.8.1",

@@ -1,4 +1,5 @@
 #include "WidgetProjectService.hpp"
+#include "CompositionService.hpp"
 #include "WidgetBuilder.hpp"
 #include "widgets/WidgetConfig.hpp"
 #include "widgets/HtmlBootstrap.hpp"
@@ -502,6 +503,14 @@ QJsonObject WidgetProjectService::settings(const QString &id, QJsonObject patch,
 			m["portableProject"] = value;
 		}
 	}
+	if (m["template"].toObject()["id"] == "builtin.composition") {
+		const auto composition = config["composition"].toObject();
+		const auto schema = readObject(schemaPath)["properties"].toObject()["composition"].toObject();
+		validateCompositionDocument(composition, schema);
+		const auto viewport = composition["viewport"].toObject();
+		config["width"] = viewport["width"];
+		config["height"] = viewport["height"];
+	}
 	if (config == m["settings"].toObject())
 		return get(id);
 	snapshot(id, m);
@@ -652,6 +661,12 @@ QJsonObject WidgetProjectService::validate(const QString &id) const
 		throw DomainError("MIGRATION_INCOMPLETE", get(id)["migrationError"].toString());
 	const auto m = get(id);
 	const auto path = projectPath(id);
+	if (m["template"].toObject()["id"] == "builtin.composition") {
+		const auto schema = readObject(path + "/schema/settings.schema.json")["properties"]
+					    .toObject()["composition"]
+					    .toObject();
+		validateCompositionDocument(m["settings"].toObject()["composition"].toObject(), schema);
+	}
 	validateBuildMode(m["build"].toObject());
 	const auto entry = m["entry"].toString();
 	if (!entry.startsWith("src/") || !QFileInfo::exists(safePath(path, entry)))

@@ -430,7 +430,7 @@
       c.root.append(c.row(d.user, "followed the creator"));
       c.trim();
       c.sound();
-      setTimeout(() => c.root.firstChild?.remove(), 5e3);
+      (c.setTimeout || setTimeout)(() => c.root.firstChild?.remove(), 5e3);
     }
   }
   var start = () => runtime(alerts, { followAlias: true });

@@ -4,7 +4,7 @@ export function alerts(c, e, d) {
     c.root.append(c.row(d.user, "followed the creator"));
     c.trim();
     c.sound();
-    setTimeout(() => c.root.firstChild?.remove(), 5000);
+    (c.setTimeout || setTimeout)(() => c.root.firstChild?.remove(), 5000);
   }
 }
 export const start = () => runtime(alerts, { followAlias: true });

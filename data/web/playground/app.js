@@ -171,8 +171,8 @@
     Playback: "Playback",
     "Renderer options": "Renderer options",
     "Simulation controls": "Simulation controls",
-    width: "Width",
-    height: "Height",
+    width: "width",
+    height: "height",
     theme: "Theme",
     color: "Accent color",
     customCss: "Custom CSS",
@@ -436,7 +436,25 @@
     received: "received",
     processed: "processed",
     rendered: "rendered",
-    skipped: "skipped"
+    skipped: "skipped",
+    "Widget template": "Widget template",
+    "Add widget": "Add widget",
+    "Composition canvas": "Composition canvas",
+    "Layer order": "Layer order",
+    Visible: "Visible",
+    Locked: "Locked",
+    "Accent color": "Accent color",
+    x: "x",
+    y: "y",
+    rotation: "rotation",
+    opacity: "opacity",
+    Composition: "Composition",
+    "Multiple independent widgets in one Browser Source": "Multiple independent widgets in one Browser Source",
+    composition: "composition",
+    Name: "Name",
+    "Simulate composition": "Simulate composition",
+    "Simulation stays in this canvas": "Simulation stays in this canvas",
+    "Instance settings": "Instance settings"
   };
 
   // web/shared/i18n/es.json
@@ -875,7 +893,25 @@
     received: "recibido",
     processed: "procesado",
     rendered: "renderizado",
-    skipped: "omitido"
+    skipped: "omitido",
+    "Widget template": "Plantilla de widget",
+    "Add widget": "A\xF1adir widget",
+    "Composition canvas": "Lienzo de composici\xF3n",
+    "Layer order": "Orden de capa",
+    Visible: "Visible",
+    Locked: "Bloqueado",
+    "Accent color": "Color de acento",
+    x: "X",
+    y: "Y",
+    rotation: "Rotaci\xF3n",
+    opacity: "Opacidad",
+    Composition: "Composici\xF3n",
+    "Multiple independent widgets in one Browser Source": "Varios widgets independientes en una fuente de navegador",
+    composition: "composici\xF3n",
+    Name: "Nombre",
+    "Simulate composition": "Simular composici\xF3n",
+    "Simulation stays in this canvas": "La simulaci\xF3n permanece en este lienzo",
+    "Instance settings": "Ajustes de instancia"
   };
 
   // web/shared/i18n/index.ts

@@ -29,6 +29,10 @@ Descartados %4 · Excesivos %5 · Duplicados %6 · Fallos de entrega %7</transla
       <translation>Un proyecto HTML vacío de confianza; declara sus eventos antes de previsualizar.</translation>
     </message>
     <message>
+      <source>Accent color</source>
+      <translation>Color de acento</translation>
+    </message>
+    <message>
       <source>Account session (optional)</source>
       <translation>Sesión de cuenta (opcional)</translation>
     </message>
@@ -47,6 +51,10 @@ Descartados %4 · Excesivos %5 · Duplicados %6 · Fallos de entrega %7</transla
     <message>
       <source>Add to scene</source>
       <translation>Añadir a escena</translation>
+    </message>
+    <message>
+      <source>Add widget</source>
+      <translation>Añadir widget</translation>
     </message>
     <message>
       <source>Advanced</source>
@@ -207,6 +215,14 @@ Descartados %4 · Excesivos %5 · Duplicados %6 · Fallos de entrega %7</transla
     <message>
       <source>Complex value retained. Edit using widgetctl.</source>
       <translation>Valor complejo conservado. Edita con widgetctl.</translation>
+    </message>
+    <message>
+      <source>Composition</source>
+      <translation>Composición</translation>
+    </message>
+    <message>
+      <source>Composition canvas</source>
+      <translation>Lienzo de composición</translation>
     </message>
     <message>
       <source>Confirm</source>
@@ -625,6 +641,10 @@ Descartados %4 · Excesivos %5 · Duplicados %6 · Fallos de entrega %7</transla
       <translation>¿Instalar código de confianza: %1?</translation>
     </message>
     <message>
+      <source>Instance settings</source>
+      <translation>Ajustes de instancia</translation>
+    </message>
+    <message>
       <source>Integration test</source>
       <translation>Prueba de integración</translation>
     </message>
@@ -689,6 +709,10 @@ Descartados %4 · Excesivos %5 · Duplicados %6 · Fallos de entrega %7</transla
       <translation>Idioma</translation>
     </message>
     <message>
+      <source>Layer order</source>
+      <translation>Orden de capa</translation>
+    </message>
+    <message>
       <source>Layers</source>
       <translation>Capas</translation>
     </message>
@@ -745,6 +769,10 @@ Descartados %4 · Excesivos %5 · Duplicados %6 · Fallos de entrega %7</transla
       <translation>Simulación local enviada</translation>
     </message>
     <message>
+      <source>Locked</source>
+      <translation>Bloqueado</translation>
+    </message>
+    <message>
       <source>Manage</source>
       <translation>Gestionar</translation>
     </message>
@@ -761,12 +789,20 @@ Descartados %4 · Excesivos %5 · Duplicados %6 · Fallos de entrega %7</transla
       <translation>Más opciones de eventos</translation>
     </message>
     <message>
+      <source>Multiple independent widgets in one Browser Source</source>
+      <translation>Varios widgets independientes en una fuente de navegador</translation>
+    </message>
+    <message>
       <source>Mutations require the current revision</source>
       <translation>Los cambios requieren la revisión actual</translation>
     </message>
     <message>
       <source>My Widgets</source>
       <translation>Mis widgets</translation>
+    </message>
+    <message>
+      <source>Name</source>
+      <translation>Nombre</translation>
     </message>
     <message>
       <source>Native gallery</source>
@@ -1289,8 +1325,16 @@ Descartados %4 · Excesivos %5 · Duplicados %6 · Fallos de entrega %7</transla
       <translation>Mostrar detalles</translation>
     </message>
     <message>
+      <source>Simulate composition</source>
+      <translation>Simular composición</translation>
+    </message>
+    <message>
       <source>Simulation controls</source>
       <translation>Controles de simulación</translation>
+    </message>
+    <message>
+      <source>Simulation stays in this canvas</source>
+      <translation>La simulación permanece en este lienzo</translation>
     </message>
     <message>
       <source>Simulations</source>
@@ -1543,6 +1587,10 @@ Import this trusted package?</source>
       <translation>Espectadores</translation>
     </message>
     <message>
+      <source>Visible</source>
+      <translation>Visible</translation>
+    </message>
+    <message>
       <source>Widget / instance</source>
       <translation>Widget / instancia</translation>
     </message>
@@ -1565,6 +1613,10 @@ Import this trusted package?</source>
     <message>
       <source>Widget restore: </source>
       <translation>Restauración del widget: </translation>
+    </message>
+    <message>
+      <source>Widget template</source>
+      <translation>Plantilla de widget</translation>
     </message>
     <message>
       <source>Widgets</source>
@@ -1601,6 +1653,10 @@ Import this trusted package?</source>
     <message>
       <source>color</source>
       <translation>Color</translation>
+    </message>
+    <message>
+      <source>composition</source>
+      <translation>composición</translation>
     </message>
     <message>
       <source>connected</source>
@@ -1671,6 +1727,10 @@ Import this trusted package?</source>
       <translation>Límite de mensajes</translation>
     </message>
     <message>
+      <source>opacity</source>
+      <translation>Opacidad</translation>
+    </message>
+    <message>
       <source>processed</source>
       <translation>procesado</translation>
     </message>
@@ -1689,6 +1749,10 @@ Import this trusted package?</source>
     <message>
       <source>rendered</source>
       <translation>renderizado</translation>
+    </message>
+    <message>
+      <source>rotation</source>
+      <translation>Rotación</translation>
     </message>
     <message>
       <source>skipped</source>
@@ -1725,6 +1789,14 @@ Import this trusted package?</source>
     <message>
       <source>width</source>
       <translation>Ancho</translation>
+    </message>
+    <message>
+      <source>x</source>
+      <translation>X</translation>
+    </message>
+    <message>
+      <source>y</source>
+      <translation>Y</translation>
     </message>
     <message>
       <source>{count} event</source>

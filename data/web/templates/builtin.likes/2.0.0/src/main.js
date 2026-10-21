@@ -429,7 +429,7 @@
     if (e.type !== "like") return;
     c.total = d.total != null ? BigInt(d.total) : c.total + BigInt(d.count || "0");
     if (!c.timer)
-      c.timer = setTimeout(
+      c.timer = (c.setTimeout || setTimeout)(
         () => {
           c.counter("\u2665", c.total.toString());
           c.timer = null;

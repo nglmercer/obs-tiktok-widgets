@@ -29,6 +29,10 @@ Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</translation
       <translation>A blank trusted HTML project; declare its event handlers before previewing.</translation>
     </message>
     <message>
+      <source>Accent color</source>
+      <translation>Accent color</translation>
+    </message>
+    <message>
       <source>Account session (optional)</source>
       <translation>Account session (optional)</translation>
     </message>
@@ -47,6 +51,10 @@ Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</translation
     <message>
       <source>Add to scene</source>
       <translation>Add to scene</translation>
+    </message>
+    <message>
+      <source>Add widget</source>
+      <translation>Add widget</translation>
     </message>
     <message>
       <source>Advanced</source>
@@ -207,6 +215,14 @@ Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</translation
     <message>
       <source>Complex value retained. Edit using widgetctl.</source>
       <translation>Complex value retained. Edit using widgetctl.</translation>
+    </message>
+    <message>
+      <source>Composition</source>
+      <translation>Composition</translation>
+    </message>
+    <message>
+      <source>Composition canvas</source>
+      <translation>Composition canvas</translation>
     </message>
     <message>
       <source>Confirm</source>
@@ -625,6 +641,10 @@ Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</translation
       <translation>Install trusted code: %1?</translation>
     </message>
     <message>
+      <source>Instance settings</source>
+      <translation>Instance settings</translation>
+    </message>
+    <message>
       <source>Integration test</source>
       <translation>Integration test</translation>
     </message>
@@ -689,6 +709,10 @@ Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</translation
       <translation>Language</translation>
     </message>
     <message>
+      <source>Layer order</source>
+      <translation>Layer order</translation>
+    </message>
+    <message>
       <source>Layers</source>
       <translation>Layers</translation>
     </message>
@@ -745,6 +769,10 @@ Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</translation
       <translation>Local simulation delivered</translation>
     </message>
     <message>
+      <source>Locked</source>
+      <translation>Locked</translation>
+    </message>
+    <message>
       <source>Manage</source>
       <translation>Manage</translation>
     </message>
@@ -761,12 +789,20 @@ Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</translation
       <translation>More event options</translation>
     </message>
     <message>
+      <source>Multiple independent widgets in one Browser Source</source>
+      <translation>Multiple independent widgets in one Browser Source</translation>
+    </message>
+    <message>
       <source>Mutations require the current revision</source>
       <translation>Mutations require the current revision</translation>
     </message>
     <message>
       <source>My Widgets</source>
       <translation>My Widgets</translation>
+    </message>
+    <message>
+      <source>Name</source>
+      <translation>Name</translation>
     </message>
     <message>
       <source>Native gallery</source>
@@ -1289,8 +1325,16 @@ Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</translation
       <translation>Show details</translation>
     </message>
     <message>
+      <source>Simulate composition</source>
+      <translation>Simulate composition</translation>
+    </message>
+    <message>
       <source>Simulation controls</source>
       <translation>Simulation controls</translation>
+    </message>
+    <message>
+      <source>Simulation stays in this canvas</source>
+      <translation>Simulation stays in this canvas</translation>
     </message>
     <message>
       <source>Simulations</source>
@@ -1543,6 +1587,10 @@ Import this trusted package?</translation>
       <translation>Viewers</translation>
     </message>
     <message>
+      <source>Visible</source>
+      <translation>Visible</translation>
+    </message>
+    <message>
       <source>Widget / instance</source>
       <translation>Widget / instance</translation>
     </message>
@@ -1565,6 +1613,10 @@ Import this trusted package?</translation>
     <message>
       <source>Widget restore: </source>
       <translation>Widget restore: </translation>
+    </message>
+    <message>
+      <source>Widget template</source>
+      <translation>Widget template</translation>
     </message>
     <message>
       <source>Widgets</source>
@@ -1601,6 +1653,10 @@ Import this trusted package?</translation>
     <message>
       <source>color</source>
       <translation>Accent color</translation>
+    </message>
+    <message>
+      <source>composition</source>
+      <translation>composition</translation>
     </message>
     <message>
       <source>connected</source>
@@ -1648,7 +1704,7 @@ Import this trusted package?</translation>
     </message>
     <message>
       <source>height</source>
-      <translation>Height</translation>
+      <translation>height</translation>
     </message>
     <message>
       <source>idle</source>
@@ -1671,6 +1727,10 @@ Import this trusted package?</translation>
       <translation>Message limit</translation>
     </message>
     <message>
+      <source>opacity</source>
+      <translation>opacity</translation>
+    </message>
+    <message>
       <source>processed</source>
       <translation>processed</translation>
     </message>
@@ -1689,6 +1749,10 @@ Import this trusted package?</translation>
     <message>
       <source>rendered</source>
       <translation>rendered</translation>
+    </message>
+    <message>
+      <source>rotation</source>
+      <translation>rotation</translation>
     </message>
     <message>
       <source>skipped</source>
@@ -1724,7 +1788,15 @@ Import this trusted package?</translation>
     </message>
     <message>
       <source>width</source>
-      <translation>Width</translation>
+      <translation>width</translation>
+    </message>
+    <message>
+      <source>x</source>
+      <translation>x</translation>
+    </message>
+    <message>
+      <source>y</source>
+      <translation>y</translation>
     </message>
     <message>
       <source>{count} event</source>

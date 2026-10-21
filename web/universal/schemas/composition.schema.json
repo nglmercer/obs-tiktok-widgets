@@ -1,0 +1,171 @@
+{
+  "type": "object",
+  "properties": {
+    "contract": {
+      "const": "obs-widget-composition"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "viewport": {
+      "type": "object",
+      "properties": {
+        "width": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 8192
+        },
+        "height": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 8192
+        }
+      },
+      "required": [
+        "width",
+        "height"
+      ],
+      "additionalProperties": false
+    },
+    "background": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "widgets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "template": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "version": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              }
+            },
+            "required": [
+              "id",
+              "version"
+            ],
+            "additionalProperties": false
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "locked": {
+            "type": "boolean"
+          },
+          "visible": {
+            "type": "boolean"
+          },
+          "transform": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number",
+                "minimum": -32768,
+                "maximum": 32768
+              },
+              "y": {
+                "type": "number",
+                "minimum": -32768,
+                "maximum": 32768
+              },
+              "width": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 8192
+              },
+              "height": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 8192
+              },
+              "rotation": {
+                "type": "number",
+                "minimum": -36000,
+                "maximum": 36000
+              },
+              "opacity": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "width",
+              "height",
+              "rotation",
+              "opacity"
+            ],
+            "additionalProperties": false
+          },
+          "zIndex": {
+            "type": "integer",
+            "minimum": -32768,
+            "maximum": 32768
+          },
+          "settings": {
+            "type": "object"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "maxItems": 128,
+            "uniqueItems": true
+          },
+          "group": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "id",
+          "template",
+          "enabled",
+          "locked",
+          "visible",
+          "transform",
+          "zIndex",
+          "settings"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 256
+    }
+  },
+  "required": [
+    "contract",
+    "schemaVersion",
+    "viewport",
+    "background",
+    "widgets"
+  ],
+  "additionalProperties": false,
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://universal-widget.local/composition/v1/schema.json"
+}

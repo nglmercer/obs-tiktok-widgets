@@ -2,6 +2,7 @@
 #include "obs/BrowserSourceManager.hpp"
 #include <obs.h>
 #include <QCoreApplication>
+#include <QFileInfo>
 #include <QTemporaryDir>
 #include <stdexcept>
 #include <cstring>
@@ -103,5 +104,47 @@ int main(int argc, char **argv)
 	obs_source_release(restored);
 	obs_data_release(saved);
 	obs_data_release(settings);
+	// Composition placement is idempotent in one scene and shares the same OBS
+	// source identity across scenes. This uses a mock source, not CEF evidence.
+	auto composition = manager.projects.create("builtin.composition");
+	const auto compositionId = composition["id"].toString();
+	tt::WidgetConfig canvas{composition["settings"].toObject()};
+	{
+		tt::WidgetManager restarted(dir.path(), WIDGET_ASSETS);
+		if (QFileInfo::exists(restarted.projects.outputPath(compositionId)))
+			throw std::runtime_error("restart published an unsaved composition");
+		try {
+			restarted.materialize(canvas);
+			throw std::runtime_error("placement published a composition");
+		} catch (const tt::DomainError &error) {
+			if (error.code != "NOT_PUBLISHED")
+				throw;
+		}
+	}
+	manager.projects.build(compositionId, composition["revision"].toString(), true);
+	auto *sceneA = obs_scene_create("Composition A");
+	auto *sceneB = obs_scene_create("Composition B");
+	const auto output = manager.projects.outputPath(compositionId);
+	if (!tt::BrowserSourceManager::add(canvas, output, "Composition A", true) ||
+	    !tt::BrowserSourceManager::add(canvas, output, "Composition A", true) ||
+	    !tt::BrowserSourceManager::add(canvas, output, "Composition B", true))
+		throw std::runtime_error("composition placement failed");
+	int matching = 0;
+	QString compositionName;
+	for (const auto &value : tt::BrowserSourceManager::sources()) {
+		const auto source = value.toObject();
+		if (source["id"] == compositionId) {
+			matching++;
+			compositionName = source["name"].toString();
+		}
+	}
+	if (matching != 1)
+		throw std::runtime_error("duplicate composition source created");
+	auto *itemA = obs_scene_find_source(sceneA, compositionName.toUtf8().constData());
+	auto *itemB = obs_scene_find_source(sceneB, compositionName.toUtf8().constData());
+	if (!itemA || !itemB || obs_sceneitem_get_source(itemA) != obs_sceneitem_get_source(itemB))
+		throw std::runtime_error("composition source identity differs between scenes");
+	obs_scene_release(sceneA);
+	obs_scene_release(sceneB);
 	obs_shutdown();
 }

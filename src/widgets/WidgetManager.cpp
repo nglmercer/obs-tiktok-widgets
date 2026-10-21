@@ -11,6 +11,8 @@ WidgetManager::WidgetManager(QString d, QString a)
 	load();
 	for (const auto &w : widgets)
 		try {
+			if (w.type() == "builtin.composition" && !QFileInfo::exists(projects.outputPath(w.id())))
+				continue;
 			materialize(w);
 		} catch (const std::exception &e) {
 			restorationError = QString::fromUtf8(e.what());
@@ -87,6 +89,11 @@ QString WidgetManager::materialize(const WidgetConfig &w) const
 	if (projects.registry()["migrationRolledBack"].toBool() && QFileInfo::exists(path))
 		return path;
 	ensureProject(w);
+	if (w.type() == "builtin.composition") {
+		if (!QFileInfo::exists(path))
+			throw DomainError("NOT_PUBLISHED", "Publish the composition before adding it to OBS");
+		return path;
+	}
 	if (!QFileInfo::exists(directory + "/runtime/" + w.id() + "/build-manifest.json")) {
 		try {
 			projects.build(w.id(), {}, true);

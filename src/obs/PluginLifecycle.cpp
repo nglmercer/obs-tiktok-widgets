@@ -125,6 +125,17 @@ void PluginLifecycle::start()
 			return QJsonArray::fromStringList(OBSFrontendManager::scenes());
 		if (method == "obs.sources.list")
 			return BrowserSourceManager::sources();
+		if (method == "obs.compositions.list") {
+			QSet<QString> compositions;
+			for (const auto &value : widgets->projects.list())
+				if (value.toObject()["template"].toObject()["id"] == "builtin.composition")
+					compositions.insert(value.toObject()["id"].toString());
+			QJsonArray result;
+			for (const auto &value : BrowserSourceManager::sources())
+				if (compositions.contains(value.toObject()["id"].toString()))
+					result.append(value);
+			return result;
+		}
 		if (method == "obs.scenes.select") {
 			auto *scene = obs_get_source_by_name(a["scene"].toString().toUtf8().constData());
 			if (!scene || !obs_scene_from_source(scene)) {
@@ -173,13 +184,16 @@ void PluginLifecycle::start()
 		}
 		const auto id = a["id"].toString();
 		const auto m = widgets->projects.get(id);
+		if (method.startsWith("obs.compositions.") && m["template"].toObject()["id"] != "builtin.composition")
+			throw DomainError("NOT_COMPOSITION", "Project is not a composition");
 		WidgetConfig w{m["settings"].toObject()};
-		if (method == "obs.sources.add") {
-			if (!BrowserSourceManager::add(w, widgets->materialize(w), a["scene"].toString()))
+		if (method == "obs.sources.add" || method == "obs.compositions.add") {
+			if (!BrowserSourceManager::add(w, widgets->materialize(w), a["scene"].toString(),
+						       m["template"].toObject()["id"] == "builtin.composition"))
 				throw DomainError("OBS_SOURCE_FAILED", "Cannot add Browser Source to selected scene");
-		} else if (method == "obs.sources.refresh")
+		} else if (method == "obs.sources.refresh" || method == "obs.compositions.refresh")
 			BrowserSourceManager::refresh(w, widgets->materialize(w));
-		else if (method == "obs.sources.remove") {
+		else if (method == "obs.sources.remove" || method == "obs.compositions.remove") {
 			if (!a["confirm"].toBool())
 				throw DomainError("CONFIRM_REQUIRED", "Removing placement requires --confirm");
 			BrowserSourceManager::remove(id, a["scene"].toString());

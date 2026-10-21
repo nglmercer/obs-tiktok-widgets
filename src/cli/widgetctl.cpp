@@ -123,13 +123,15 @@ int main(int argc, char **argv)
 		if (words.isEmpty())
 			throw DomainError("USAGE", "Command required");
 		method = words.takeFirst();
-		if (QStringList{"templates", "widgets", "obs", "migration", "builders", "studio"}.contains(method)) {
+		if (QStringList{"templates", "widgets", "obs", "migration", "builders", "studio", "compositions"}
+			    .contains(method)) {
 			if (words.isEmpty())
 				throw DomainError("USAGE", "Subcommand required");
 			method += '.' + words.takeFirst();
 			if (method == "widgets.portable" || method == "widgets.files" || method == "widgets.project" ||
 			    method == "widgets.settings" || method == "widgets.assets" || method == "obs.sources" ||
-			    method == "obs.scenes") {
+			    method == "obs.scenes" || method == "obs.compositions" ||
+			    method == "compositions.widgets") {
 				if (words.isEmpty())
 					throw DomainError("USAGE", "Operation required");
 				method += '.' + words.takeFirst();
@@ -141,7 +143,8 @@ int main(int argc, char **argv)
 		} else if (method == "widgets.import") {
 			if (!words.isEmpty())
 				request["path"] = words.takeFirst();
-		} else if (method.startsWith("widgets.") || method.startsWith("obs.sources.")) {
+		} else if (method.startsWith("widgets.") || method.startsWith("obs.sources.") ||
+			   method.startsWith("compositions.") || method.startsWith("obs.compositions.")) {
 			if (!words.isEmpty())
 				request["id"] = words.takeFirst();
 			if (!words.isEmpty())
@@ -150,6 +153,12 @@ int main(int argc, char **argv)
 		if (!words.isEmpty())
 			throw DomainError("USAGE", "Unexpected positional argument");
 		request["settings"] = settings;
+		if (method.startsWith("compositions.")) {
+			request["patch"] = settings;
+			request["widget"] = settings;
+			if (request.contains("file"))
+				request["widgetId"] = request["file"];
+		}
 		if (method == "studio.start") {
 			if (!request["confirm"].toBool())
 				throw DomainError(

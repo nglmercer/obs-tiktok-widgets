@@ -4,7 +4,7 @@ export function likes(c, e, d) {
   c.total =
     d.total != null ? BigInt(d.total) : c.total + BigInt(d.count || "0");
   if (!c.timer)
-    c.timer = setTimeout(
+    c.timer = (c.setTimeout || setTimeout)(
       () => {
         c.counter("♥", c.total.toString());
         c.timer = null;

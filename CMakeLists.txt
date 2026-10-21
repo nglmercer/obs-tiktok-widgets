@@ -157,7 +157,7 @@ else()
   set(author_resources "${CMAKE_INSTALL_DATAROOTDIR}/obs/obs-plugins/${PROJECT_NAME}")
 endif()
 install(DIRECTORY skills/obs-tiktok-widget-author DESTINATION "${author_resources}/skills")
-install(FILES docs/WIDGETCTL.md docs/TEMPLATE_ENGINE_V2.md docs/AGENT_WORKFLOWS.md docs/EVENT_PLAYGROUND.md docs/STUDIO_V3.md docs/UI_V4.md docs/VALIDATION.md docs/UNIVERSAL_WIDGETS.md
+install(FILES docs/WIDGETCTL.md docs/TEMPLATE_ENGINE_V2.md docs/AGENT_WORKFLOWS.md docs/EVENT_PLAYGROUND.md docs/STUDIO_V3.md docs/UI_V4.md docs/VALIDATION.md docs/UNIVERSAL_WIDGETS.md docs/COMPOSITIONS.md
   DESTINATION "${author_resources}/docs")
 install(DIRECTORY docs/architecture DESTINATION "${author_resources}/docs")
 

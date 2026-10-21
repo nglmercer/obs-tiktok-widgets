@@ -1,4 +1,5 @@
 #include "WidgetCommands.hpp"
+#include "CompositionService.hpp"
 #include "WidgetBuilder.hpp"
 #include <QDir>
 #include <QFileInfo>
@@ -11,23 +12,73 @@
 namespace tt {
 QStringList WidgetCommands::methods()
 {
-	return {"widgets.portable.get", "widgets.portable.set",  "studio.start",
-		"builders.status",      "builders.install",      "doctor",
-		"templates.list",       "templates.inspect",     "templates.install",
-		"templates.export",     "templates.create",      "widgets.list",
-		"widgets.create",       "widgets.show",          "widgets.project.get",
-		"widgets.project.set",  "widgets.fork",          "widgets.duplicate",
-		"widgets.delete",       "widgets.settings.get",  "widgets.settings.set",
-		"widgets.files.list",   "widgets.files.read",    "widgets.files.write",
-		"widgets.files.rename", "widgets.files.remove",  "widgets.files.mkdir",
-		"widgets.files.format", "widgets.assets.import", "widgets.validate",
-		"widgets.build",        "widgets.publish",       "widgets.preview",
-		"widgets.history",      "widgets.snapshot",      "widgets.rollback",
-		"widgets.export",       "widgets.import",        "migration.report",
-		"migration.apply",      "migration.rollback",    "obs.status",
-		"obs.scenes.list",      "obs.sources.list",      "obs.sources.add",
-		"obs.sources.refresh",  "obs.sources.remove",    "obs.sources.capture",
-		"obs.scenes.select",    "obs.shutdown",          "widgets.health"};
+	return {"compositions.list",
+		"compositions.create",
+		"compositions.get",
+		"compositions.update",
+		"compositions.duplicate",
+		"compositions.remove",
+		"compositions.publish",
+		"compositions.history",
+		"compositions.rollback",
+		"compositions.widgets.add",
+		"compositions.widgets.update",
+		"compositions.widgets.remove",
+		"obs.compositions.list",
+		"obs.compositions.add",
+		"obs.compositions.refresh",
+		"obs.compositions.remove",
+		"widgets.portable.get",
+		"widgets.portable.set",
+		"studio.start",
+		"builders.status",
+		"builders.install",
+		"doctor",
+		"templates.list",
+		"templates.inspect",
+		"templates.install",
+		"templates.export",
+		"templates.create",
+		"widgets.list",
+		"widgets.create",
+		"widgets.show",
+		"widgets.project.get",
+		"widgets.project.set",
+		"widgets.fork",
+		"widgets.duplicate",
+		"widgets.delete",
+		"widgets.settings.get",
+		"widgets.settings.set",
+		"widgets.files.list",
+		"widgets.files.read",
+		"widgets.files.write",
+		"widgets.files.rename",
+		"widgets.files.remove",
+		"widgets.files.mkdir",
+		"widgets.files.format",
+		"widgets.assets.import",
+		"widgets.validate",
+		"widgets.build",
+		"widgets.publish",
+		"widgets.preview",
+		"widgets.history",
+		"widgets.snapshot",
+		"widgets.rollback",
+		"widgets.export",
+		"widgets.import",
+		"migration.report",
+		"migration.apply",
+		"migration.rollback",
+		"obs.status",
+		"obs.scenes.list",
+		"obs.sources.list",
+		"obs.sources.add",
+		"obs.sources.refresh",
+		"obs.sources.remove",
+		"obs.sources.capture",
+		"obs.scenes.select",
+		"obs.shutdown",
+		"widgets.health"};
 }
 QJsonValue WidgetCommands::execute(const QString &method, const QJsonObject &a)
 {
@@ -35,6 +86,11 @@ QJsonValue WidgetCommands::execute(const QString &method, const QJsonObject &a)
 		throw DomainError("UNKNOWN_METHOD", "Unknown command: " + method);
 	const auto id = a["id"].toString(), revision = a["ifRevision"].toString();
 	const bool dry = a["dryRun"].toBool();
+	if (method.startsWith("compositions.")) {
+		if (dry)
+			return QJsonObject{{"dryRun", true}, {"method", method}};
+		return CompositionService(service).execute(method, a);
+	}
 	if (method.startsWith("obs.") || method == "widgets.health") {
 		if (dry)
 			return QJsonObject{{"dryRun", true}, {"method", method}};

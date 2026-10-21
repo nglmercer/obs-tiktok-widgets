@@ -40,6 +40,9 @@ StudioServer::StudioServer(WidgetProjectService &s, QString assets, QObject *par
 		   "widgets.publish",        "widgets.preview",
 		   "widgets.history",        "widgets.snapshot",
 		   "widgets.rollback"};
+	for (const auto &method : WidgetCommands::methods())
+		if (method.startsWith("compositions.") || method.startsWith("obs.compositions."))
+			allowed.append(method);
 	commands.obs = [this](const QString &method, const QJsonObject &args) -> QJsonValue {
 		const auto path = safePath(service.directory(), "cache/ipc.json");
 		if (!QFileInfo::exists(path))
@@ -194,7 +197,8 @@ void StudioServer::receive(QTcpSocket *socket)
 				throw DomainError("INVALID_JSON", "Invalid request");
 			auto method = packet["method"].toString();
 			auto args = packet["args"].toObject();
-			if ((method == "obs.sources.add" || method == "obs.sources.remove") &&
+			if ((method == "obs.sources.add" || method == "obs.sources.remove" ||
+			     method == "obs.compositions.add" || method == "obs.compositions.remove") &&
 			    !args["confirm"].toBool())
 				throw DomainError("CONFIRM_REQUIRED", "Scene changes require explicit confirmation");
 			if (QStringList{"widgets.settings.set", "widgets.project.set", "widgets.delete",

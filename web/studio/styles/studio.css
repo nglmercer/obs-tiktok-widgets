@@ -658,3 +658,65 @@ h3 {
     width: 100%;
   }
 }
+
+.composition-editor {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  gap: 8px;
+}
+.composition-layout {
+  display: grid;
+  grid-template-columns: minmax(120px, 16%) minmax(0, 1fr) minmax(140px, 20%);
+  gap: 8px;
+  min-height: 0;
+  flex: 1;
+}
+.composition-layout aside {
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.composition-layout label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.composition-scroll {
+  overflow: auto;
+  background: repeating-conic-gradient(#20232a 0% 25%, #292d36 0% 50%) 50%/20px
+    20px;
+  min-height: 300px;
+}
+.composition-hit {
+  position: absolute;
+  cursor: move;
+  touch-action: none;
+  border: 1px solid transparent;
+  box-sizing: border-box;
+}
+.composition-hit[data-selected="true"] {
+  border: 2px solid #56baff;
+}
+.composition-layout input {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+.composition-layout input[type="checkbox"] {
+  width: auto;
+}
+@media (max-width: 800px) {
+  .composition-layout {
+    grid-template-columns: 110px minmax(0, 1fr);
+  }
+  .composition-layout aside:last-child {
+    grid-column: 1/-1;
+    max-height: 250px;
+  }
+  .composition-scroll {
+    min-height: 250px;
+  }
+}

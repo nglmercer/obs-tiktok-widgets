@@ -29,6 +29,15 @@ for (const id of readdirSync("web/templates", { withFileTypes: true })
     schemas[JSON.stringify(canonical(schema))] = key;
   }
 let code = standaloneCode(ajv, exports);
+// AJV emits CommonJS runtime references even for standalone ESM validators.
+// Import its tiny Unicode-length helper through Vite so browsers need no require.
+code = code.replaceAll(
+  'require("ajv/dist/runtime/ucs2length").default',
+  "ucs2length",
+);
+if (/\brequire\(/.test(code))
+  throw new Error("Unsupported standalone validator runtime dependency");
+code = 'import ucs2length from "ajv/dist/runtime/ucs2length.js";\n' + code;
 code +=
   "\nconst validators={" +
   Object.values(exports).join(",") +

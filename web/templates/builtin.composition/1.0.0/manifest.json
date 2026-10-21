@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 2,
+  "id": "builtin.composition",
+  "version": "1.0.0",
+  "name": "Composition",
+  "category": "composition",
+  "description": "Multiple independent widgets in one Browser Source",
+  "entry": "src/index.html",
+  "events": ["chat", "gift", "follow", "like", "roomUser"],
+  "defaultSize": { "width": 1920, "height": 1080 },
+  "configSchema": "schema/settings.schema.json",
+  "presets": ["presets/default.json"],
+  "assets": ["src/renderer.js"],
+  "build": { "mode": "static" }
+}
