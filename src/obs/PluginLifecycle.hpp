@@ -3,6 +3,9 @@
 #include <memory>
 #include "core/EventDispatcher.hpp"
 #include "core/BrowserEventBridge.hpp"
+#include "widgets/WidgetHealthManager.hpp"
+#include "widgets/WidgetDeliveryTracker.hpp"
+#include "widgets/WidgetTelemetryServer.hpp"
 namespace tt {
 class PluginConfig;
 class TikTokConnectionManager;
@@ -15,6 +18,9 @@ class ExternalEventReceiver;
 class PluginLifecycle : public QObject {
 	EventDispatcher dispatcher;
 	BrowserEventBridge bridge;
+	std::unique_ptr<WidgetHealthManager> health;
+	WidgetDeliveryTracker deliveryHistory;
+	std::unique_ptr<WidgetTelemetryServer> telemetry;
 	std::unique_ptr<PluginConfig> config;
 	std::unique_ptr<TikTokConnectionManager> connection;
 	std::unique_ptr<WidgetManager> widgets;

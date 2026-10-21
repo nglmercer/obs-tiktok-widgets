@@ -164,7 +164,7 @@ int main(int argc, char **argv)
 			process.waitForFinished(-1);
 			return process.exitCode();
 		}
-		if (method.startsWith("obs.")) {
+		if (method.startsWith("obs.") || method == "widgets.health") {
 			const auto statePath = safePath(config, "cache/ipc.json");
 			if (!QFileInfo::exists(statePath))
 				throw DomainError("OBS_OFFLINE", "OBS IPC is disabled or not running");

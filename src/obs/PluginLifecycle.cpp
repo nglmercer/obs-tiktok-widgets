@@ -18,6 +18,10 @@
 #include <QScrollArea>
 #include <QNetworkAccessManager>
 #include <QFileInfo>
+#include <QUuid>
+#include <QFile>
+#include <QSaveFile>
+#include <QDir>
 namespace tt {
 PluginLifecycle::PluginLifecycle() = default;
 PluginLifecycle::~PluginLifecycle()
@@ -29,6 +33,8 @@ void PluginLifecycle::start()
 	if (started)
 		return;
 	started = true;
+	const auto sessionId = QUuid::createUuid().toString(QUuid::WithoutBraces);
+	health = std::make_unique<WidgetHealthManager>(sessionId);
 	char *path = obs_module_config_path("");
 	char *assets = obs_module_file("web");
 	if (!path || !assets) {
@@ -40,6 +46,29 @@ void PluginLifecycle::start()
 	bfree(path);
 	bfree(assets);
 	config = std::make_unique<PluginConfig>(directory);
+	// Runtime-only material; never rewrite author sources or published releases.
+	QDir().mkpath(directory + "/runtime-session");
+	QFile::setPermissions(directory + "/runtime-session",
+			      QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner);
+	{
+		QSaveFile sessionFile(directory + "/runtime-session/health.js");
+		if (sessionFile.open(QIODevice::WriteOnly)) {
+			sessionFile.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner);
+			sessionFile.write("window.TikTokWidgetHealthSession=null;\n");
+			sessionFile.commit();
+		}
+		QFile client(web + "/health-client.js");
+		QSaveFile installed(directory + "/runtime-session/health-client.js");
+		if (client.open(QIODevice::ReadOnly) && installed.open(QIODevice::WriteOnly)) {
+			installed.write(client.readAll());
+			installed.commit();
+		}
+	}
+	if (config->settings["widgetHealth"].toObject()["experimentalTelemetry"].toBool(false)) {
+		telemetry = std::make_unique<WidgetTelemetryServer>(*health, sessionId);
+		if (!telemetry->start(directory))
+			telemetry.reset();
+	}
 	eventReceiver = std::make_unique<ExternalEventReceiver>(dispatcher);
 	eventReceiverOptions = config->settings["externalEvents"].toObject();
 	if (!eventReceiver->start(eventReceiverOptions, [](const QJsonObject &record) {
@@ -74,6 +103,21 @@ void PluginLifecycle::start()
 					window->close();
 			});
 			return QJsonObject{{"shutdownRequested", true}};
+		}
+		if (method == "widgets.health") {
+			auto result = health->snapshot(telemetry ? telemetry->now() : 0);
+			result["transport"] = telemetry ? telemetry->diagnostics() : QJsonObject{{"listening", false}};
+			QJsonArray sources;
+			for (const auto &value : BrowserSourceManager::sources()) {
+				auto source = value.toObject();
+				source.remove("localFile");
+				source["browserRuntime"] = "unobservable";
+				source["instanceMapping"] = "unmapped";
+				sources.append(source);
+			}
+			result["sources"] = sources;
+			result["history"] = deliveryHistory.snapshot();
+			return result;
 		}
 		if (method == "obs.status")
 			return QJsonObject{{"running", true}, {"ipc", true}};
@@ -152,7 +196,7 @@ void PluginLifecycle::start()
 		dock = nullptr;
 		throw std::runtime_error("Cannot register OBS dock");
 	}
-	bridge.verify();
+	health->vendorResult(bridge.verify());
 	auto *timer = new QTimer(this);
 	connect(timer, &QTimer::timeout, this, [this] {
 		if (eventReceiver && eventReceiverOptions != config->settings["externalEvents"].toObject()) {
@@ -177,14 +221,21 @@ void PluginLifecycle::start()
 			if (batch.isEmpty())
 				break;
 			const auto &e = batch.front();
-			dispatcher.delivered(bridge.broadcast(e));
+			const bool accepted = bridge.broadcast(e);
+			dispatcher.delivered(accepted);
+			health->vendorResult(accepted);
+			deliveryHistory.record(e, accepted);
 			dock->monitor->append(e);
 		}
 		dock->updateStatus(bridge.lastError());
 	});
 	timer->start(16);
 	auto *snapshot = new QTimer(this);
-	connect(snapshot, &QTimer::timeout, this, [this] { dispatcher.push(connection->stateSnapshot()); });
+	connect(snapshot, &QTimer::timeout, this, [this] {
+		health->tick(telemetry ? telemetry->now() : 0);
+		dock->updateWidgetHealth(health->snapshot(telemetry ? telemetry->now() : 0));
+		dispatcher.push(connection->stateSnapshot());
+	});
 	snapshot->start(2000);
 	dock->startAutoConnect();
 }
@@ -193,6 +244,11 @@ void PluginLifecycle::stop()
 	if (!started)
 		return;
 	started = false;
+	telemetry.reset();
+	if (config)
+		QFile::remove(config->directory + "/runtime-session/health.js");
+	if (health)
+		health->shutdown();
 	for (auto *timer : findChildren<QTimer *>())
 		timer->stop();
 	if (dock)

@@ -134,3 +134,53 @@ Executed on Linux:
 **Actual OBS 32.2.2 / CEF, disposable Flatpak profile only:** created a plain gift project and added two Browser Sources referencing its UUID. HTML/JS formatted with Prettier CRLF remained byte-identical after publication; CEF displayed authored content and `CSS1Compat`. An atomic CSS save/publication changed both matching source captures while an unrelated source (with an explicit reload counter) remained identical. A missing relative stylesheet rejected publication and retained the working stable loader; restoring the source recovered. Scene switching preserved all source IDs/paths. After reinstalling into this disposable profile and restarting OBS, all ten existing Browser Source identities/paths remained intact; both new matching captures were identical. The unrelated source's own counter advanced once for normal OBS startup, then remained unchanged. Authenticated Studio opened the selected published project, automatically initialized preview, performed isolated Replay/Reset and saved Spanish preferences. Before/after captures of the two matching sources and unrelated source were identical across preview actions and locale changes. OBS and its temporary Studio helper were shut down gracefully; normal user scenes/configuration were not edited. [Matching CEF source](studio/v4/cef-0.png), [second reference](studio/v4/cef-1.png), [unrelated reference](studio/v4/cef-2.png), [Studio with disposable OBS](studio/v4/studio-live-obs-es.png).
 
 Unverified/limits: Windows/macOS packaging, Firefox/Safari, audible audio/autoplay playback, live TikTok traffic, and the complete manual 14-step native GUI workflow were not executed. The native narrow-dock screenshots/tests are offscreen Qt, not a manually resized live OBS dock. Real CEF edits/publish/restart were driven through the same native CLI/domain services; the browser Studio exercised preview/language in that profile, not every manual authoring step. Compiler/provider technical messages and user-authored schema/template text may remain literal; plugin UI surrounds them with localized labels. Custom HTML without `x-visual` bindings is code-only. Native appearance follows OBS's theme; web interface themes do not change widget settings. No author source or production user's files were rewritten by the UI build/package checks. This evidence does not claim cross-platform or full manual workflow completion.
+
+## Widget Health development validation — 2026-10-21
+
+This is a **partial implementation**, not a production-ready recovery release. Tests below must not be read as completing the health task's full acceptance matrix. The browser-to-native transport has not passed real CEF acceptance; its adapter is explicitly opt-in (`widgetHealth.experimentalTelemetry=false` by default). Replay across reloads, automatic recovery/rollback, native per-event ACK deadlines and targeted test/recovery commands remain outstanding. See [WIDGET_HEALTH.md](WIDGET_HEALTH.md).
+
+Environment: CachyOS Linux; OBS Studio 32.2.2; obs-browser 2.26.9; CEF runtime 152.0.7977.83, compiled 151.3.18+gbeff58d+chromium-151.0.7922.138; Qt runtime 6.12.0. Testing used a newly created disposable XDG config/profile/scene collection, not the user's normal OBS scenes. The network OBS WebSocket server remained disabled. No live TikTok account was connected and no Studio authoring server was launched for CEF playback.
+
+### Unit/mock and Chromium
+
+Executed:
+
+```sh
+npm ci
+node tools/package-locales.mjs --compile
+npm run build
+npm run test:universal
+WIDGETCTL=/tmp/widgets-health-build/widgetctl npm test
+WIDGETCTL=/tmp/widgets-health-build/widgetctl WIDGETSTUDIO=/tmp/widgets-health-build/widgetstudio PLAYGROUND_BROWSER_EXECUTABLE=/home/meme/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome npm test
+npm run format:check
+npm run locales:check
+node tools/check-generated.mjs
+cmake --build build -j2
+cmake --build build_system -j2
+cmake -S . -B /tmp/widgets-health-build -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE=Debug -DTTL_TARGET_DIR=/home/meme/Documents/Codex/2026-08-02/obs-tiktok-widgets/build_flatpak/rust
+cmake --build /tmp/widgets-health-build -j4
+ctest --test-dir /tmp/widgets-health-build --output-on-failure
+```
+
+Results: npm installation/build passed (104 packages, no audit vulnerabilities; npm reported blocked dependency install scripts, but binaries were usable). Universal tests: 13/13 passed. Final web run with native CLI, Studio and Chromium selected: **37/37 passed, zero skipped**, including responsive en/es browser coverage. Format check passed; **435** catalog keys/placeholders validated; **139** generated assets deterministic. Fresh Makefiles native build passed, **11/11 CTest tests passed**, including the 280px Qt dock test, new health/HTTP tests and mock bridge regression. After the buffered-read fix, health/HTTP/bridge tests were rerun: 3/3 passed.
+
+The old `build` tree could not regenerate because its cached `/tmp/widgets-obs-sdk/usr/include` no longer exists. `build_system` hit a Ninja dependency assertion. Neither failure is described as a successful build; a separate fresh Makefiles build was used. Initial web regressions in state/feed dedup and universal dropped counts were corrected before the final passing run. An initial offline CLI test used an old executable; rerunning with the freshly built executable passed.
+
+### Real OBS/CEF: limited and mixed results
+
+Launch pattern (temporary configuration only):
+
+```sh
+XDG_CONFIG_HOME=/tmp/widget-health-obs-_jrvgt4a XDG_DATA_HOME=/tmp/widget-health-obs-_jrvgt4a/data QT_QPA_PLATFORM=xcb LIBGL_ALWAYS_SOFTWARE=1 /usr/bin/obs --multi --disable-shutdown-check --profile Health --collection Health
+python3 tests/widgets/obs-cef-acceptance.py --config /tmp/widget-health-obs-_jrvgt4a/obs-studio/plugin_config/obs-tiktok-widgets --assets data/web --widgetctl /tmp/widgets-health-build/widgetctl --existing-ids /tmp/widget-health-cef-ids.json --output /tmp/widget-health-cef-acceptance-stable
+```
+
+The scene contained two sources sharing one widget UUID and a third unrelated source. OBS native source enumeration reported all three active/showing. In-process vendor requests were accepted with the network server disabled. The hardware-accelerated test configuration captured blank output for both the widget and an intentionally visible HTML control. After disabling browser hardware acceleration **only in the disposable config**, a real OBS source capture displayed the probe's text and JavaScript diagnostic snapshot. This is an environment-specific observation, not proof that hardware acceleration causes the original user's intermittent failures.
+
+The telemetry listener observed loopback connections but **no parsed HTTP reports and no page ACKs**, including a final run after the buffered-socket read correction. No origin was parsed, so the evidence does not identify a CORS/CSP/authentication cause. Actual CEF-to-loopback reporting is **unverified/failed acceptance**, not passed. Neither vendor success nor the Chromium tests are substituted for a browser ACK. No telemetry-driven refresh was triggered.
+
+The real-CEF authoring harness initially falsely accepted transient transparent reload frames as completed publication and then failed its failed-build screenshot comparison. The harness was repaired to require visible, stable output from its explicitly visible fixture. The repaired run **passed**: HTML/CSS/JS edits changed the two matching sources while leaving the unrelated source unchanged; invalid CSS retained the prior rendered release; stable source paths were unchanged. That pass covers authoring persistence only, not the complete widget-health matrix or synthetic alert ACKs.
+
+Artifacts: [software-rendered OBS source probe](validation/widget-health/obs-software-source.png), [hardware test control capture](validation/widget-health/obs-hardware-control.png), [retained real CEF authoring output](validation/widget-health/obs-authoring-retained.png), [redacted native health snapshot](validation/widget-health/obs-status.json), [authoring harness summary](validation/widget-health/authoring-result.json).
+
+Not performed/passed: real synthetic gift/follow/chat/universal receive/process/render ACKs; source-to-page correlation; telemetry interruption recovery; CEF asset/audio/font failure matrix; sustained burst/latency/CPU/memory acceptance; automatic rollback/replay/recovery; Windows, macOS, Linux Flatpak or live TikTok health validation. Old published releases are preserved and are not silently instrumented. The real OBS process was stopped through its authenticated local shutdown command after testing.

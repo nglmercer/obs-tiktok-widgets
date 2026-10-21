@@ -861,7 +861,7 @@ QJsonObject WidgetProjectService::buildUnlocked(const QString &id, bool publish)
 	publicSettings["events"] = m["events"];
 	const auto config = publicConfig(publicSettings);
 
-	const auto bootstrap =
+	const auto configBootstrap =
 		"<script>window.TikTokWidgetConfig=" + QString::fromUtf8(config) + ";window.UniversalWidgetProject=" +
 		(m.contains("portableProject")
 			 ? QString::fromUtf8(
@@ -869,6 +869,15 @@ QJsonObject WidgetProjectService::buildUnlocked(const QString &id, bool publish)
 				   .replace("<", "\\u003c")
 			 : QString("null")) +
 		";Object.defineProperty(window,\"TikTokWidgetAssetBase\",{configurable:true,get:()=>new URL(\".\",document.baseURI).href});</script>";
+	const auto healthIdentity =
+		QJsonDocument(QJsonObject{{"widgetId", id}, {"buildId", buildId}}).toJson(QJsonDocument::Compact);
+	const auto bootstrap =
+		configBootstrap + "<script>window.TikTokWidgetHealthIdentity=" + QString::fromUtf8(healthIdentity) +
+		";</script>" + "<script src=\"" +
+		relativeUrl(release + "/dist/" + entry, root + "/runtime-session/health.js").toHtmlEscaped() +
+		"\"></script>" + "<script src=\"" +
+		relativeUrl(release + "/dist/" + entry, root + "/runtime-session/health-client.js").toHtmlEscaped() +
+		"\"></script>";
 	const auto original = readFile(staging.path() + "/dist/" + entry);
 	QSet<QString> approvedScripts;
 	const auto configHashes = m["legacyConfigHashes"].toObject();
@@ -905,7 +914,7 @@ QJsonObject WidgetProjectService::buildUnlocked(const QString &id, bool publish)
 				  ";</script>"
 			: QString{};
 	const auto previewBootstrap =
-		bootstrap + portablePreview + "<script>window.TikTokWidgetBuildPointer=" + "new URL(" +
+		configBootstrap + portablePreview + "<script>window.TikTokWidgetBuildPointer=" + "new URL(" +
 		jsonString(relativeUrl(release + "/dist/" + entry, runtime + "/build-pointer.js")) +
 		",location.href).href" + ";window.TikTokWidgetBuildId=" + jsonString(buildId) +
 		";</script><script src=\"" +

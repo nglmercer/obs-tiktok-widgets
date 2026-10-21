@@ -82,3 +82,7 @@ Custom projects declare supported event types explicitly with `widgets project s
 ## Installed-user policy and Studio preferences
 
 User projects use static HTML/CSS/JavaScript. `builders install` returns `DEVELOPMENT_ONLY`; framework starter sources are excluded from installed packages. Existing source projects/releases are retained. UI v4 uses the same widgetctl domain methods; its authenticated adapter additionally exposes allowlisted `studio.preferences.get/set` for non-secret locale/theme preferences. They never alter widget configuration/revisions. See [UI v4](UI_V4.md).
+
+### Experimental health diagnostics
+
+`widgetctl widgets health --json` reads redacted native health, per-page reports, source visibility and recent vendor acceptance history through the existing authenticated opt-in live IPC. It never uses the public telemetry listener for privileged operations. With IPC disabled/offline it returns `OBS_OFFLINE`; enable Widgetctl IPC in the OBS dock using the existing workflow. `doctor --json` reports live health as unknown/offline rather than inventing browser ACKs. A source UUID is not a page-to-source mapping. Targeted tests, recovery commands and cross-reload replay are not implemented; see [WIDGET_HEALTH.md](WIDGET_HEALTH.md).

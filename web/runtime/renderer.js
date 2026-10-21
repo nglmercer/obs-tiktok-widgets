@@ -1,3 +1,4 @@
+import { createWidgetHealthClient } from "./health-client.js";
 export function runtime(handler, extra = {}) {
   const config = {
     template: document.body.dataset.template,
@@ -5,7 +6,12 @@ export function runtime(handler, extra = {}) {
     messageLimit: 30,
     ...window.TikTokWidgetConfig,
   };
+  const health = createWidgetHealthClient();
   const root = document.getElementById("root");
+  if (!root) {
+    health.report("runtime.error", { code: "ROOT_MISSING" });
+    return { config, root, health };
+  }
   document.documentElement.style.setProperty(
     "--accent",
     config.color || "#ff416c",
@@ -30,6 +36,17 @@ export function runtime(handler, extra = {}) {
       const img = document.createElement("img");
       img.src = src;
       img.referrerPolicy = "no-referrer";
+      img.addEventListener(
+        "error",
+        () => {
+          health.report("asset.failed", {
+            code: "IMAGE_FAILED",
+            resourceType: "img",
+          });
+          img.remove();
+        },
+        { once: true },
+      );
       div.append(img);
     }
     const content = document.createElement("div"),
@@ -49,6 +66,12 @@ export function runtime(handler, extra = {}) {
       root.firstChild.remove();
   }
   function report(error) {
+    health.report("audio.failed", {
+      code:
+        error?.name === "NotAllowedError"
+          ? "AUDIO_BLOCKED"
+          : "AUDIO_PLAY_FAILED",
+    });
     const message = "Audio playback failed: " + (error?.message || error);
     console.warn(message);
     if (window.TikTokPlaygroundPreview)
@@ -86,23 +109,40 @@ export function runtime(handler, extra = {}) {
     div.textContent = `${label} ${value}`;
     root.append(div);
   }
-  const ctx = { config, root, row, trim, sound, counter, ...extra };
+  const ctx = { config, root, row, trim, sound, counter, health, ...extra };
+  const changes =
+    typeof MutationObserver === "function"
+      ? new MutationObserver(() => {})
+      : null;
+  changes?.observe(root, {
+    childList: true,
+    subtree: true,
+    characterData: true,
+    attributes: true,
+  });
   const accept = (event) => {
     const e = event.detail;
-    if (
-      !e ||
-      e.version !== 1 ||
-      (config.filters?.length && !config.filters.includes(e.type))
-    )
+    if (!e || e.version !== 1) return;
+    if (config.filters?.length && !config.filters.includes(e.type)) {
+      health.report("event.skipped", { eventType: e.type, code: "FILTER" });
       return;
+    }
+    const ticket = health.begin(e, {
+      deduplicate: e.type === "gift" || e.type === "follow",
+    });
+    if (!ticket) return;
     try {
+      changes?.takeRecords();
       handler(ctx, e, e.data || {});
+      health.processed(ticket);
+      if (changes?.takeRecords().length) health.rendered(ticket, root);
     } catch (error) {
+      health.failed(ticket);
       console.warn("Invalid widget event", error);
     }
   };
   window.addEventListener("tiktok:event", accept);
-  window.addEventListener("tiktok:preview-settings", (event) => {
+  const previewSettings = (event) => {
     if (window.TikTokPlaygroundPreview) {
       Object.assign(config, event.detail);
       document.documentElement.style.setProperty(
@@ -112,15 +152,26 @@ export function runtime(handler, extra = {}) {
       document.body.classList.toggle("light", config.theme === "light");
       style.textContent = config.customCss || "";
     }
-  });
-  window.addEventListener("tiktok:state", (event) => {
+  };
+  const state = (event) => {
     window.TikTokLastState = event.detail;
-  });
-  if (extra.followAlias)
-    window.addEventListener("tiktok:follow", (event) => {
-      if (event.detail.type !== "follow")
-        accept({ detail: { ...event.detail, type: "follow" } });
-    });
+  };
+  const follow = (event) => {
+    if (event.detail.type !== "follow")
+      accept({ detail: { ...event.detail, type: "follow" } });
+  };
+  window.addEventListener("tiktok:preview-settings", previewSettings);
+  window.addEventListener("tiktok:state", state);
+  if (extra.followAlias) window.addEventListener("tiktok:follow", follow);
+  ctx.dispose = () => {
+    window.removeEventListener("tiktok:event", accept);
+    window.removeEventListener("tiktok:preview-settings", previewSettings);
+    window.removeEventListener("tiktok:state", state);
+    window.removeEventListener("tiktok:follow", follow);
+    changes?.disconnect();
+    health.dispose();
+  };
+  health.ready();
   offlineFixture(config);
   return ctx;
 }

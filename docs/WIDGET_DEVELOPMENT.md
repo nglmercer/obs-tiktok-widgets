@@ -36,3 +36,7 @@ An iframe can optionally receive events forwarded explicitly by its parent with 
 ## Edit local HTML externally
 
 Select a widget, then choose **More actions → Open editable HTML folder**. The plugin creates a per-widget `editable` folder containing `index.html`, `widget.js`, and `widget.css`, and uses that HTML as the widget source. Open those files in your preferred editor, save, then choose **Reload edited HTML**. The editable files survive settings changes and OBS restarts. `config.js` is generated automatically; change settings through Edit widget instead of editing that file. Browser preview uses fixtures; real DOM events require an OBS Browser Source. Deleting the widget removes its per-widget folder.
+
+## Health instrumentation
+
+New publications include a runtime-only health bootstrap reference without altering author files or old releases. Built-in and universal lifecycle diagnostics are bounded and optional. Custom authors may explicitly signal initialized readiness with `window.TikTokWidgetHealth?.ready()`; ordinary HTML load does not establish a mounted widget. Preserve CSP restrictions: unsupported telemetry is reported as unobservable, and does not prevent playback. See [Widget health](WIDGET_HEALTH.md) for report semantics, security limits and outstanding recovery work.

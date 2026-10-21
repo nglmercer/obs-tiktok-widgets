@@ -42,3 +42,10 @@ await build({
   outfile: "data/web/widgets/widget.js",
 });
 copyFileSync("data/web/widgets/widget.js", "data/web/playground/widget.js");
+
+await build({
+  entryPoints: ["web/runtime/health-bootstrap.js"],
+  bundle: true,
+  format: "iife",
+  outfile: "data/web/health-client.js",
+});

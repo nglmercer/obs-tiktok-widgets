@@ -307,7 +307,6 @@
     "Validate project": "Validate project",
     "Widget project \u2014 save source, then publish": "Widget project \u2014 save source, then publish",
     "Widget restore: ": "Widget restore: ",
-    "%1 events/s \xB7 Received %2 \xB7 Delivered %3\nDropped %4 \xB7 Oversized %5 \xB7 Duplicates %6 \xB7 Delivery failures %7": "%1 events/s \xB7 Received %2 \xB7 Delivered %3\nDropped %4 \xB7 Oversized %5 \xB7 Duplicates %6 \xB7 Delivery failures %7",
     "@creator": "@creator",
     "Select a widget in My Widgets to inspect its": "Select a widget in My Widgets to inspect its",
     "Editable gifts widget": "Editable gifts widget",
@@ -418,7 +417,26 @@
     "Allow this app to publish TikTok gift, chat, follow and like events?": "Allow this app to publish TikTok gift, chat, follow and like events?",
     "Producer token": "Producer token",
     "Copy token": "Copy token",
-    "Revoke local app": "Revoke local app"
+    "Revoke local app": "Revoke local app",
+    "%1 events/s \xB7 Received %2 \xB7 OBS vendor accepted %3\nDropped %4 \xB7 Oversized %5 \xB7 Duplicates %6 \xB7 Delivery failures %7": "%1 events/s \xB7 Received %2 \xB7 OBS vendor accepted %3\nDropped %4 \xB7 Oversized %5 \xB7 Duplicates %6 \xB7 Delivery failures %7",
+    "Widget Health": "Widget Health",
+    "Browser acknowledgements are separate from OBS vendor acceptance. Video output requires visual verification.": "Browser acknowledgements are separate from OBS vendor acceptance. Video output requires visual verification.",
+    "Telemetry is experimental and optional. Sources without reports are unobservable; no automatic refresh is triggered. Expand a page to inspect its build and last event.": "Telemetry is experimental and optional. Sources without reports are unobservable; no automatic refresh is triggered. Expand a page to inspect its build and last event.",
+    "Widget / instance": "Widget / instance",
+    "Health / acknowledgement": "Health / acknowledgement",
+    "Copy sanitized diagnostics": "Copy sanitized diagnostics",
+    "Browser runtime": "Browser runtime",
+    unobservable: "unobservable",
+    loading: "loading",
+    ready: "ready",
+    unresponsive: "unresponsive",
+    suspended: "suspended",
+    failed: "failed",
+    idle: "idle",
+    received: "received",
+    processed: "processed",
+    rendered: "rendered",
+    skipped: "skipped"
   };
 
   // web/shared/i18n/es.json
@@ -728,7 +746,6 @@
     "Validate project": "Validar proyecto",
     "Widget project \u2014 save source, then publish": "Proyecto de widget \u2014 guarda el c\xF3digo y luego publica",
     "Widget restore: ": "Restauraci\xF3n del widget: ",
-    "%1 events/s \xB7 Received %2 \xB7 Delivered %3\nDropped %4 \xB7 Oversized %5 \xB7 Duplicates %6 \xB7 Delivery failures %7": "%1 eventos/s \xB7 Recibidos %2 \xB7 Entregados %3\nDescartados %4 \xB7 Excesivos %5 \xB7 Duplicados %6 \xB7 Fallos de entrega %7",
     "@creator": "@creator",
     "Select a widget in My Widgets to inspect its": "Selecciona un widget en Mis widgets para inspeccionar sus",
     "Editable gifts widget": "Widget de regalos editable",
@@ -839,7 +856,26 @@
     "Allow this app to publish TikTok gift, chat, follow and like events?": "\xBFPermitir que esta aplicaci\xF3n publique eventos de regalos, chat, seguidores y me gusta de TikTok?",
     "Producer token": "Token del productor",
     "Copy token": "Copiar token",
-    "Revoke local app": "Revocar aplicaci\xF3n local"
+    "Revoke local app": "Revocar aplicaci\xF3n local",
+    "%1 events/s \xB7 Received %2 \xB7 OBS vendor accepted %3\nDropped %4 \xB7 Oversized %5 \xB7 Duplicates %6 \xB7 Delivery failures %7": "%1 eventos/s \xB7 Recibidos %2 \xB7 Aceptados por OBS %3\nDescartados %4 \xB7 Excesivos %5 \xB7 Duplicados %6 \xB7 Fallos de entrega %7",
+    "Widget Health": "Diagn\xF3stico de widgets",
+    "Browser acknowledgements are separate from OBS vendor acceptance. Video output requires visual verification.": "Las confirmaciones del navegador son independientes de la aceptaci\xF3n de OBS. La salida de v\xEDdeo requiere verificaci\xF3n visual.",
+    "Telemetry is experimental and optional. Sources without reports are unobservable; no automatic refresh is triggered. Expand a page to inspect its build and last event.": "La telemetr\xEDa es experimental y opcional. Las fuentes sin informes no son observables; no se actualizan autom\xE1ticamente. Expande una p\xE1gina para ver su compilaci\xF3n y \xFAltimo evento.",
+    "Widget / instance": "Widget / instancia",
+    "Health / acknowledgement": "Estado / confirmaci\xF3n",
+    "Copy sanitized diagnostics": "Copiar diagn\xF3stico sin datos privados",
+    "Browser runtime": "Entorno del navegador",
+    unobservable: "no observable",
+    loading: "cargando",
+    ready: "listo",
+    unresponsive: "sin respuesta",
+    suspended: "suspendido",
+    failed: "fallido",
+    idle: "inactivo",
+    received: "recibido",
+    processed: "procesado",
+    rendered: "renderizado",
+    skipped: "omitido"
   };
 
   // web/shared/i18n/index.ts

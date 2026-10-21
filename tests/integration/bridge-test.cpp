@@ -7,6 +7,7 @@
 #include <iostream>
 static proc_handler_t *vendor;
 static int calls;
+static bool rejectCanonical;
 static void getHandler(void *, calldata_t *cd)
 {
 	calldata_set_ptr(cd, "ph", vendor);
@@ -22,7 +23,7 @@ static void call(void *, calldata_t *cd)
 		throw std::runtime_error("event_data must be parsed object");
 	++calls;
 	auto *response = static_cast<obs_websocket_request_response *>(bzalloc(sizeof(obs_websocket_request_response)));
-	response->status_code = 100;
+	response->status_code = rejectCanonical && nested["event_name"] == "universal:event" ? 500 : 100;
 	calldata_set_ptr(cd, "response", response);
 }
 int main(int argc, char **argv)
@@ -41,6 +42,9 @@ int main(int argc, char **argv)
 		    {{"version", 1}, {"type", "gift"}, {"data", QJsonObject{{"gift_id", "9007199254740993"}}}}) ||
 	    calls != 3)
 		throw std::runtime_error("bridge failure");
+	rejectCanonical = true;
+	if (bridge.broadcast({{"version", 1}, {"type", "follow"}, {"data", QJsonObject{}}}))
+		throw std::runtime_error("canonical emission failure must not be counted as fully accepted");
 	proc_handler_destroy(vendor);
 	obs_shutdown();
 	std::cout

@@ -40,15 +40,26 @@ bool BrowserEventBridge::broadcast(const QJsonObject &e)
 	// Canonical events never enter legacy TikTok channels or privileged APIs.
 	if (e.contains("source") && e.contains("id"))
 		return emitEvent("universal:event", e);
+	bool ok = true;
+	QString firstError;
+	const auto send = [&](const QString &name, const QJsonObject &payload) {
+		if (!emitEvent(name, payload)) {
+			ok = false;
+			if (firstError.isEmpty())
+				firstError = error;
+		}
+	};
 	if (!e["_universalDuplicate"].toBool())
-		emitEvent("universal:event", uw::fromNative(e));
+		send("universal:event", uw::fromNative(e));
 	auto legacy = e;
 	legacy.remove("_universalDuplicate");
-	bool ok = emitEvent("tiktok:event", legacy);
+	send("tiktok:event", legacy);
 	const auto type = legacy["type"].toString("unknown");
-	ok = emitEvent("tiktok:" + type, legacy) && ok;
+	send("tiktok:" + type, legacy);
 	if (type != "follow" && EventNormalizer::isFollow(legacy))
-		ok = emitEvent("tiktok:follow", legacy) && ok;
+		send("tiktok:follow", legacy);
+	if (!ok)
+		error = firstError;
 	return ok;
 }
 } // namespace tt

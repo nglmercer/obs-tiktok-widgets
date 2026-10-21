@@ -27,7 +27,7 @@ QStringList WidgetCommands::methods()
 		"migration.apply",      "migration.rollback",    "obs.status",
 		"obs.scenes.list",      "obs.sources.list",      "obs.sources.add",
 		"obs.sources.refresh",  "obs.sources.remove",    "obs.sources.capture",
-		"obs.scenes.select",    "obs.shutdown"};
+		"obs.scenes.select",    "obs.shutdown",          "widgets.health"};
 }
 QJsonValue WidgetCommands::execute(const QString &method, const QJsonObject &a)
 {
@@ -35,7 +35,7 @@ QJsonValue WidgetCommands::execute(const QString &method, const QJsonObject &a)
 		throw DomainError("UNKNOWN_METHOD", "Unknown command: " + method);
 	const auto id = a["id"].toString(), revision = a["ifRevision"].toString();
 	const bool dry = a["dryRun"].toBool();
-	if (method.startsWith("obs.")) {
+	if (method.startsWith("obs.") || method == "widgets.health") {
 		if (dry)
 			return QJsonObject{{"dryRun", true}, {"method", method}};
 		if (!obs)
@@ -55,7 +55,10 @@ QJsonValue WidgetCommands::execute(const QString &method, const QJsonObject &a)
 				   {"diagnostics", service.templates.diagnostics},
 				   {"nodeSyntaxValidation", !QStandardPaths::findExecutable("node").isEmpty()},
 				   {"apiMethods", QJsonArray::fromStringList(methods())},
-				   {"runtimeNodeRequired", false}};
+				   {"runtimeNodeRequired", false},
+				   {"widgetHealth", QJsonObject{{"liveState", "unknown"},
+								{"code", "HEALTH_UNAVAILABLE"},
+								{"visualVerified", false}}}};
 	if (method == "templates.list")
 		return service.templates.list();
 	if (method == "templates.inspect")

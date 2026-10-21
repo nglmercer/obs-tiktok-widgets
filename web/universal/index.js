@@ -1,3 +1,4 @@
+import { createWidgetHealthClient } from "../runtime/health-client.js";
 // Portable browser code. The schemas in ./schemas are the contract authority.
 import eventSchema from "./schemas/event.schema.json" with { type: "json" };
 import manifestSchema from "./schemas/manifest.schema.json" with { type: "json" };
@@ -369,6 +370,7 @@ export class WidgetRuntime {
     this.host = host;
     this.manifest = manifest;
     this.state = "new";
+    this.health = createWidgetHealthClient();
     this.router = new EventRouter({ instance: host.instance });
     this.pending = Promise.resolve();
     this.pendingCount = 0;
@@ -406,14 +408,41 @@ export class WidgetRuntime {
         }
         this.state = "mounted";
         this.router.subscribe((event) => {
-          if (this.manifest.events.includes(event.type))
-            this.enqueue(() => this.widget.onEvent?.(event));
+          const ticket = this.health.begin(event);
+          if (!ticket) return;
+          if (!this.manifest.events.includes(event.type)) {
+            this.health.report("event.skipped", {
+              ...ticket.data,
+              code: "FILTER",
+            });
+            return;
+          }
+          if (this.pendingCount >= 256) {
+            this.dropped++;
+            this.health.report("event.skipped", {
+              ...ticket.data,
+              code: "QUEUE_FULL",
+            });
+            return;
+          }
+          this.enqueue(async () => {
+            try {
+              await this.widget.onEvent?.(event);
+              this.health.processed(ticket);
+              // Custom handlers opt in to rendered ACK; arbitrary DOM cannot be inferred.
+            } catch (error) {
+              this.health.failed(ticket);
+              throw error;
+            }
+          });
         });
         if (this.manifest.capabilities.includes("events.subscribe"))
           this.off = this.host.subscribe(
             (event) => this.state === "mounted" && this.router.push(event),
           );
+        this.health.ready();
       } catch (error) {
+        this.health.report("runtime.error", { code: "MOUNT_FAILED" });
         if (this.state !== "disposed") {
           this.state = "failed";
           await this.cleanup();
@@ -459,6 +488,7 @@ export class WidgetRuntime {
   async dispose() {
     if (this.state === "disposed") return;
     this.state = "disposed";
+    this.health.dispose();
     this.off?.();
     await this.initialization?.catch(() => {});
     await this.pending;

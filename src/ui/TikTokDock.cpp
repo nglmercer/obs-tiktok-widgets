@@ -43,6 +43,9 @@
 #include <QDesktopServices>
 #include <QUrl>
 #include <QFile>
+#include <QTreeWidget>
+#include <QHeaderView>
+#include <QJsonDocument>
 #include <QSaveFile>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
@@ -495,6 +498,31 @@ TikTokDock::TikTokDock(PluginConfig &c, TikTokConnectionManager &n, EventDispatc
 	diagnostics = new QLabel;
 	diagnostics->setWordWrap(true);
 	eventsLayout->addWidget(diagnostics);
+	auto *healthGroup = new QGroupBox(uiTr("Widget Health"));
+	healthGroup->setObjectName("widgetHealth");
+	auto *healthLayout = new QVBoxLayout(healthGroup);
+	auto *healthSummary = new QLabel(uiTr(
+		"Browser acknowledgements are separate from OBS vendor acceptance. Video output requires visual verification."));
+	healthSummary->setWordWrap(true);
+	healthLayout->addWidget(healthSummary);
+	auto *healthDetails = new QLabel(uiTr(
+		"Telemetry is experimental and optional. Sources without reports are unobservable; no automatic refresh is triggered. Expand a page to inspect its build and last event."));
+	healthDetails->setWordWrap(true);
+	healthDetails->setTextInteractionFlags(Qt::TextSelectableByMouse);
+	healthLayout->addWidget(healthDetails);
+	healthRows = new QTreeWidget;
+	healthRows->setObjectName("widgetHealthRows");
+	healthRows->setHeaderLabels({uiTr("Widget / instance"), uiTr("Health / acknowledgement")});
+	healthRows->setMaximumHeight(220);
+	healthRows->setColumnWidth(0, 120);
+	healthRows->header()->setStretchLastSection(true);
+	healthLayout->addWidget(healthRows);
+	auto *copyHealth = new QPushButton(uiTr("Copy sanitized diagnostics"));
+	connect(copyHealth, &QPushButton::clicked, this, [this] {
+		QApplication::clipboard()->setText(QString::fromUtf8(QJsonDocument(healthSnapshot).toJson()));
+	});
+	healthLayout->addWidget(copyHealth);
+	eventsLayout->addWidget(healthGroup);
 	setMinimumWidth(280);
 	auto *language = new QComboBox;
 	uiLanguage = language;
@@ -639,7 +667,7 @@ void TikTokDock::updateStatus(const QString &bridgeError)
 	status->setText(text);
 	const QLocale locale(config.settings["uiLocale"].toString("en"));
 	diagnostics->setText(
-		uiTr("%1 events/s · Received %2 · Delivered %3\nDropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7")
+		uiTr("%1 events/s · Received %2 · OBS vendor accepted %3\nDropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7")
 			.arg(locale.toString(eventsPerSecond, 'f', 1))
 			.arg(locale.toString(static_cast<qulonglong>(stats.accepted)))
 			.arg(locale.toString(static_cast<qulonglong>(stats.delivered)))
@@ -656,4 +684,26 @@ void tt::TikTokDock::projectState(const QString &id, const QString &state, const
 				    (diagnostic.isEmpty() ? QString{} : "\n" + diagnostic));
 	if (state == "published")
 		refreshList();
+}
+
+void tt::TikTokDock::updateWidgetHealth(const QJsonObject &snapshot)
+{
+	healthSnapshot = snapshot;
+	healthRows->clear();
+	for (const auto &value : snapshot["instances"].toArray()) {
+		const auto page = value.toObject();
+		auto *row = new QTreeWidgetItem(healthRows);
+		row->setText(0, page["widgetId"].toString().left(8) + " / " + page["instanceId"].toString().left(8));
+		row->setText(1, uiTr(page["runtime"].toString()) + " · " + uiTr(page["rendering"].toString()));
+		for (const auto &key : {"buildId", "assets", "code", "placement", "lastEventId", "lastEventStage"}) {
+			auto *detail = new QTreeWidgetItem(row);
+			detail->setText(0, QString::fromLatin1(key));
+			detail->setText(1, page[key].toString());
+		}
+	}
+	if (healthRows->topLevelItemCount() == 0) {
+		auto *row = new QTreeWidgetItem(healthRows);
+		row->setText(0, uiTr("Browser runtime"));
+		row->setText(1, uiTr("unobservable"));
+	}
 }

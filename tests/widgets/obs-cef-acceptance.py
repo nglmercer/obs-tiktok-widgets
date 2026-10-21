@@ -7,6 +7,8 @@ import os
 from pathlib import Path
 import subprocess
 import time
+import struct
+import zlib
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--config', required=True)
@@ -46,18 +48,63 @@ if not args.existing_ids:
 sources = [s for s in command('obs', 'sources', 'list', live=True) if s['id'] in ids.values()]
 assert len(sources) == 3, sources
 
+def visible_fixture(png):
+    # Our fixture has visible text on a colored background. Transparent/solid
+    # transitional frames cannot prove publication. This is not a production
+    # blank-widget heuristic (idle overlays are intentionally transparent).
+    offset, compressed, width, height, color = 8, bytearray(), 0, 0, 0
+    while offset + 12 <= len(png):
+        length = struct.unpack('>I', png[offset:offset + 4])[0]
+        kind, data = png[offset + 4:offset + 8], png[offset + 8:offset + 8 + length]
+        if kind == b'IHDR':
+            width, height, depth, color, _, _, interlace = struct.unpack('>IIBBBBB', data)
+            assert depth == 8 and color in (2, 6) and interlace == 0, 'Unsupported capture PNG'
+        elif kind == b'IDAT':
+            compressed.extend(data)
+        offset += length + 12
+    channels = 4 if color == 6 else 3
+    stride, raw = width * channels, zlib.decompress(compressed)
+    previous, colors = bytearray(stride), set()
+    for y in range(height):
+        start = y * (stride + 1)
+        mode, row = raw[start], bytearray(raw[start + 1:start + 1 + stride])
+        for x in range(stride):
+            left, above = (row[x - channels] if x >= channels else 0), previous[x]
+            upper_left = previous[x - channels] if x >= channels else 0
+            if mode == 1:
+                predictor = left
+            elif mode == 2:
+                predictor = above
+            elif mode == 3:
+                predictor = (left + above) // 2
+            elif mode == 4:
+                prediction = left + above - upper_left
+                distances = [abs(prediction - value) for value in (left, above, upper_left)]
+                predictor = (left, above, upper_left)[distances.index(min(distances))]
+            else:
+                assert mode == 0, 'Invalid PNG filter'
+                predictor = 0
+            row[x] = (row[x] + predictor) & 255
+        for x in range(0, stride, channels):
+            if channels == 3 or row[x + 3]:
+                colors.add(bytes(row[x:x + 3]))
+                if len(colors) > 1:
+                    return True
+        previous = row
+    return False
+
 def capture(label):
     images = []
     for index, source in enumerate(sources):
         packet = command('obs', 'sources', 'capture', source['id'], '--name', source['name'], live=True)
         image = base64.b64decode(packet['imageData'].split(',', 1)[1])
         (output/f'{label}-{index}.png').write_bytes(image)
-        images.append(hashlib.sha256(image).hexdigest())
+        images.append(hashlib.sha256(image).hexdigest() if visible_fixture(image) else None)
     return images
 
 time.sleep(3)
 before = capture('before')
-assert len(set(before)) > 1, 'Sources appear blank/identical; inspect screenshots'
+assert all(before) and len(set(before)) > 1, 'Sources appear blank/identical; inspect screenshots'
 results = []
 for filename, previous, updated in [('index.html', 'HTML initial', 'HTML authored Ω'), ('style.css', 'background:red', 'background:blue'), ('main.js', 'JS initial', 'JS authored')]:
     path = config/'projects'/ids['editable']/'src'/filename
@@ -69,8 +116,13 @@ for filename, previous, updated in [('index.html', 'HTML initial', 'HTML authore
         after = capture(filename)
         changed = [a != b for a, b in zip(after, before)]
         wanted = [source['id'] == ids['editable'] for source in sources]
-        if changed == wanted:
-            break
+        if all(after) and changed == wanted:
+            # A second stable, visible capture avoids acknowledging a teardown
+            # frame as a completed refresh.
+            time.sleep(.3)
+            stable = capture(filename)
+            if stable == after:
+                break
         assert time.monotonic() < deadline, (filename, changed, wanted)
         time.sleep(.3)
     results.append({'edit': filename, 'matchingSourcesChanged': 2, 'unrelatedUnchanged': True})

@@ -3,9 +3,9 @@
   <context>
     <name>TikTokWidgets</name>
     <message>
-      <source>%1 events/s · Received %2 · Delivered %3
+      <source>%1 events/s · Received %2 · OBS vendor accepted %3
 Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</source>
-      <translation>%1 events/s · Received %2 · Delivered %3
+      <translation>%1 events/s · Received %2 · OBS vendor accepted %3
 Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</translation>
     </message>
     <message>
@@ -125,6 +125,14 @@ Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</translation
       <translation>Broadcast synthetic events to OBS (integration test)</translation>
     </message>
     <message>
+      <source>Browser acknowledgements are separate from OBS vendor acceptance. Video output requires visual verification.</source>
+      <translation>Browser acknowledgements are separate from OBS vendor acceptance. Video output requires visual verification.</translation>
+    </message>
+    <message>
+      <source>Browser runtime</source>
+      <translation>Browser runtime</translation>
+    </message>
+    <message>
       <source>Browser uploads are limited to 700 KB; use widgetctl for larger resources.</source>
       <translation>Browser uploads are limited to 700 KB; use widgetctl for larger resources.</translation>
     </message>
@@ -235,6 +243,10 @@ Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</translation
     <message>
       <source>Copy JSON</source>
       <translation>Copy JSON</translation>
+    </message>
+    <message>
+      <source>Copy sanitized diagnostics</source>
+      <translation>Copy sanitized diagnostics</translation>
     </message>
     <message>
       <source>Copy source and settings</source>
@@ -539,6 +551,10 @@ Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</translation
     <message>
       <source>Gift streak</source>
       <translation>Gift streak</translation>
+    </message>
+    <message>
+      <source>Health / acknowledgement</source>
+      <translation>Health / acknowledgement</translation>
     </message>
     <message>
       <source>Help</source>
@@ -1357,6 +1373,10 @@ Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</translation
       <translation>System</translation>
     </message>
     <message>
+      <source>Telemetry is experimental and optional. Sources without reports are unobservable; no automatic refresh is triggered. Expand a page to inspect its build and last event.</source>
+      <translation>Telemetry is experimental and optional. Sources without reports are unobservable; no automatic refresh is triggered. Expand a page to inspect its build and last event.</translation>
+    </message>
+    <message>
       <source>Template gallery</source>
       <translation>Template gallery</translation>
     </message>
@@ -1523,6 +1543,14 @@ Import this trusted package?</translation>
       <translation>Viewers</translation>
     </message>
     <message>
+      <source>Widget / instance</source>
+      <translation>Widget / instance</translation>
+    </message>
+    <message>
+      <source>Widget Health</source>
+      <translation>Widget Health</translation>
+    </message>
+    <message>
       <source>Widget Studio</source>
       <translation>Widget Studio</translation>
     </message>
@@ -1607,6 +1635,10 @@ Import this trusted package?</translation>
       <translation>events</translation>
     </message>
     <message>
+      <source>failed</source>
+      <translation>failed</translation>
+    </message>
+    <message>
       <source>filters</source>
       <translation>Event filters</translation>
     </message>
@@ -1619,6 +1651,10 @@ Import this trusted package?</translation>
       <translation>Height</translation>
     </message>
     <message>
+      <source>idle</source>
+      <translation>idle</translation>
+    </message>
+    <message>
       <source>light</source>
       <translation>Light</translation>
     </message>
@@ -1627,12 +1663,36 @@ Import this trusted package?</translation>
       <translation>Like aggregation interval</translation>
     </message>
     <message>
+      <source>loading</source>
+      <translation>loading</translation>
+    </message>
+    <message>
       <source>messageLimit</source>
       <translation>Message limit</translation>
     </message>
     <message>
+      <source>processed</source>
+      <translation>processed</translation>
+    </message>
+    <message>
+      <source>ready</source>
+      <translation>ready</translation>
+    </message>
+    <message>
+      <source>received</source>
+      <translation>received</translation>
+    </message>
+    <message>
       <source>reconnecting</source>
       <translation>reconnecting</translation>
+    </message>
+    <message>
+      <source>rendered</source>
+      <translation>rendered</translation>
+    </message>
+    <message>
+      <source>skipped</source>
+      <translation>skipped</translation>
     </message>
     <message>
       <source>sound</source>
@@ -1643,8 +1703,20 @@ Import this trusted package?</translation>
       <translation>Audio</translation>
     </message>
     <message>
+      <source>suspended</source>
+      <translation>suspended</translation>
+    </message>
+    <message>
       <source>theme</source>
       <translation>Theme</translation>
+    </message>
+    <message>
+      <source>unobservable</source>
+      <translation>unobservable</translation>
+    </message>
+    <message>
+      <source>unresponsive</source>
+      <translation>unresponsive</translation>
     </message>
     <message>
       <source>viewerCoalescingMs</source>

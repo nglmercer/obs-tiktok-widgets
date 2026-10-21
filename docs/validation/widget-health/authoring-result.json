@@ -1,0 +1,22 @@
+{
+  "ok": true,
+  "edits": [
+    {
+      "edit": "index.html",
+      "matchingSourcesChanged": 2,
+      "unrelatedUnchanged": true
+    },
+    {
+      "edit": "style.css",
+      "matchingSourcesChanged": 2,
+      "unrelatedUnchanged": true
+    },
+    {
+      "edit": "main.js",
+      "matchingSourcesChanged": 2,
+      "unrelatedUnchanged": true
+    }
+  ],
+  "failedBuildRetainedCEF": true,
+  "note": "Real OBS source captures; this does not establish browser ACK telemetry or synthetic alert rendering."
+}

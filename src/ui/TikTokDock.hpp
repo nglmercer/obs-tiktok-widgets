@@ -10,6 +10,7 @@ class QListWidget;
 class QCheckBox;
 class QPushButton;
 class QComboBox;
+class QTreeWidget;
 namespace tt {
 class StudioLauncher;
 class UiLocale;
@@ -31,6 +32,8 @@ class TikTokDock : public QWidget {
 	QComboBox *uiLanguage = nullptr;
 	QListWidget *list;
 	QLabel *projectDiagnostics;
+	QTreeWidget *healthRows = nullptr;
+	QJsonObject healthSnapshot;
 	QElapsedTimer throughputClock;
 	uint64_t previousAccepted = 0;
 	double eventsPerSecond = 0;
@@ -42,6 +45,7 @@ public:
 	EventMonitor *monitor;
 	TikTokDock(PluginConfig &, TikTokConnectionManager &, EventDispatcher &, WidgetManager &);
 	void updateStatus(const QString &bridgeError);
+	void updateWidgetHealth(const QJsonObject &);
 	void startAutoConnect();
 	void cancelPendingConnection();
 	void projectState(const QString &id, const QString &state, const QString &diagnostic);

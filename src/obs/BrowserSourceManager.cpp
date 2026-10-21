@@ -116,7 +116,9 @@ QJsonArray BrowserSourceManager::sources()
 					{"name", QString::fromUtf8(obs_source_get_name(source))},
 					{"localFile", QString::fromUtf8(obs_data_get_string(data, "local_file"))},
 					{"width", static_cast<int>(obs_data_get_int(data, "width"))},
-					{"height", static_cast<int>(obs_data_get_int(data, "height"))}});
+					{"height", static_cast<int>(obs_data_get_int(data, "height"))},
+					{"active", obs_source_active(source)},
+					{"showing", obs_source_showing(source)}});
 			obs_data_release(data);
 			return true;
 		},

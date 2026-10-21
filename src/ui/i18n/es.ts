@@ -3,9 +3,9 @@
   <context>
     <name>TikTokWidgets</name>
     <message>
-      <source>%1 events/s · Received %2 · Delivered %3
+      <source>%1 events/s · Received %2 · OBS vendor accepted %3
 Dropped %4 · Oversized %5 · Duplicates %6 · Delivery failures %7</source>
-      <translation>%1 eventos/s · Recibidos %2 · Entregados %3
+      <translation>%1 eventos/s · Recibidos %2 · Aceptados por OBS %3
 Descartados %4 · Excesivos %5 · Duplicados %6 · Fallos de entrega %7</translation>
     </message>
     <message>
@@ -125,6 +125,14 @@ Descartados %4 · Excesivos %5 · Duplicados %6 · Fallos de entrega %7</transla
       <translation>Enviar eventos sintéticos a OBS (prueba de integración)</translation>
     </message>
     <message>
+      <source>Browser acknowledgements are separate from OBS vendor acceptance. Video output requires visual verification.</source>
+      <translation>Las confirmaciones del navegador son independientes de la aceptación de OBS. La salida de vídeo requiere verificación visual.</translation>
+    </message>
+    <message>
+      <source>Browser runtime</source>
+      <translation>Entorno del navegador</translation>
+    </message>
+    <message>
       <source>Browser uploads are limited to 700 KB; use widgetctl for larger resources.</source>
       <translation>Las cargas del navegador se limitan a 700 KB; usa widgetctl para recursos más grandes.</translation>
     </message>
@@ -235,6 +243,10 @@ Descartados %4 · Excesivos %5 · Duplicados %6 · Fallos de entrega %7</transla
     <message>
       <source>Copy JSON</source>
       <translation>Copiar JSON</translation>
+    </message>
+    <message>
+      <source>Copy sanitized diagnostics</source>
+      <translation>Copiar diagnóstico sin datos privados</translation>
     </message>
     <message>
       <source>Copy source and settings</source>
@@ -539,6 +551,10 @@ Descartados %4 · Excesivos %5 · Duplicados %6 · Fallos de entrega %7</transla
     <message>
       <source>Gift streak</source>
       <translation>Racha de regalos</translation>
+    </message>
+    <message>
+      <source>Health / acknowledgement</source>
+      <translation>Estado / confirmación</translation>
     </message>
     <message>
       <source>Help</source>
@@ -1357,6 +1373,10 @@ Descartados %4 · Excesivos %5 · Duplicados %6 · Fallos de entrega %7</transla
       <translation>Sistema</translation>
     </message>
     <message>
+      <source>Telemetry is experimental and optional. Sources without reports are unobservable; no automatic refresh is triggered. Expand a page to inspect its build and last event.</source>
+      <translation>La telemetría es experimental y opcional. Las fuentes sin informes no son observables; no se actualizan automáticamente. Expande una página para ver su compilación y último evento.</translation>
+    </message>
+    <message>
       <source>Template gallery</source>
       <translation>Galería de plantillas</translation>
     </message>
@@ -1523,6 +1543,14 @@ Import this trusted package?</source>
       <translation>Espectadores</translation>
     </message>
     <message>
+      <source>Widget / instance</source>
+      <translation>Widget / instancia</translation>
+    </message>
+    <message>
+      <source>Widget Health</source>
+      <translation>Diagnóstico de widgets</translation>
+    </message>
+    <message>
       <source>Widget Studio</source>
       <translation>Estudio de widgets</translation>
     </message>
@@ -1607,6 +1635,10 @@ Import this trusted package?</source>
       <translation>Eventos</translation>
     </message>
     <message>
+      <source>failed</source>
+      <translation>fallido</translation>
+    </message>
+    <message>
       <source>filters</source>
       <translation>Filtros de eventos</translation>
     </message>
@@ -1619,6 +1651,10 @@ Import this trusted package?</source>
       <translation>Alto</translation>
     </message>
     <message>
+      <source>idle</source>
+      <translation>inactivo</translation>
+    </message>
+    <message>
       <source>light</source>
       <translation>Claro</translation>
     </message>
@@ -1627,12 +1663,36 @@ Import this trusted package?</source>
       <translation>Intervalo de agrupación de me gusta</translation>
     </message>
     <message>
+      <source>loading</source>
+      <translation>cargando</translation>
+    </message>
+    <message>
       <source>messageLimit</source>
       <translation>Límite de mensajes</translation>
     </message>
     <message>
+      <source>processed</source>
+      <translation>procesado</translation>
+    </message>
+    <message>
+      <source>ready</source>
+      <translation>listo</translation>
+    </message>
+    <message>
+      <source>received</source>
+      <translation>recibido</translation>
+    </message>
+    <message>
       <source>reconnecting</source>
       <translation>Reconectando</translation>
+    </message>
+    <message>
+      <source>rendered</source>
+      <translation>renderizado</translation>
+    </message>
+    <message>
+      <source>skipped</source>
+      <translation>omitido</translation>
     </message>
     <message>
       <source>sound</source>
@@ -1643,8 +1703,20 @@ Import this trusted package?</source>
       <translation>Audio</translation>
     </message>
     <message>
+      <source>suspended</source>
+      <translation>suspendido</translation>
+    </message>
+    <message>
       <source>theme</source>
       <translation>Tema</translation>
+    </message>
+    <message>
+      <source>unobservable</source>
+      <translation>no observable</translation>
+    </message>
+    <message>
+      <source>unresponsive</source>
+      <translation>sin respuesta</translation>
     </message>
     <message>
       <source>viewerCoalescingMs</source>

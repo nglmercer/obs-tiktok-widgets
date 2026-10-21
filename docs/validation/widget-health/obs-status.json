@@ -1,0 +1,46 @@
+{
+  "bridge": "healthy",
+  "transport": {
+    "connections": "8",
+    "lastHttpStatus": 0,
+    "listening": true,
+    "originCategory": ""
+  },
+  "instances": [],
+  "sources": [
+    {
+      "active": true,
+      "browserRuntime": "unobservable",
+      "height": 400,
+      "id": "4ba75147-5434-403e-bc1c-3d1a170f059e",
+      "instanceMapping": "unmapped",
+      "name": "CEFHealth [4ba75147]",
+      "showing": true,
+      "width": 600
+    },
+    {
+      "active": true,
+      "browserRuntime": "unobservable",
+      "height": 400,
+      "id": "0c50b57c-2b65-49bb-aadc-8c4b4401c316",
+      "instanceMapping": "unmapped",
+      "name": "CEFControl [0c50b57c]",
+      "showing": true,
+      "width": 600
+    },
+    {
+      "active": true,
+      "browserRuntime": "unobservable",
+      "height": 400,
+      "id": "4ba75147-5434-403e-bc1c-3d1a170f059e",
+      "instanceMapping": "unmapped",
+      "name": "CEFHealth [4ba75147] 2",
+      "showing": true,
+      "width": 600
+    }
+  ],
+  "telemetry": "unobservable",
+  "telemetryReason": "CEF_TRANSPORT_UNVERIFIED",
+  "automaticRecovery": false,
+  "visualVerified": false
+}

@@ -84,7 +84,7 @@ bool WidgetLocalIPC::start(bool enabled)
 					if (++count > 20)
 						throw DomainError("RATE_LIMIT", "Too many IPC requests");
 					method = p["method"].toString();
-					if (!method.startsWith("obs."))
+					if (!method.startsWith("obs.") && method != "widgets.health")
 						throw DomainError(
 							"METHOD_DENIED",
 							"Only OBS placement operations are exposed over live IPC; author edits use the locked offline service");
